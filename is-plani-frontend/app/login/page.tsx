@@ -1,6 +1,6 @@
 "use client";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "https://srart-era.onrender.com";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";

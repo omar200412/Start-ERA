@@ -1,5 +1,7 @@
 "use client";
 
+const API_URL = "https://srart-era.onrender.com";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Chatbot from "./Chatbot";

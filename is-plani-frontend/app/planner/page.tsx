@@ -1,6 +1,6 @@
 "use client";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "https://srart-era.onrender.com";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -23,7 +23,7 @@ export default function PlannerPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/generate_plan`, {
+      const res = await fetch("https://srart-era.onrender.com/generate_plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ business_idea: idea, language: "tr" }),
