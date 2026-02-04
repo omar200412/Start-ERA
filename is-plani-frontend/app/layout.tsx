@@ -1,7 +1,7 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
-// TAM ADRES KULLANIYORUZ
 import { ThemeAuthProvider } from "./context/ThemeAuthContext"; 
+import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -13,8 +13,8 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body className={inter.className}>
-        {/* Hata veren 72. satırı susturan sarmalama burası */}
         <ThemeAuthProvider>
+          <Toaster position="top-right" />
           {children}
         </ThemeAuthProvider>
       </body>

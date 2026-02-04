@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
 interface ChatbotProps {
   lang: string;
   darkMode: boolean;
@@ -31,7 +33,7 @@ export default function Chatbot({ lang, darkMode }: ChatbotProps) {
     setIsTyping(true);
 
     try {
-      const res = await fetch("https://srart-era.onrender.com/chat", {
+      const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
