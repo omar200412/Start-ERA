@@ -3,6 +3,12 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
+// --- API URL (Güvenli Erişim) ---
+// process.env kontrolü eklenerek "process is not defined" hatası önlenmiştir.
+const API_URL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_URL)
+  ? process.env.NEXT_PUBLIC_API_URL
+  : "http://127.0.0.1:8000";
+
 // --- MOCK CONTEXT (Güvenli Çalıştırma İçin) ---
 const ThemeAuthContext = createContext<any>(null);
 const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {

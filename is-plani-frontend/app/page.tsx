@@ -3,7 +3,13 @@
 import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
 import toast, { Toaster } from "react-hot-toast";
 
-// --- MOCK / INTERNAL CONTEXT (Harici dosya hatalarını önlemek için birleştirildi) ---
+// --- API URL (Vercel Desteği İçin Güncellendi) ---
+// process.env kontrolü eklenerek "process is not defined" hatası önlenmiştir.
+const API_URL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_URL)
+  ? process.env.NEXT_PUBLIC_API_URL
+  : "http://127.0.0.1:8000";
+
+// --- MOCK / INTERNAL CONTEXT ---
 const ThemeAuthContext = createContext<any>(null);
 
 const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -11,7 +17,6 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    // Tarayıcı ortamında olduğumuzu kontrol et
     if (typeof window !== 'undefined') {
       const savedUser = localStorage.getItem("userEmail");
       const theme = localStorage.getItem("theme");
@@ -21,9 +26,10 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const toggleTheme = () => {
-    setDarkMode(!darkMode);
+    const newMode = !darkMode;
+    setDarkMode(newMode);
     if (typeof window !== 'undefined') {
-      localStorage.setItem("theme", !darkMode ? "dark" : "light");
+      localStorage.setItem("theme", newMode ? "dark" : "light");
     }
   };
 
@@ -54,7 +60,7 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 const useThemeAuth = () => useContext(ThemeAuthContext);
 
-// --- CHATBOT BİLEŞENİ (Dahili olarak tanımlandı) ---
+// --- CHATBOT BİLEŞENİ ---
 const Chatbot = ({ lang, darkMode }: { lang: "tr" | "en" | "ar", darkMode: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: string, content: string }[]>([]);
@@ -68,38 +74,42 @@ const Chatbot = ({ lang, darkMode }: { lang: "tr" | "en" | "ar", darkMode: boole
     }
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
     const userMsg = { role: "user", content: input };
     setMessages((prev) => [...prev, userMsg]);
+    
+    const currentInput = input;
     setInput("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      const replies = {
-        tr: "Size nasıl yardımcı olabilirim? Start ERA yanınızda.",
-        en: "How can I help you? Start ERA is here.",
-        ar: "كيف يمكنني مساعدتك؟ Start ERA هنا."
+    try {
+      const res = await fetch(`${API_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          message: currentInput,
+          system_prompt: "You are a helpful Start ERA assistant. Reply in the user's language."
+        }),
+      });
+
+      if (!res.ok) throw new Error("API Error");
+      const data = await res.json();
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+    } catch {
+      const errorMsg = {
+        tr: "⚠️ Bağlantı hatası.",
+        en: "⚠️ Connection error.",
+        ar: "⚠️ خطأ في الاتصال."
       };
-      setMessages((prev) => [...prev, { 
-        role: "assistant", 
-        content: replies[lang] 
-      }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: errorMsg[lang] }]);
+    } finally {
       setIsTyping(false);
-    }, 1000);
+    }
   };
 
-  const placeholders = {
-    tr: "Mesaj yaz...",
-    en: "Type a message...",
-    ar: "اكتب رسالة..."
-  };
-
-  const welcomeMsg = {
-    tr: "Merhaba! Nasıl yardımcı olabilirim?",
-    en: "Hello! How can I help you?",
-    ar: "مرحباً! كيف يمكنني مساعدتك؟"
-  };
+  const placeholders = { tr: "Mesaj yaz...", en: "Type a message...", ar: "اكتب رسالة..." };
+  const welcomeMsg = { tr: "Merhaba! Yardımcı olabilir miyim?", en: "Hello! How can I help?", ar: "مرحباً! كيف يمكنني مساعدتك؟" };
 
   return (
     <div className="fixed bottom-6 right-6 z-[60]">
@@ -111,9 +121,7 @@ const Chatbot = ({ lang, darkMode }: { lang: "tr" | "en" | "ar", darkMode: boole
           </div>
           <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-4">
             {messages.length === 0 && (
-              <p className="text-center text-sm opacity-50 mt-10">
-                {welcomeMsg[lang]}
-              </p>
+              <p className="text-center text-sm opacity-50 mt-10">{welcomeMsg[lang]}</p>
             )}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>

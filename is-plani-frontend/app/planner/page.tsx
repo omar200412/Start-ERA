@@ -3,10 +3,92 @@
 import React, { useState, useEffect, useRef, createContext, useContext } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
-// --- API URL ---
-const API_URL = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) 
+// --- API URL (Vercel Desteği İçin Güncellendi) ---
+// process.env kontrolü eklenerek "process is not defined" hatası önlenmiştir.
+const API_URL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_URL) 
   ? process.env.NEXT_PUBLIC_API_URL 
   : "http://127.0.0.1:8000";
+
+// --- MOCK CONTEXT (Güvenli Çalıştırma İçin) ---
+const ThemeAuthContext = createContext<any>(null);
+const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [darkMode, setDarkMode] = useState(false);
+  const user = "girisimci@startera.com"; 
+  const toggleTheme = () => setDarkMode(!darkMode);
+  return (
+    <ThemeAuthContext.Provider value={{ user, darkMode, toggleTheme }}>
+      <div className={darkMode ? 'dark' : ''}>{children}</div>
+    </ThemeAuthContext.Provider>
+  );
+};
+const useThemeAuth = () => useContext(ThemeAuthContext);
+
+// --- ICONS ---
+const MoonIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" strokeWidth={2}/></svg>);
+const SunIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" strokeWidth={2}/></svg>);
+const SparkleIcon = () => (<svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 3.214L13 21l-2.286-6.857L5 12l5.714-3.214z" /></svg>);
+
+// --- TYPEWRITER EFFECT COMPONENT (Yazı Efekti) ---
+const TypewriterEffect = ({ text, speed = 5 }: { text: string, speed?: number }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  
+  useEffect(() => {
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i < text.length) {
+        setDisplayedText((prev) => prev + text.charAt(i));
+        i++;
+      } else {
+        clearInterval(timer);
+      }
+    }, speed);
+    return () => clearInterval(timer);
+  }, [text, speed]);
+
+  return <div className="whitespace-pre-wrap leading-relaxed">{displayedText}</div>;
+};
+
+// --- CHATBOT BUTTON ---
+const ChatbotButton = () => {
+  return (
+    <div className="fixed bottom-6 right-6 z-[60]">
+      <button 
+        onClick={() => toast("Asistan şu an analiz yapıyor 🤖", { icon: '⏳', style: { borderRadius: '12px', background: '#333', color: '#fff' } })} 
+        className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition active:scale-95 ring-4 ring-blue-500/20"
+      >
+        🤖
+      </button>
+    </div>
+  );
+};
+
+// --- LOADING OVERLAY (Yükleme Ekranı) ---
+const LoadingOverlay = ({ messages }: { messages: string[] }) => {
+  const [message, setMessage] = useState(messages[0]);
+  
+  useEffect(() => {
+    let i = 0;
+    const interval = setInterval(() => {
+      setMessage(messages[i % messages.length]);
+      i++;
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [messages]);
+
+  return (
+    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl rounded-3xl transition-all duration-500">
+      <div className="relative w-24 h-24 mb-8">
+        <div className="absolute inset-0 border-t-4 border-blue-500 rounded-full animate-spin"></div>
+        <div className="absolute inset-2 border-r-4 border-purple-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
+        <div className="absolute inset-0 flex items-center justify-center text-3xl">🚀</div>
+      </div>
+      <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 animate-pulse">
+        Start ERA AI
+      </h3>
+      <p className="mt-2 text-sm text-slate-500 font-medium animate-fade-in">{message}</p>
+    </div>
+  );
+};
 
 // --- ÇEVİRİ SÖZLÜĞÜ ---
 const TRANSLATIONS = {
@@ -118,87 +200,6 @@ const TRANSLATIONS = {
       { id: 5, key: "management", title: "طاقم الإدارة", subtitle: "من يقود السفينة؟", ph: "مثال: أنا أدير العمليات، وشريكي يدير الشؤون المالية..." }
     ]
   }
-};
-
-// --- MOCK CONTEXT ---
-const ThemeAuthContext = createContext<any>(null);
-const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [darkMode, setDarkMode] = useState(false);
-  const user = "girisimci@startera.com"; 
-  const toggleTheme = () => setDarkMode(!darkMode);
-  return (
-    <ThemeAuthContext.Provider value={{ user, darkMode, toggleTheme }}>
-      <div className={darkMode ? 'dark' : ''}>{children}</div>
-    </ThemeAuthContext.Provider>
-  );
-};
-const useThemeAuth = () => useContext(ThemeAuthContext);
-
-// --- ICONS ---
-const MoonIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" strokeWidth={2}/></svg>);
-const SunIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" strokeWidth={2}/></svg>);
-const SparkleIcon = () => (<svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 3.214L13 21l-2.286-6.857L5 12l5.714-3.214z" /></svg>);
-
-// --- TYPEWRITER EFFECT ---
-const TypewriterEffect = ({ text, speed = 5 }: { text: string, speed?: number }) => {
-  const [displayedText, setDisplayedText] = useState("");
-  
-  useEffect(() => {
-    let i = 0;
-    const timer = setInterval(() => {
-      if (i < text.length) {
-        setDisplayedText((prev) => prev + text.charAt(i));
-        i++;
-      } else {
-        clearInterval(timer);
-      }
-    }, speed);
-    return () => clearInterval(timer);
-  }, [text, speed]);
-
-  return <div className="whitespace-pre-wrap leading-relaxed">{displayedText}</div>;
-};
-
-// --- CHATBOT BUTTON ---
-const ChatbotButton = () => {
-  return (
-    <div className="fixed bottom-6 right-6 z-[60]">
-      <button 
-        onClick={() => toast("Asistan şu an analiz yapıyor 🤖", { icon: '⏳', style: { borderRadius: '12px', background: '#333', color: '#fff' } })} 
-        className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition active:scale-95 ring-4 ring-blue-500/20"
-      >
-        🤖
-      </button>
-    </div>
-  );
-};
-
-// --- LOADING OVERLAY ---
-const LoadingOverlay = ({ messages }: { messages: string[] }) => {
-  const [message, setMessage] = useState(messages[0]);
-  
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      setMessage(messages[i % messages.length]);
-      i++;
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [messages]);
-
-  return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl rounded-3xl transition-all duration-500">
-      <div className="relative w-24 h-24 mb-8">
-        <div className="absolute inset-0 border-t-4 border-blue-500 rounded-full animate-spin"></div>
-        <div className="absolute inset-2 border-r-4 border-purple-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
-        <div className="absolute inset-0 flex items-center justify-center text-3xl">🚀</div>
-      </div>
-      <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 animate-pulse">
-        Start ERA AI
-      </h3>
-      <p className="mt-2 text-sm text-slate-500 font-medium animate-fade-in">{message}</p>
-    </div>
-  );
 };
 
 // --- MAIN PAGE CONTENT ---
@@ -323,7 +324,7 @@ ${formData.strategy}
   return (
     <div dir={dir} className={`min-h-screen transition-all duration-700 relative overflow-hidden ${darkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`}>
       
-      {/* --- BACKGROUND ANIMATION --- */}
+      {/* --- BACKGROUND ANIMATION (Aurora Effect) --- */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
          <div className={`absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-20 animate-pulse ${darkMode ? 'bg-blue-900' : 'bg-blue-300'}`}></div>
          <div className={`absolute top-[40%] -right-[10%] w-[50%] h-[70%] rounded-full blur-[130px] opacity-20 animate-pulse delay-1000 ${darkMode ? 'bg-purple-900' : 'bg-indigo-300'}`}></div>
@@ -340,7 +341,7 @@ ${formData.strategy}
             <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Start ERA</span>
         </div>
         <div className="flex items-center gap-4">
-             <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95" title="Change Language">{getLangLabel()}</button>
+             <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95 px-2 w-10 text-center" title="Change Language">{getLangLabel()}</button>
              <button onClick={toggleTheme} className={`p-2.5 rounded-xl transition-all active:scale-95 ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm hover:shadow-md border border-slate-100'}`}>
                 {darkMode ? <SunIcon /> : <MoonIcon />}
              </button>

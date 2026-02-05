@@ -27,15 +27,25 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 # ✅ MODEL: Gemini 2.5 Flash
 MODEL_NAME = "gemini-2.5-flash"
 
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel(MODEL_NAME)
+try:
+    if API_KEY:
+        genai.configure(api_key=API_KEY)
+        model = genai.GenerativeModel(MODEL_NAME)
+    else:
+        print("Warning: GOOGLE_API_KEY is missing.")
+        model = None
+except Exception as e:
+    print(f"Model config error: {e}")
+    model = None
 
 # -------------------- APP --------------------
 app = FastAPI()
 
+# CORS Ayarları: Frontend'den gelen her türlü isteğe izin ver
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], # Güvenlik için canlıda frontend domaini yazılabilir ama "*" şimdilik çalışır.
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -44,6 +54,8 @@ app.add_middleware(
 def get_db():
     if DATABASE_URL:
         return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    # Render diskleri geçicidir, SQLite verisi silinebilir. 
+    # Kalıcı veri için Render Postgres kullanılmalı.
     conn = sqlite3.connect("chatbot.db")
     conn.row_factory = sqlite3.Row
     return conn
@@ -52,28 +64,31 @@ def ph():
     return "%s" if DATABASE_URL else "?"
 
 def init_db():
-    conn = get_db()
-    cur = conn.cursor()
+    try:
+        conn = get_db()
+        cur = conn.cursor()
 
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
-        );
-    """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL
+            );
+        """)
 
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS chat_history (
-            id SERIAL PRIMARY KEY,
-            role TEXT,
-            message TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS chat_history (
+                id SERIAL PRIMARY KEY,
+                role TEXT,
+                message TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"DB Init Error: {e}")
 
 init_db()
 
@@ -97,6 +112,16 @@ class BusinessPlanRequest(BaseModel):
 class PDFRequest(BaseModel):
     text: str
 
+# -------------------- ROUTES --------------------
+
+@app.get("/")
+def read_root():
+    return {"message": "Start ERA Backend is Running! 🚀"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 # -------------------- AUTH --------------------
 @app.post("/register")
 def register(user: UserAuth):
@@ -111,8 +136,9 @@ def register(user: UserAuth):
         )
         conn.commit()
         return {"message": "ok"}
-    except Exception:
-        raise HTTPException(400, "Email already exists")
+    except Exception as e:
+        print(e)
+        raise HTTPException(400, "Email already exists or DB error")
     finally:
         conn.close()
 
@@ -122,12 +148,16 @@ def login(user: UserAuth):
     cur = conn.cursor()
     hashed = hashlib.sha256(user.password.encode()).hexdigest()
 
-    cur.execute(
-        f"SELECT email FROM users WHERE email={ph()} AND password={ph()}",
-        (user.email, hashed),
-    )
-    row = cur.fetchone()
-    conn.close()
+    try:
+        cur.execute(
+            f"SELECT email FROM users WHERE email={ph()} AND password={ph()}",
+            (user.email, hashed),
+        )
+        row = cur.fetchone()
+    except Exception:
+        row = None
+    finally:
+        conn.close()
 
     if not row:
         raise HTTPException(401, "Invalid credentials")
@@ -140,47 +170,59 @@ def login(user: UserAuth):
 # -------------------- CHAT --------------------
 @app.post("/chat")
 def chat(req: ChatRequest):
+    if not model:
+        raise HTTPException(503, "AI Model not configured properly.")
+
     prompt = req.system_prompt + "\n\nUser: " + req.message if req.system_prompt else req.message
 
     try:
         response = model.generate_content(prompt)
         reply = response.text
-    except Exception:
+    except Exception as e:
+        print(f"Gemini Error: {e}")
         reply = "⚠️ AI service temporarily unavailable."
 
-    conn = get_db()
-    cur = conn.cursor()
-
-    cur.execute(
-        f"INSERT INTO chat_history (role, message) VALUES ({ph()}, {ph()})",
-        ("user", req.message),
-    )
-    cur.execute(
-        f"INSERT INTO chat_history (role, message) VALUES ({ph()}, {ph()})",
-        ("bot", reply),
-    )
-
-    conn.commit()
-    conn.close()
+    # Chat geçmişini kaydetme (Opsiyonel - Hata olursa akışı bozmasın)
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            f"INSERT INTO chat_history (role, message) VALUES ({ph()}, {ph()})",
+            ("user", req.message),
+        )
+        cur.execute(
+            f"INSERT INTO chat_history (role, message) VALUES ({ph()}, {ph()})",
+            ("bot", reply),
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"DB Chat Log Error: {e}")
 
     return {"reply": reply}
 
 @app.get("/chat/history")
 def chat_history():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT role, message FROM chat_history ORDER BY id")
-    rows = cur.fetchall()
-    conn.close()
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT role, message FROM chat_history ORDER BY id")
+        rows = cur.fetchall()
+        conn.close()
 
-    return [
-        {"text": r["message"], "isBot": r["role"] == "bot"}
-        for r in rows
-    ]
+        return [
+            {"text": r["message"], "isBot": r["role"] == "bot"}
+            for r in rows
+        ]
+    except Exception:
+        return []
 
 # -------------------- PLAN --------------------
 @app.post("/generate_plan")
 def generate_plan(req: BusinessPlanRequest):
+    if not model:
+        raise HTTPException(503, "AI Model not configured.")
+
     prompt = f"""
 You are a professional business consultant named Start ERA AI.
 LANGUAGE: {req.language}
@@ -207,13 +249,13 @@ Tone: Professional, encouraging, and analytical.
         text = model.generate_content(prompt).text.replace("*", "").replace("#", "")
         return JSONResponse(content={"plan": text})
     except Exception as e:
+        print(f"Plan Error: {e}")
         raise HTTPException(500, f"Plan generation failed: {str(e)}")
 
 @app.post("/create_pdf")
 def create_pdf(req: PDFRequest):
-    pdf_file = "StartERA_Plan.pdf"
+    pdf_file = "/tmp/StartERA_Plan.pdf" # Render/Vercel gibi yerlerde /tmp kullanmak daha güvenlidir
     try:
-        # A4 Sayfa Ayarları (Kenar boşlukları)
         doc = SimpleDocTemplate(
             pdf_file, 
             pagesize=A4,
@@ -222,12 +264,8 @@ def create_pdf(req: PDFRequest):
         )
         
         styles = getSampleStyleSheet()
-        
-        # --- Özel Stiller ---
-        # Marka Rengi (Koyu Mavi)
         brand_color = HexColor("#1e40af") 
         
-        # Başlık Stili
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Title'],
@@ -238,7 +276,6 @@ def create_pdf(req: PDFRequest):
             alignment=TA_CENTER
         )
         
-        # Alt Başlık / Bölüm Başlıkları
         heading_style = ParagraphStyle(
             'CustomHeading',
             parent=styles['Heading2'],
@@ -254,39 +291,32 @@ def create_pdf(req: PDFRequest):
             borderBottomWidth=1
         )
         
-        # Gövde Metni
         body_style = ParagraphStyle(
             'CustomBody',
             parent=styles['Normal'],
             fontName='Helvetica',
             fontSize=11,
-            leading=15, # Satır aralığı
+            leading=15,
             alignment=TA_JUSTIFY,
             spaceAfter=10,
             textColor=HexColor("#333333")
         )
 
         story = []
-        
-        # Üst Kısım
         story.append(Paragraph("Start ERA", title_style))
         story.append(Paragraph("Professional Business Plan", styles["Heading3"]))
         story.append(Paragraph("Generated by AI Consultant", styles["Italic"]))
         story.append(Spacer(1, 30))
         
-        # İçerik İşleme
         for line in req.text.split("\n"):
             line = line.strip()
             if not line:
                 continue
-                
-            # Başlık Tespiti: Kısa, büyük harf veya ':' ile biten satırlar
             if (len(line) < 60 and line.isupper()) or (len(line) < 50 and line.endswith(":")):
                 story.append(Paragraph(line, heading_style))
             else:
                 story.append(Paragraph(line, body_style))
         
-        # Alt Bilgi
         story.append(Spacer(1, 40))
         story.append(Paragraph("© 2026 Start ERA - Confidential Document", styles["Italic"]))
         
@@ -295,12 +325,6 @@ def create_pdf(req: PDFRequest):
     except Exception as e:
         raise HTTPException(500, f"PDF creation failed: {str(e)}")
 
-# -------------------- HEALTH --------------------
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
-# -------------------- RUN --------------------
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
