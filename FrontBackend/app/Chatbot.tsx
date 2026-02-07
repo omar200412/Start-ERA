@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+// --- API URL FIX ---
+// Tarayıcı hatasını önlemek için process kontrolü
+const API_URL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_URL)
+  ? process.env.NEXT_PUBLIC_API_URL
+  : "http://127.0.0.1:8000";
 
 interface ChatbotProps {
   lang: string;
@@ -38,8 +42,7 @@ export default function Chatbot({ lang, darkMode }: ChatbotProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           message: currentInput,
-          // 👇 KRİTİK: DİL AYNALAMA TALİMATI
-          system_prompt: "You are a professional Start ERA assistant. KURAL: Kullanıcı hangi dilde yazarsa SADECE o dilde cevap ver. 'Hello' İngilizcedir, 'Merhaba' Türkçedir. Kullanıcının dilini asla değiştirme!"
+          system_prompt: "You are a professional Start ERA assistant. KURAL: Kullanıcı hangi dilde yazarsa SADECE o dilde cevap ver."
         }),
       });
 
