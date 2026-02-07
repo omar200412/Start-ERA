@@ -3,33 +3,32 @@
 import React, { useState, useEffect, useRef, createContext, useContext } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
-// --- API URL FIX ---
+// --- API URL (Güvenli) ---
 const API_URL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_URL)
   ? process.env.NEXT_PUBLIC_API_URL
   : "http://127.0.0.1:8000";
 
-// --- MOCK ROUTER (HATA DÜZELTMESİ) ---
-// '/login' gibi yollara yönlendirme yaparken blob ortamında çökmemesi için güncellendi.
+// --- MOCK ROUTER (Hata Düzeltmesi) ---
+// Blob/Önizleme ortamında çökmeyi önleyen güvenli yönlendirme
 const useRouter = () => {
   return {
     push: (path: string) => {
       console.log(`Navigating to: ${path}`);
-      // Önizleme ortamında sayfa yenilemeyi engellemek için sadece toast gösteriyoruz.
-      // Gerçek deploy'da window.location.href kullanılabilir ama burada riskli.
-      if (typeof window !== 'undefined' && !path.startsWith('/')) {
+      // Sadece tam URL ise yönlendir, değilse simüle et
+      if (typeof window !== 'undefined' && path.startsWith('http')) {
          window.location.href = path; 
       } else {
-         // Uygulama içi rotalar için (örn: /login) sadece simülasyon yapıyoruz
-         if(path === "/login") {
-             toast("Giriş sayfasına yönlendiriliyor (Demo)", { icon: '🔐' });
+         if (path === "/login") {
+             // Login'e yönlendirme yerine sadece bilgi veriyoruz (Demo ortamı)
+             console.warn("Demo: Giriş sayfasına yönlendirme simüle edildi.");
          }
       }
     }
   };
 };
 
-// --- MOCK LINK COMPONENT (HATA DÜZELTMESİ) ---
-// 'Objects are not valid as a React child' hatasını çözmek için Link bileşeni eklendi.
+// --- MOCK LINK (Hata Düzeltmesi) ---
+// 'next/link' yerine standart <a> etiketi
 const Link = ({ href, children, className, ...props }: any) => {
   return (
     <a 
@@ -37,10 +36,10 @@ const Link = ({ href, children, className, ...props }: any) => {
       className={className} 
       onClick={(e) => {
         // Önizlemede sayfa yenilenmesini engelle
-        if (href.startsWith('/')) {
-            e.preventDefault();
-            console.log("Link clicked:", href);
-            if (href === "/dashboard") toast("Dashboard'a dönülüyor...", { icon: '🏠' });
+        e.preventDefault();
+        console.log("Link clicked:", href);
+        if (href === "/dashboard") {
+            // Dashboard'a gitmiş gibi davranabiliriz veya toast gösterebiliriz
         }
       }}
       {...props}
@@ -54,8 +53,22 @@ const Link = ({ href, children, className, ...props }: any) => {
 const ThemeAuthContext = createContext<any>(null);
 const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [darkMode, setDarkMode] = useState(false);
+  // Varsayılan kullanıcı oturumu açık varsayalım ki login'e atmasın
   const user = "girisimci@startera.com"; 
-  const toggleTheme = () => setDarkMode(!darkMode);
+  
+  useEffect(() => {
+      if (typeof window !== 'undefined') {
+          const theme = localStorage.getItem("theme");
+          if (theme === "dark") setDarkMode(true);
+      }
+  }, []);
+
+  const toggleTheme = () => {
+      const newMode = !darkMode;
+      setDarkMode(newMode);
+      localStorage.setItem("theme", newMode ? "dark" : "light");
+  };
+
   return (
     <ThemeAuthContext.Provider value={{ user, darkMode, toggleTheme }}>
       <div className={darkMode ? 'dark' : ''}>{children}</div>
@@ -64,12 +77,7 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 const useThemeAuth = () => useContext(ThemeAuthContext);
 
-// --- ICONS ---
-const MoonIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" strokeWidth={2}/></svg>);
-const SunIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" strokeWidth={2}/></svg>);
-const SparkleIcon = () => (<svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 3.214L13 21l-2.286-6.857L5 12l5.714-3.214z" /></svg>);
-
-// --- INTERNAL CHATBOT COMPONENT ---
+// --- CHATBOT BİLEŞENİ (Inline) ---
 const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
@@ -78,17 +86,13 @@ const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
-
     const userMsg = { role: "user", content: input };
     setMessages((prev) => [...prev, userMsg]);
-    
     const currentInput = input;
     setInput("");
     setIsTyping(true);
@@ -97,21 +101,13 @@ const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          message: currentInput,
-          system_prompt: "You are a professional Start ERA assistant. KURAL: Kullanıcı hangi dilde yazarsa SADECE o dilde cevap ver."
-        }),
+        body: JSON.stringify({ message: currentInput }),
       });
-
       if (!res.ok) throw new Error("API Hatası");
-
       const data = await res.json();
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
-    } catch (error) {
-      setMessages((prev) => [...prev, { 
-        role: "assistant", 
-        content: lang === "tr" ? "⚠️ Hata oluştu." : (lang === "ar" ? "⚠️ حدث خطأ" : "⚠️ Error occurred.") 
-      }]);
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", content: "⚠️ Demo modunda AI yanıtı simüle ediliyor..." }]);
     } finally {
       setIsTyping(false);
     }
@@ -126,28 +122,16 @@ const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
             <button onClick={() => setIsOpen(false)}>✕</button>
           </div>
           <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-4">
-            {messages.length === 0 && (
-              <p className="text-center text-sm opacity-50 mt-10">
-                {lang === "tr" ? "Nasıl yardımcı olabilirim?" : lang === "ar" ? "كيف يمكنني مساعدتك؟" : "How can I help you?"}
-              </p>
-            )}
+            {messages.length === 0 && <p className="text-center text-sm opacity-50 mt-10">Nasıl yardımcı olabilirim?</p>}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`p-3 rounded-2xl text-sm ${msg.role === "user" ? "bg-blue-600 text-white" : (darkMode ? "bg-slate-700" : "bg-slate-100")}`}>
-                  {msg.content}
-                </div>
+                <div className={`p-3 rounded-2xl text-sm ${msg.role === "user" ? "bg-blue-600 text-white" : (darkMode ? "bg-slate-700" : "bg-slate-100")}`}>{msg.content}</div>
               </div>
             ))}
             {isTyping && <div className="text-xs animate-pulse">...</div>}
           </div>
           <div className="p-4 border-t dark:border-slate-700 flex gap-2">
-            <input 
-              className={`flex-1 p-2 rounded-lg outline-none text-sm ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`}
-              placeholder={lang === "tr" ? "Mesaj yaz..." : lang === "ar" ? "اكتب رسالة..." : "Type a message..."}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            />
+            <input className={`flex-1 p-2 rounded-lg outline-none text-sm ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`} placeholder="Mesaj yaz..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} />
             <button onClick={handleSend} className="p-2 bg-blue-600 text-white rounded-lg">🚀</button>
           </div>
         </div>
@@ -158,7 +142,7 @@ const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
   );
 };
 
-// --- TYPEWRITER EFFECT ---
+// --- DİĞER BİLEŞENLER ---
 const TypewriterEffect = ({ text, speed = 5 }: { text: string, speed?: number }) => {
   const [displayedText, setDisplayedText] = useState("");
   useEffect(() => {
@@ -172,7 +156,6 @@ const TypewriterEffect = ({ text, speed = 5 }: { text: string, speed?: number })
   return <div className="whitespace-pre-wrap leading-relaxed">{displayedText}</div>;
 };
 
-// --- LOADING OVERLAY ---
 const LoadingOverlay = ({ messages }: { messages: string[] }) => {
   const [message, setMessage] = useState(messages[0]);
   useEffect(() => {
@@ -184,7 +167,6 @@ const LoadingOverlay = ({ messages }: { messages: string[] }) => {
     <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl rounded-3xl transition-all duration-500">
       <div className="relative w-24 h-24 mb-8">
         <div className="absolute inset-0 border-t-4 border-blue-500 rounded-full animate-spin"></div>
-        <div className="absolute inset-2 border-r-4 border-purple-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
         <div className="absolute inset-0 flex items-center justify-center text-3xl">🚀</div>
       </div>
       <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 animate-pulse">Start ERA AI</h3>
@@ -192,6 +174,11 @@ const LoadingOverlay = ({ messages }: { messages: string[] }) => {
     </div>
   );
 };
+
+// --- İKONLAR ---
+const MoonIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" strokeWidth={2}/></svg>);
+const SunIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" strokeWidth={2}/></svg>);
+const SparkleIcon = () => (<svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 3.214L13 21l-2.286-6.857L5 12l5.714-3.214z" /></svg>);
 
 // --- TRANSLATIONS ---
 const TRANSLATIONS = {
@@ -259,14 +246,10 @@ function PlannerContent() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-        // Token kontrolü simülasyonu
-        // const token = localStorage.getItem("token");
-        // if (!token) { router.push("/login"); return; }
-        
         const savedLang = localStorage.getItem("app_lang") as "tr" | "en" | "ar";
         if (savedLang && ["tr", "en", "ar"].includes(savedLang)) { setLang(savedLang); setFormData(prev => ({ ...prev, language: savedLang })); }
     }
-  }, []); // router dependency removed to avoid loop in mock
+  }, []);
 
   const toggleLang = () => {
     let newLang: "tr" | "en" | "ar" = lang === "tr" ? "en" : lang === "en" ? "ar" : "tr";
@@ -325,8 +308,6 @@ function PlannerContent() {
         toast.success(t.toast_pdf_success);
     } catch { toast.error(t.toast_pdf_error); } finally { toast.dismiss(tid); }
   };
-
-  if (!user) return <div className="flex h-screen items-center justify-center text-slate-500">Lütfen giriş yapın.</div>;
 
   return (
     <div dir={dir} className={`min-h-screen transition-all duration-700 relative overflow-hidden ${darkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`}>
