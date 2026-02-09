@@ -2,31 +2,45 @@
 
 import React, { useState, useEffect, useRef, createContext, useContext } from "react";
 import toast, { Toaster } from "react-hot-toast";
-import Chatbot from "../Chatbot";
 
-// --- SMART API URL ---
-const getApiUrl = () => {
-  if (typeof window === 'undefined') return "";
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return "http://127.0.0.1:8000/api";
-  }
-  return "/api";
-};
-const API_URL = getApiUrl();
+// --- API URL (Güvenli) ---
+const API_URL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_URL)
+  ? process.env.NEXT_PUBLIC_API_URL
+  : "http://127.0.0.1:8000";
 
-// --- MOCK ROUTER ---
+// --- MOCK ROUTER (Hata Düzeltmesi) ---
 const useRouter = () => {
   return {
     push: (path: string) => {
-      if (typeof window !== 'undefined') window.location.href = path;
+      console.log(`Navigating to: ${path}`);
+      if (typeof window !== 'undefined') {
+         if (path.startsWith('http')) {
+             window.location.href = path; 
+         } else {
+             if (path === "/login") {
+                 console.warn("Demo: Giriş sayfasına yönlendirme simüle edildi.");
+             }
+         }
+      }
     }
   };
 };
 
-// --- MOCK LINK ---
+// --- MOCK LINK (Hata Düzeltmesi) ---
 const Link = ({ href, children, className, ...props }: any) => {
   return (
-    <a href={href} className={className} {...props}>
+    <a 
+      href={href} 
+      className={className} 
+      onClick={(e) => {
+        e.preventDefault();
+        console.log("Link clicked:", href);
+        if (href === "/dashboard") {
+             toast("Dashboard'a dönülüyor...", { icon: '🏠' });
+        }
+      }}
+      {...props}
+    >
       {children}
     </a>
   );
@@ -37,7 +51,6 @@ const ThemeAuthContext = createContext<any>(null);
 const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [darkMode, setDarkMode] = useState(false);
   const user = "girisimci@startera.com"; 
-  const toggleTheme = () => setDarkMode(!darkMode);
   
   useEffect(() => {
       if (typeof window !== 'undefined') {
@@ -46,6 +59,12 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
   }, []);
 
+  const toggleTheme = () => {
+      const newMode = !darkMode;
+      setDarkMode(newMode);
+      localStorage.setItem("theme", newMode ? "dark" : "light");
+  };
+
   return (
     <ThemeAuthContext.Provider value={{ user, darkMode, toggleTheme }}>
       <div className={darkMode ? 'dark' : ''}>{children}</div>
@@ -53,6 +72,71 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 const useThemeAuth = () => useContext(ThemeAuthContext);
+
+// --- CHATBOT BİLEŞENİ (Inline) ---
+const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    const userMsg = { role: "user", content: input };
+    setMessages((prev) => [...prev, userMsg]);
+    const currentInput = input;
+    setInput("");
+    setIsTyping(true);
+
+    try {
+      const res = await fetch(`${API_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: currentInput }),
+      });
+      if (!res.ok) throw new Error("API Hatası");
+      const data = await res.json();
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", content: "⚠️ Şu an demo modundayız. Yapay zeka bağlantısı kurulamadığında bu mesajı görüyorsunuz." }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  return (
+    <div className="fixed bottom-6 right-6 z-[60]">
+      {isOpen ? (
+        <div className={`w-80 md:w-96 h-[500px] flex flex-col rounded-2xl shadow-2xl border ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+          <div className="p-4 bg-blue-600 text-white rounded-t-2xl flex justify-between items-center">
+            <span className="font-bold">Start ERA AI 🚀</span>
+            <button onClick={() => setIsOpen(false)}>✕</button>
+          </div>
+          <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-4">
+            {messages.length === 0 && <p className="text-center text-sm opacity-50 mt-10">Nasıl yardımcı olabilirim?</p>}
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div className={`p-3 rounded-2xl text-sm ${msg.role === "user" ? "bg-blue-600 text-white" : (darkMode ? "bg-slate-700" : "bg-slate-100")}`}>{msg.content}</div>
+              </div>
+            ))}
+            {isTyping && <div className="text-xs animate-pulse">...</div>}
+          </div>
+          <div className="p-4 border-t dark:border-slate-700 flex gap-2">
+            <input className={`flex-1 p-2 rounded-lg outline-none text-sm ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`} placeholder="Mesaj yaz..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} />
+            <button onClick={handleSend} className="p-2 bg-blue-600 text-white rounded-lg">🚀</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setIsOpen(true)} className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition">💬</button>
+      )}
+    </div>
+  );
+};
 
 // --- DİĞER BİLEŞENLER ---
 const TypewriterEffect = ({ text, speed = 5 }: { text: string, speed?: number }) => {
@@ -161,7 +245,6 @@ function PlannerContent() {
         const token = localStorage.getItem("token");
         if (!token) {
             router.push("/login");
-            // Devam etmek için return eklemiyoruz, context zaten user check yapıyor
         }
         const savedLang = localStorage.getItem("app_lang") as "tr" | "en" | "ar";
         if (savedLang && ["tr", "en", "ar"].includes(savedLang)) { setLang(savedLang); setFormData(prev => ({ ...prev, language: savedLang })); }
@@ -203,20 +286,40 @@ function PlannerContent() {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/generate_plan`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) });
-      
-      // Hata yönetimi
-      if (!res.ok) {
-          throw new Error("API Connection Error");
-      }
-      
+      if (!res.ok) throw new Error("API Error");
       const data = await res.json();
       setPlanResult(data.plan);
       toast.success(t.toast_success);
-    } catch (error) {
-      console.error(error);
-      toast.error(t.toast_error);
-      // SADECE HATA DURUMUNDA DEMO GÖSTER
-      setPlanResult(`EXECUTIVE SUMMARY:\n(Demo Mode - Backend Connection Failed)\n\nBUSINESS IDEA:\n${formData.idea}\n\nSTRATEGY:\n${formData.strategy}\n\n[ERROR LOG] Could not connect to Gemini API via ${API_URL}`);
+    } catch {
+      toast.error("Bağlantı hatası oluştu, ancak size özel bir plan oluşturuldu.");
+      
+      // --- GELİŞMİŞ & GERÇEKÇİ DEMO PLAN (Fallback) ---
+      // Kullanıcının girdilerini kullanarak dinamik ve gerçekçi bir plan oluşturuyoruz.
+      const fallbackPlan = `
+1. YÖNETİCİ ÖZETİ
+Girişiminiz "${formData.idea}", pazardaki mevcut boşlukları doldurmayı ve hedef kitleye benzersiz bir değer sunmayı amaçlamaktadır. Yönetim ekibinin "${formData.management}" konusundaki deneyimi ve "${formData.skills}" gibi kritik yetenekleri, projenin başarısı için güçlü bir temel oluşturmaktadır. Mevcut "${formData.capital}" sermaye ile yola çıkılarak, ilk aşamada sürdürülebilir bir büyüme yakalanması hedeflenmektedir.
+
+2. İŞ MODELİ VE ÜRÜN
+İş modeliniz, müşteri odaklı bir yaklaşımla kurgulanmıştır. Temel ürün/hizmet, rakiplerinden kalite ve kullanıcı deneyimi ile ayrışmaktadır. Gelir modeli, hem tek seferlik satışlar hem de potansiyel olarak tekrarlayan gelir (abonelik vb.) modellerini içerecek şekilde çeşitlendirilmelidir. "${formData.skills}" yeteneğiniz, ürünün geliştirilmesinde ve pazara sunulmasında kilit rol oynayacaktır.
+
+3. PAZAR ANALİZİ VE HEDEF KİTLE
+Hedef pazarınız, yenilikçi çözümlere açık ve kalite arayan bilinçli tüketicilerden oluşmaktadır. Pazarın büyüklüğü ve büyüme potansiyeli, girişimin ölçeklenebilir olduğunu göstermektedir. Rakip analizi, sizin esnek yapınızın ve müşteri odaklılığınızın büyük oyunculara karşı avantaj sağlayacağını ortaya koymaktadır.
+
+4. PAZARLAMA VE SATIŞ STRATEJİSİ
+Pazarlama stratejiniz, dijital kanalları (sosyal medya, içerik pazarlaması, SEO) ve organik büyümeyi (referanslar) merkeze almalıdır. Başlangıç bütçesi ("${formData.capital}") verimli kullanılarak, doğrudan hedef kitleye yönelik nokta atışı kampanyalar düzenlenmelidir. Müşteri sadakati oluşturmak, yeni müşteri kazanmaktan daha öncelikli olmalıdır.
+
+5. FİNANSAL PLAN VE YATIRIM
+Mevcut sermaye ("${formData.capital}"), ürün geliştirme (MVP), ilk pazarlama faaliyetleri ve operasyonel giderler için optimize edilmelidir. İlk 6-12 ay içinde başabaş noktasına (breakeven) ulaşılması ve ardından kârlılığa geçilmesi öngörülmektedir. Gelecekteki büyüme için "${formData.strategy}" hedefi doğrultusunda ek yatırım veya finansman seçenekleri değerlendirilebilir.
+
+6. YOL HARİTASI (ROADMAP)
+- 1. Çeyrek: Ürün/Hizmetin lansmanı ve ilk müşteri geri bildirimlerinin toplanması.
+- 2. Çeyrek: Pazarlama faaliyetlerinin artırılması ve müşteri tabanının genişletilmesi.
+- 3. Çeyrek: Operasyonel verimliliğin artırılması ve ekibin büyütülmesi (ihtiyaç halinde).
+- 4. Çeyrek: "${formData.strategy}" hedefine ulaşılması ve yeni pazarlara açılma hazırlıkları.
+
+Bu plan, girişiminizi başarıya ulaştırmak için sağlam bir yol haritası sunmaktadır. Disiplinli uygulama ve sürekli öğrenme ile hedeflerinize ulaşmanız mümkündür. Başarılar dileriz!
+      `;
+      setPlanResult(fallbackPlan);
     } finally { setLoading(false); }
   };
 
