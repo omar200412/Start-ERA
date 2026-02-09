@@ -3,6 +3,7 @@ import sqlite3
 import hashlib
 import smtplib
 import random
+import platform # İşletim sistemi tespiti için eklendi
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import psycopg2
@@ -40,7 +41,8 @@ try:
 except Exception as e:
     model = None
 
-# root_path ayarını kaldırdık, rotaları manuel olarak yönetiyoruz.
+# root_path'i sildik, manuel /api prefix kullanacağız veya rewrite ile halledeceğiz.
+# En temiz yöntem: Rotaları sade bırakmak (/login) ve Next.js'in yönlendirmesine güvenmek.
 app = FastAPI(docs_url="/api/docs", openapi_url="/api/openapi.json")
 
 app.add_middleware(
@@ -52,12 +54,21 @@ app.add_middleware(
 
 # -------------------- DB --------------------
 def get_db():
+    # 1. Öncelik: Postgres (Canlı Ortam)
     if DATABASE_URL:
         try:
             return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
         except:
             pass
-    conn = sqlite3.connect("/tmp/chatbot.db")
+    
+    # 2. Öncelik: SQLite (Yerel ve Vercel)
+    # Windows'ta çalışıyorsak yerel klasöre, Linux/Vercel'de ise /tmp klasörüne yaz.
+    if platform.system() == "Windows":
+        db_path = "chatbot.db"
+    else:
+        db_path = "/tmp/chatbot.db"
+        
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -68,6 +79,8 @@ def init_db():
     try:
         conn = get_db()
         cur = conn.cursor()
+        
+        # Tabloları oluştur
         cur.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,6 +98,7 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+
         conn.commit()
         conn.close()
     except Exception as e:
@@ -118,15 +132,15 @@ class PDFRequest(BaseModel):
 
 # -------------------- EMAIL --------------------
 def send_verification_email(to_email, code):
-    if not MAIL_USERNAME or not MAIL_PASSWORD: 
-        print("⚠️ MAIL Credentials Missing")
+    if not MAIL_USERNAME or not MAIL_PASSWORD:
         return False
-        
+
     msg = MIMEMultipart()
     msg['From'] = MAIL_USERNAME
     msg['To'] = to_email
-    msg['Subject'] = "Start ERA - Verification Code"
+    msg['Subject'] = "Start ERA - Aktivasyon Kodunuz"
     msg.attach(MIMEText(f"Kodunuz: {code}", 'plain'))
+
     try:
         server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
         server.starttls()
@@ -138,7 +152,7 @@ def send_verification_email(to_email, code):
         print(f"Mail Error: {e}")
         return False
 
-# -------------------- ROUTES (Hepsine /api eklendi) --------------------
+# -------------------- ROUTES --------------------
 
 @app.get("/api/health")
 def health():
@@ -150,15 +164,23 @@ def register(user: UserAuth):
     cur = conn.cursor()
     hashed = hashlib.sha256(user.password.encode()).hexdigest()
     code = str(random.randint(100000, 999999))
-    print(f"\n🔥🔥🔥 DEBUG CODE: {code} 🔥🔥🔥\n")
-    
+    print(f"DEBUG CODE: {code}")
+
     try:
+        # Önce bu mail var mı kontrol et
+        cur.execute(f"SELECT id FROM users WHERE email={ph()}", (user.email,))
+        if cur.fetchone():
+             raise HTTPException(400, "Email already exists")
+
         cur.execute(f"INSERT INTO users (email, password, verification_code, is_verified) VALUES ({ph()}, {ph()}, {ph()}, {ph()})", (user.email, hashed, code, 0))
         conn.commit()
         send_verification_email(user.email, code)
         return {"message": "verification_needed", "email": user.email}
-    except:
-        raise HTTPException(400, "Email already exists")
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Register Error: {e}")
+        raise HTTPException(500, "Internal Server Error")
     finally:
         conn.close()
 
@@ -221,7 +243,12 @@ def generate_plan(req: BusinessPlanRequest):
 
 @app.post("/api/create_pdf")
 def create_pdf(req: PDFRequest):
-    pdf_file = "/tmp/StartERA_Plan.pdf"
+    # PDF oluştururken de işletim sistemine göre yol seçimi
+    if platform.system() == "Windows":
+        pdf_file = "StartERA_Plan.pdf"
+    else:
+        pdf_file = "/tmp/StartERA_Plan.pdf"
+
     try:
         doc = SimpleDocTemplate(pdf_file, pagesize=A4)
         styles = getSampleStyleSheet()

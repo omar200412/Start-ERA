@@ -3,58 +3,54 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
-// --- API URL (Güvenli) ---
-const getApiUrl = () => {
+// --- URL YÖNETİMİ (DÜZELTİLDİ) ---
+// Yerelde: http://127.0.0.1:8000
+// Canlıda: "" (Boş string, çünkü /api zaten domain'e eklenir)
+const getBaseUrl = () => {
   if (typeof window === 'undefined') return "";
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return "http://127.0.0.1:8000"; // Localhost'ta /api eklemiyoruz, rewrite yok
+    return "http://127.0.0.1:8000"; 
   }
-  return "/api"; // Vercel'de /api rewrites var
+  return ""; 
 };
+const BASE_URL = getBaseUrl();
 
-// Tarayıcı tarafında URL'i belirle
-const API_URL = typeof window !== 'undefined' ? getApiUrl() : "";
-
-// --- YARDIMCI FONKSİYON: TAM URL OLUŞTURMA ---
+// Backend yolları artık /api ile başladığı için, yerelde de /api eklemeliyiz.
 const getFullUrl = (path: string) => {
-    // Eğer API_URL "/api" ise (Vercel), path "/login" -> "/api/login" olur.
-    // Eğer API_URL "http://...:8000" ise (Local), path "/login" -> "http://...:8000/api/login" olmalı (Backend /api bekliyor)
+    // path zaten "/api/login" gibi geliyorsa, direkt birleştir.
+    // Eğer path "/login" geliyorsa, "/api/login" yap.
     
-    // Backend routes are prefixed with /api in index.py now? 
-    // Evet, backend index.py dosyasında /api prefixleri eklenmişti.
-    // Ancak Localhost'ta root_path yoksa URL http://127.0.0.1:8000/api/login olmalı.
-    
-    if (API_URL.startsWith("http")) {
-        return `${API_URL}/api${path}`;
+    // Bizim backend kodumuzda rotalar "/api/login" olarak tanımlı.
+    // Bu yüzden path parametresi "/api" içermiyorsa ekleyelim.
+    let cleanPath = path;
+    if (!path.startsWith("/api")) {
+        cleanPath = `/api${path}`;
     }
-    return `${API_URL}${path}`;
+
+    return `${BASE_URL}${cleanPath}`;
 };
 
-
-// --- MOCK ROUTER (Hata Düzeltmesi: Güvenli Yönlendirme) ---
+// --- MOCK ROUTER ---
 const useRouter = () => {
   return {
     push: (path: string) => {
-      console.log(`Yönlendiriliyor: ${path}`);
-      // Önizleme ortamında (blob url) relative path ataması hata verebilir.
-      // Sadece http ile başlayan tam URL'lerde yönlendirme yapıyoruz.
+      console.log(`Navigating to: ${path}`);
       if (typeof window !== 'undefined') {
-         if (path.startsWith('http')) {
-             window.location.href = path;
-         } else {
-             // Uygulama içi rotalar için sadece başarılı mesajı gösteriyoruz
-             if (path === "/dashboard") {
-                 toast.success("Giriş Başarılı! (Yönlendirme Simüle Edildi)", { icon: '🚀' });
-             } else {
-                 console.warn("Önizleme modunda sayfa değişimi devre dışı:", path);
-             }
-         }
+          // Önizleme ortamı kontrolü
+          if (path.startsWith('http')) {
+               window.location.href = path;
+          } else {
+               // Uygulama içi rotalar için başarılı mesajı
+               if (path === "/dashboard") {
+                   toast.success("Yönlendiriliyor...", { icon: '🚀' });
+               }
+          }
       }
     }
   };
 };
 
-// --- MOCK LINK (Hata Düzeltmesi) ---
+// --- MOCK LINK ---
 const Link = ({ href, children, className, ...props }: any) => {
   return (
     <a 
@@ -62,8 +58,7 @@ const Link = ({ href, children, className, ...props }: any) => {
       className={className} 
       onClick={(e) => {
         e.preventDefault();
-        console.log("Linke tıklandı:", href);
-        if(href === "/") toast("Ana Sayfaya Dönülüyor...", { icon: '🏠' });
+        console.log("Link clicked:", href);
       }}
       {...props}
     >
@@ -194,12 +189,13 @@ function AuthPageContent() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    // Artık endpointleri temiz veriyoruz, getFullUrl /api ekleyecek
     const path = view === 'login' ? "/login" : "/register";
 
     try {
-      // Backend URL'ini doğru oluştur
       const fullUrl = getFullUrl(path);
-      
+      console.log("İstek URL:", fullUrl); // Debug için
+
       const res = await fetch(fullUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -216,24 +212,15 @@ function AuthPageContent() {
         router.push("/dashboard");
       } else {
         toast.success(t.success_register);
-        // Debug için kodu konsola yaz (Mail gitmezse)
+        // Debug kodu konsola yaz (Mail gitmezse)
         if(data.debug_code) console.log("DEBUG KODU:", data.debug_code);
         setView('verify');
       }
     } catch (error: any) {
       console.error("Auth Error:", error);
       
-      // Demo Modu (Sadece gösterim amaçlı)
-      if (error.message.includes("Failed to fetch") || error.name === 'TypeError') {
-          toast.error("Sunucuya erişilemedi. Demo modunda devam ediliyor...", { icon: '⚠️' });
-          setTimeout(() => {
-              if (view === 'login') {
-                  login("demo-token", form.email);
-                  router.push("/dashboard");
-              } else {
-                  setView('verify');
-              }
-          }, 1500);
+      if (error.message.includes("Failed to fetch")) {
+          toast.error("Sunucuya erişilemedi. Backend çalışıyor mu?", { icon: '⚠️' });
       } else {
           toast.error(error.message || t.err_generic);
       }
@@ -262,14 +249,7 @@ function AuthPageContent() {
       router.push("/dashboard");
 
     } catch (error: any) {
-        // Demo Modu Fallback
-        if (error.message.includes("Failed to fetch") || otp === "123456") {
-            toast.success("Demo doğrulama başarılı!");
-            login("demo-token", form.email);
-            router.push("/dashboard");
-        } else {
-            toast.error(error.message);
-        }
+        toast.error(error.message);
     } finally {
       setLoading(false);
     }
@@ -284,12 +264,11 @@ function AuthPageContent() {
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
          <div className={`absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-20 animate-pulse ${darkMode ? 'bg-blue-900' : 'bg-blue-300'}`}></div>
          <div className={`absolute top-[40%] -right-[10%] w-[50%] h-[70%] rounded-full blur-[130px] opacity-20 animate-pulse delay-1000 ${darkMode ? 'bg-purple-900' : 'bg-indigo-300'}`}></div>
-         <div className={`absolute -bottom-[20%] left-[20%] w-[70%] h-[50%] rounded-full blur-[110px] opacity-15 animate-pulse delay-2000 ${darkMode ? 'bg-emerald-900' : 'bg-teal-300'}`}></div>
       </div>
 
       <div className="absolute top-6 right-6 flex items-center gap-3 z-50">
         <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95 w-10 text-center" title="Change Language">{getLangLabel()}</button>
-        <button onClick={toggleTheme} className={`p-2.5 rounded-xl transition-all active:scale-95 ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm hover:shadow-md border border-slate-100'}`}>
+        <button onClick={toggleTheme} className={`p-2.5 rounded-xl transition-all active:scale-95 ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm'}`}>
             {darkMode ? <SunIcon /> : <MoonIcon />}
         </button>
       </div>
@@ -310,7 +289,6 @@ function AuthPageContent() {
             </div>
 
             {view === 'verify' ? (
-                // --- DOĞRULAMA FORMU ---
                 <form onSubmit={handleVerify} className="space-y-6">
                     <div className="space-y-2">
                         <label className={`text-xs font-bold uppercase ml-1 tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>DOĞRULAMA KODU</label>
@@ -321,43 +299,30 @@ function AuthPageContent() {
                     </button>
                 </form>
             ) : (
-                // --- GİRİŞ / KAYIT FORMU ---
                 <form onSubmit={handleAuth} className="space-y-6">
                   <div className="space-y-2">
                     <label className={`text-xs font-bold uppercase ml-1 tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t.email_label}</label>
-                    <div className="relative group">
-                        <div className={`absolute -inset-0.5 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500 bg-gradient-to-r from-blue-600 to-purple-600`}></div>
-                        <input 
-                        type="email" 
-                        required 
-                        className={`relative w-full p-4 rounded-2xl border-none outline-none transition-all ${darkMode ? 'bg-slate-950 text-white placeholder:text-slate-600' : 'bg-slate-50 text-slate-900 placeholder:text-slate-400'}`}
-                        placeholder={t.email_ph}
-                        value={form.email} 
-                        onChange={(e) => setForm({ ...form, email: e.target.value })} 
-                        />
-                    </div>
-                  </div>
-
+                    <input 
+                    type="email" 
+                    required 
+                    className={`relative w-full p-4 rounded-2xl border-none outline-none transition-all ${darkMode ? 'bg-slate-950 text-white placeholder:text-slate-600' : 'bg-slate-50 text-slate-900 placeholder:text-slate-400'}`}
+                    placeholder={t.email_ph}
+                    value={form.email} 
+                    onChange={(e) => setForm({ ...form, email: e.target.value })} 
+                    />
+                </div>
                   <div className="space-y-2">
                     <label className={`text-xs font-bold uppercase ml-1 tracking-wider ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t.pass_label}</label>
-                    <div className="relative group">
-                        <div className={`absolute -inset-0.5 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500 bg-gradient-to-r from-blue-600 to-purple-600`}></div>
-                        <input 
-                        type="password" 
-                        required 
-                        className={`relative w-full p-4 rounded-2xl border-none outline-none transition-all ${darkMode ? 'bg-slate-950 text-white placeholder:text-slate-600' : 'bg-slate-50 text-slate-900 placeholder:text-slate-400'}`}
-                        placeholder={t.pass_ph}
-                        value={form.password} 
-                        onChange={(e) => setForm({ ...form, password: e.target.value })} 
-                        />
-                    </div>
-                  </div>
-
-                  <button 
-                    type="submit" 
-                    disabled={loading} 
-                    className={`group relative w-full py-4 rounded-2xl font-black text-white shadow-lg transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden ${view === 'login' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700' : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'}`}
-                  >
+                    <input 
+                    type="password" 
+                    required 
+                    className={`relative w-full p-4 rounded-2xl border-none outline-none transition-all ${darkMode ? 'bg-slate-950 text-white placeholder:text-slate-600' : 'bg-slate-50 text-slate-900 placeholder:text-slate-400'}`}
+                    placeholder={t.pass_ph}
+                    value={form.password} 
+                    onChange={(e) => setForm({ ...form, password: e.target.value })} 
+                    />
+                </div>
+                  <button type="submit" disabled={loading} className={`group relative w-full py-4 rounded-2xl font-black text-white shadow-lg transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden ${view === 'login' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700' : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'}`}>
                     <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
                     <span className="relative z-10 flex items-center justify-center gap-2">
                         {loading ? (
