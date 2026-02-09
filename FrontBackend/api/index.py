@@ -1,30 +1,34 @@
 import os
 import sqlite3
 import hashlib
+import smtplib
+import random
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import google.generativeai as genai
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-# ReportLab imports
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
 from reportlab.lib.colors import HexColor
 
-# -------------------- ENV --------------------
 load_dotenv()
 
 API_KEY = os.getenv("GOOGLE_API_KEY")
 DATABASE_URL = os.getenv("DATABASE_URL")
-
-# ✅ MODEL: Gemini 2.5 Flash
+MAIL_SERVER = os.getenv("MAIL_SERVER", "mail.plan-iq.net")
+MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
+MAIL_USERNAME = os.getenv("MAIL_USERNAME", "dev@plan-iq.net")
+MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
 MODEL_NAME = "gemini-2.5-flash"
 
 try:
@@ -36,8 +40,7 @@ try:
 except Exception as e:
     model = None
 
-# -------------------- APP --------------------
-# Vercel'de docs rotaları çakışma yapmasın diye kapatıyoruz veya farklı yola alıyoruz
+# root_path ayarını kaldırdık, rotaları manuel olarak yönetiyoruz.
 app = FastAPI(docs_url="/api/docs", openapi_url="/api/openapi.json")
 
 app.add_middleware(
@@ -49,17 +52,12 @@ app.add_middleware(
 
 # -------------------- DB --------------------
 def get_db():
-    # Vercel'de kalıcı veri için Postgres önerilir
     if DATABASE_URL:
         try:
             return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
         except:
             pass
-    
-    # SQLite kullanıyorsak Vercel'de SADECE /tmp klasörüne yazabiliriz
-    # UYARI: /tmp klasörü her deployda sıfırlanır!
-    db_path = "/tmp/chatbot.db"
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect("/tmp/chatbot.db")
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -70,31 +68,16 @@ def init_db():
     try:
         conn = get_db()
         cur = conn.cursor()
-
-        # Users Tablosu
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                email TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL
-            );
-        """ if DATABASE_URL else """
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL
+                password TEXT NOT NULL,
+                verification_code TEXT,
+                is_verified INTEGER DEFAULT 0
             );
         """)
-
-        # Chat History Tablosu
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS chat_history (
-                id SERIAL PRIMARY KEY,
-                role TEXT,
-                message TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """ if DATABASE_URL else """
             CREATE TABLE IF NOT EXISTS chat_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 role TEXT,
@@ -102,19 +85,21 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-
         conn.commit()
         conn.close()
     except Exception as e:
         print(f"DB Init Error: {e}")
 
-# Uygulama başlarken DB'yi hazırla
 init_db()
 
 # -------------------- MODELS --------------------
 class UserAuth(BaseModel):
     email: str
     password: str
+
+class VerifyRequest(BaseModel):
+    email: str
+    code: str
 
 class ChatRequest(BaseModel):
     message: str
@@ -131,7 +116,29 @@ class BusinessPlanRequest(BaseModel):
 class PDFRequest(BaseModel):
     text: str
 
-# -------------------- ROUTES --------------------
+# -------------------- EMAIL --------------------
+def send_verification_email(to_email, code):
+    if not MAIL_USERNAME or not MAIL_PASSWORD: 
+        print("⚠️ MAIL Credentials Missing")
+        return False
+        
+    msg = MIMEMultipart()
+    msg['From'] = MAIL_USERNAME
+    msg['To'] = to_email
+    msg['Subject'] = "Start ERA - Verification Code"
+    msg.attach(MIMEText(f"Kodunuz: {code}", 'plain'))
+    try:
+        server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
+        server.starttls()
+        server.login(MAIL_USERNAME, MAIL_PASSWORD)
+        server.sendmail(MAIL_USERNAME, to_email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Mail Error: {e}")
+        return False
+
+# -------------------- ROUTES (Hepsine /api eklendi) --------------------
 
 @app.get("/api/health")
 def health():
@@ -142,12 +149,35 @@ def register(user: UserAuth):
     conn = get_db()
     cur = conn.cursor()
     hashed = hashlib.sha256(user.password.encode()).hexdigest()
+    code = str(random.randint(100000, 999999))
+    print(f"\n🔥🔥🔥 DEBUG CODE: {code} 🔥🔥🔥\n")
+    
     try:
-        cur.execute(f"INSERT INTO users (email, password) VALUES ({ph()}, {ph()})", (user.email, hashed))
+        cur.execute(f"INSERT INTO users (email, password, verification_code, is_verified) VALUES ({ph()}, {ph()}, {ph()}, {ph()})", (user.email, hashed, code, 0))
         conn.commit()
-        return {"message": "ok"}
+        send_verification_email(user.email, code)
+        return {"message": "verification_needed", "email": user.email}
     except:
         raise HTTPException(400, "Email already exists")
+    finally:
+        conn.close()
+
+@app.post("/api/verify")
+def verify(req: VerifyRequest):
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute(f"SELECT verification_code FROM users WHERE email={ph()}", (req.email,))
+        row = cur.fetchone()
+        if not row: raise HTTPException(404, "User not found")
+        
+        stored_code = row[0] if DATABASE_URL else row["verification_code"]
+        if str(stored_code).strip() == str(req.code).strip():
+            cur.execute(f"UPDATE users SET is_verified={ph()} WHERE email={ph()}", (1, req.email))
+            conn.commit()
+            return {"message": "success", "token": f"user-{req.email}", "email": req.email}
+        else:
+            raise HTTPException(400, "Invalid code")
     finally:
         conn.close()
 
@@ -157,61 +187,32 @@ def login(user: UserAuth):
     cur = conn.cursor()
     hashed = hashlib.sha256(user.password.encode()).hexdigest()
     try:
-        cur.execute(f"SELECT email FROM users WHERE email={ph()} AND password={ph()}", (user.email, hashed))
+        cur.execute(f"SELECT email, is_verified FROM users WHERE email={ph()} AND password={ph()}", (user.email, hashed))
         row = cur.fetchone()
-    except:
-        row = None
+        if not row: raise HTTPException(401, "Invalid credentials")
+        
+        is_verified = row[1] if DATABASE_URL else row["is_verified"]
+        if not is_verified: raise HTTPException(403, "Not verified")
+        
+        return {"token": f"user-{user.email}", "email": user.email}
     finally:
         conn.close()
 
-    if not row:
-        raise HTTPException(401, "Invalid credentials")
-
-    return {"token": f"user-{user.email}", "email": user.email}
-
 @app.post("/api/chat")
 def chat(req: ChatRequest):
-    if not model: return {"reply": "API Key Missing or Model Error"}
-    
-    prompt = (req.system_prompt or "") + "\n\nUser: " + req.message
-    
+    if not model: return {"reply": "API Key Missing"}
     try:
+        prompt = (req.system_prompt or "") + "\n\nUser: " + req.message
         response = model.generate_content(prompt)
         reply = response.text
-    except Exception as e:
-        reply = "⚠️ AI service temporarily unavailable."
-
-    # Chat loglama (Hata verirse akışı bozmasın)
-    try:
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute(f"INSERT INTO chat_history (role, message) VALUES ({ph()}, {ph()})", ("user", req.message))
-        cur.execute(f"INSERT INTO chat_history (role, message) VALUES ({ph()}, {ph()})", ("bot", reply))
-        conn.commit()
-        conn.close()
     except:
-        pass
-
+        reply = "⚠️ AI Error"
     return {"reply": reply}
 
 @app.post("/api/generate_plan")
 def generate_plan(req: BusinessPlanRequest):
     if not model: raise HTTPException(503, "API Key Missing")
-    
-    prompt = f"""
-You are a professional business consultant named Start ERA AI.
-LANGUAGE: {req.language}
-
-Details:
-- Idea: {req.idea}
-- Capital: {req.capital}
-- Skills: {req.skills}
-- Strategy: {req.strategy}
-- Management: {req.management}
-
-OUTPUT: A structured business plan (Executive Summary, Market Analysis, Financial Plan).
-No markdown symbols like **.
-"""
+    prompt = f"Idea: {req.idea}\nCapital: {req.capital}\nSkills: {req.skills}\nStrategy: {req.strategy}\nLang: {req.language}\nCreate a business plan."
     try:
         text = model.generate_content(prompt).text.replace("*", "").replace("#", "")
         return JSONResponse(content={"plan": text})
@@ -220,35 +221,14 @@ No markdown symbols like **.
 
 @app.post("/api/create_pdf")
 def create_pdf(req: PDFRequest):
-    # Vercel'de yazılabilir tek alan /tmp klasörüdür
     pdf_file = "/tmp/StartERA_Plan.pdf"
-    
     try:
-        doc = SimpleDocTemplate(pdf_file, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
+        doc = SimpleDocTemplate(pdf_file, pagesize=A4)
         styles = getSampleStyleSheet()
-        brand_color = HexColor("#1e40af") 
-        
-        title_style = ParagraphStyle('CustomTitle', parent=styles['Title'], fontName='Helvetica-Bold', fontSize=24, spaceAfter=30, textColor=brand_color, alignment=TA_CENTER)
-        heading_style = ParagraphStyle('CustomHeading', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=14, spaceBefore=20, textColor=brand_color)
-        body_style = ParagraphStyle('CustomBody', parent=styles['Normal'], fontName='Helvetica', fontSize=11, leading=15, alignment=TA_JUSTIFY, spaceAfter=10)
-
-        story = []
-        story.append(Paragraph("Start ERA", title_style))
-        story.append(Paragraph("Professional Business Plan", styles["Heading3"]))
-        story.append(Spacer(1, 30))
-        
+        story = [Paragraph("Business Plan", styles["Title"]), Spacer(1, 12)]
         for line in req.text.split("\n"):
-            line = line.strip()
-            if not line: continue
-            if (len(line) < 60 and line.isupper()) or (len(line) < 50 and line.endswith(":")):
-                story.append(Paragraph(line, heading_style))
-            else:
-                story.append(Paragraph(line, body_style))
-        
-        story.append(Spacer(1, 40))
-        story.append(Paragraph("© 2026 Start ERA", styles["Italic"]))
-        
+            if line.strip(): story.append(Paragraph(line, styles["Normal"]))
         doc.build(story)
         return FileResponse(pdf_file, filename="StartERA_Plan.pdf", media_type="application/pdf")
     except Exception as e:
-        raise HTTPException(500, f"PDF Error: {str(e)}")
+        raise HTTPException(500, str(e))

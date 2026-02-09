@@ -2,11 +2,16 @@
 
 import { useState, useEffect, useRef } from "react";
 
-// --- API URL FIX ---
-// Tarayıcı hatasını önlemek için process kontrolü
-const API_URL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_URL)
-  ? process.env.NEXT_PUBLIC_API_URL
-  : "http://127.0.0.1:8000";
+// --- SMART API URL ---
+// Tarayıcıdaysa (window var) ve localhost ise yerel backend'e, değilse Vercel/Render'a yönlendir.
+const getApiUrl = () => {
+  if (typeof window === 'undefined') return "";
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return "http://127.0.0.1:8000/api"; // Yerel backend /api ile başlıyor
+  }
+  return "/api"; // Canlı ortamda rewrite kullanılır
+};
+const API_URL = getApiUrl();
 
 interface ChatbotProps {
   lang: string;

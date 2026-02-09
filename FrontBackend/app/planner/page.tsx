@@ -2,48 +2,31 @@
 
 import React, { useState, useEffect, useRef, createContext, useContext } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import Chatbot from "../Chatbot";
 
-// --- API URL (Güvenli) ---
-const API_URL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_URL)
-  ? process.env.NEXT_PUBLIC_API_URL
-  : "http://127.0.0.1:8000";
+// --- SMART API URL ---
+const getApiUrl = () => {
+  if (typeof window === 'undefined') return "";
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return "http://127.0.0.1:8000/api";
+  }
+  return "/api";
+};
+const API_URL = getApiUrl();
 
-// --- MOCK ROUTER (Hata Düzeltmesi) ---
-// Blob/Önizleme ortamında çökmeyi önleyen güvenli yönlendirme
+// --- MOCK ROUTER ---
 const useRouter = () => {
   return {
     push: (path: string) => {
-      console.log(`Navigating to: ${path}`);
-      // Sadece tam URL ise yönlendir, değilse simüle et
-      if (typeof window !== 'undefined' && path.startsWith('http')) {
-         window.location.href = path; 
-      } else {
-         if (path === "/login") {
-             // Login'e yönlendirme yerine sadece bilgi veriyoruz (Demo ortamı)
-             console.warn("Demo: Giriş sayfasına yönlendirme simüle edildi.");
-         }
-      }
+      if (typeof window !== 'undefined') window.location.href = path;
     }
   };
 };
 
-// --- MOCK LINK (Hata Düzeltmesi) ---
-// 'next/link' yerine standart <a> etiketi
+// --- MOCK LINK ---
 const Link = ({ href, children, className, ...props }: any) => {
   return (
-    <a 
-      href={href} 
-      className={className} 
-      onClick={(e) => {
-        // Önizlemede sayfa yenilenmesini engelle
-        e.preventDefault();
-        console.log("Link clicked:", href);
-        if (href === "/dashboard") {
-            // Dashboard'a gitmiş gibi davranabiliriz veya toast gösterebiliriz
-        }
-      }}
-      {...props}
-    >
+    <a href={href} className={className} {...props}>
       {children}
     </a>
   );
@@ -53,8 +36,8 @@ const Link = ({ href, children, className, ...props }: any) => {
 const ThemeAuthContext = createContext<any>(null);
 const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [darkMode, setDarkMode] = useState(false);
-  // Varsayılan kullanıcı oturumu açık varsayalım ki login'e atmasın
   const user = "girisimci@startera.com"; 
+  const toggleTheme = () => setDarkMode(!darkMode);
   
   useEffect(() => {
       if (typeof window !== 'undefined') {
@@ -63,12 +46,6 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
   }, []);
 
-  const toggleTheme = () => {
-      const newMode = !darkMode;
-      setDarkMode(newMode);
-      localStorage.setItem("theme", newMode ? "dark" : "light");
-  };
-
   return (
     <ThemeAuthContext.Provider value={{ user, darkMode, toggleTheme }}>
       <div className={darkMode ? 'dark' : ''}>{children}</div>
@@ -76,71 +53,6 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 const useThemeAuth = () => useContext(ThemeAuthContext);
-
-// --- CHATBOT BİLEŞENİ (Inline) ---
-const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages]);
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-    const userMsg = { role: "user", content: input };
-    setMessages((prev) => [...prev, userMsg]);
-    const currentInput = input;
-    setInput("");
-    setIsTyping(true);
-
-    try {
-      const res = await fetch(`${API_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: currentInput }),
-      });
-      if (!res.ok) throw new Error("API Hatası");
-      const data = await res.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
-    } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "⚠️ Demo modunda AI yanıtı simüle ediliyor..." }]);
-    } finally {
-      setIsTyping(false);
-    }
-  };
-
-  return (
-    <div className="fixed bottom-6 right-6 z-[60]">
-      {isOpen ? (
-        <div className={`w-80 md:w-96 h-[500px] flex flex-col rounded-2xl shadow-2xl border ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
-          <div className="p-4 bg-blue-600 text-white rounded-t-2xl flex justify-between items-center">
-            <span className="font-bold">Start ERA AI 🚀</span>
-            <button onClick={() => setIsOpen(false)}>✕</button>
-          </div>
-          <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-4">
-            {messages.length === 0 && <p className="text-center text-sm opacity-50 mt-10">Nasıl yardımcı olabilirim?</p>}
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`p-3 rounded-2xl text-sm ${msg.role === "user" ? "bg-blue-600 text-white" : (darkMode ? "bg-slate-700" : "bg-slate-100")}`}>{msg.content}</div>
-              </div>
-            ))}
-            {isTyping && <div className="text-xs animate-pulse">...</div>}
-          </div>
-          <div className="p-4 border-t dark:border-slate-700 flex gap-2">
-            <input className={`flex-1 p-2 rounded-lg outline-none text-sm ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`} placeholder="Mesaj yaz..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} />
-            <button onClick={handleSend} className="p-2 bg-blue-600 text-white rounded-lg">🚀</button>
-          </div>
-        </div>
-      ) : (
-        <button onClick={() => setIsOpen(true)} className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition">💬</button>
-      )}
-    </div>
-  );
-};
 
 // --- DİĞER BİLEŞENLER ---
 const TypewriterEffect = ({ text, speed = 5 }: { text: string, speed?: number }) => {
@@ -175,7 +87,7 @@ const LoadingOverlay = ({ messages }: { messages: string[] }) => {
   );
 };
 
-// --- İKONLAR ---
+// --- ICONS ---
 const MoonIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" strokeWidth={2}/></svg>);
 const SunIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" strokeWidth={2}/></svg>);
 const SparkleIcon = () => (<svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 3.214L13 21l-2.286-6.857L5 12l5.714-3.214z" /></svg>);
@@ -308,6 +220,8 @@ function PlannerContent() {
         toast.success(t.toast_pdf_success);
     } catch { toast.error(t.toast_pdf_error); } finally { toast.dismiss(tid); }
   };
+
+  if (!user) return <div className="flex h-screen items-center justify-center text-slate-500">Lütfen giriş yapın.</div>;
 
   return (
     <div dir={dir} className={`min-h-screen transition-all duration-700 relative overflow-hidden ${darkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`}>
