@@ -158,6 +158,11 @@ function PlannerContent() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            router.push("/login");
+            // Devam etmek için return eklemiyoruz, context zaten user check yapıyor
+        }
         const savedLang = localStorage.getItem("app_lang") as "tr" | "en" | "ar";
         if (savedLang && ["tr", "en", "ar"].includes(savedLang)) { setLang(savedLang); setFormData(prev => ({ ...prev, language: savedLang })); }
     }
@@ -198,13 +203,20 @@ function PlannerContent() {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/generate_plan`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) });
-      if (!res.ok) throw new Error("API Error");
+      
+      // Hata yönetimi
+      if (!res.ok) {
+          throw new Error("API Connection Error");
+      }
+      
       const data = await res.json();
       setPlanResult(data.plan);
       toast.success(t.toast_success);
-    } catch {
+    } catch (error) {
+      console.error(error);
       toast.error(t.toast_error);
-      setPlanResult(`EXECUTIVE SUMMARY:\n(Demo Mode)\n\nBUSINESS IDEA:\n${formData.idea}\n\nSTRATEGY:\n${formData.strategy}`);
+      // SADECE HATA DURUMUNDA DEMO GÖSTER
+      setPlanResult(`EXECUTIVE SUMMARY:\n(Demo Mode - Backend Connection Failed)\n\nBUSINESS IDEA:\n${formData.idea}\n\nSTRATEGY:\n${formData.strategy}\n\n[ERROR LOG] Could not connect to Gemini API via ${API_URL}`);
     } finally { setLoading(false); }
   };
 

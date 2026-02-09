@@ -26,7 +26,6 @@ load_dotenv()
 
 API_KEY = os.getenv("GOOGLE_API_KEY")
 DATABASE_URL = os.getenv("DATABASE_URL")
-# E-posta ayarları (Şimdilik otomatik onay açık olduğu için kritik değil)
 MAIL_SERVER = os.getenv("MAIL_SERVER", "mail.plan-iq.net")
 MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
 MAIL_USERNAME = os.getenv("MAIL_USERNAME", "dev@plan-iq.net")
@@ -42,7 +41,6 @@ try:
 except Exception as e:
     model = None
 
-# FastAPI Uygulaması
 app = FastAPI(docs_url="/api/docs", openapi_url="/api/openapi.json")
 
 app.add_middleware(
@@ -52,22 +50,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -------------------- DB AYARLARI (KRİTİK DÜZELTME) --------------------
+# -------------------- DB --------------------
 def get_db():
-    # 1. Eğer Postgres varsa onu kullan (Canlı Ortam İçin En İyisi)
     if DATABASE_URL:
         try:
             return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
         except:
             pass
     
-    # 2. SQLite Ayarı:
-    # Windows'ta (Localhost) ise ana dizine kaydet (Kalıcı olur)
-    # Vercel'de (Linux) ise /tmp altına kaydet (Geçici olur - Veri silinir!)
     if platform.system() == "Windows":
-        db_path = "chatbot.db" # Bilgisayarında kalıcı durur
+        db_path = "chatbot.db"
     else:
-        db_path = "/tmp/chatbot.db" # Vercel'de silinir (Normaldir)
+        db_path = "/tmp/chatbot.db"
         
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
@@ -80,19 +74,15 @@ def init_db():
     try:
         conn = get_db()
         cur = conn.cursor()
-        
-        # Tabloları oluştur
         cur.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 verification_code TEXT,
-                is_verified INTEGER DEFAULT 1 
+                is_verified INTEGER DEFAULT 0
             );
         """)
-        # Not: is_verified varsayılan olarak 1 (True) yapıldı ki hemen girebilesin.
-        
         cur.execute("""
             CREATE TABLE IF NOT EXISTS chat_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -108,7 +98,7 @@ def init_db():
 
 init_db()
 
-# -------------------- MODELLER --------------------
+# -------------------- MODELS --------------------
 class UserAuth(BaseModel):
     email: str
     password: str
@@ -132,45 +122,52 @@ class BusinessPlanRequest(BaseModel):
 class PDFRequest(BaseModel):
     text: str
 
-# -------------------- ROTALAR --------------------
+# -------------------- EMAIL --------------------
+def send_verification_email(to_email, code):
+    if not MAIL_USERNAME or not MAIL_PASSWORD: return False
+    msg = MIMEMultipart()
+    msg['From'] = MAIL_USERNAME
+    msg['To'] = to_email
+    msg['Subject'] = "Start ERA - Aktivasyon Kodu"
+    msg.attach(MIMEText(f"Kodunuz: {code}", 'plain'))
+    try:
+        server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
+        server.starttls()
+        server.login(MAIL_USERNAME, MAIL_PASSWORD)
+        server.sendmail(MAIL_USERNAME, to_email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Mail Error: {e}")
+        return False
+
+# -------------------- ROUTES --------------------
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "backend": "Python Active"}
+    return {"status": "ok", "backend": "Vercel Python Runtime"}
 
 @app.post("/api/register")
 def register(user: UserAuth):
     conn = get_db()
     cur = conn.cursor()
     hashed = hashlib.sha256(user.password.encode()).hexdigest()
-    code = "123456" # Sabit kod
+    code = str(random.randint(100000, 999999))
+    print(f"DEBUG CODE: {code}")
 
     try:
-        # Kullanıcı var mı kontrol et
         cur.execute(f"SELECT id FROM users WHERE email={ph()}", (user.email,))
-        if cur.fetchone():
-             raise HTTPException(400, "Bu e-posta zaten kayıtlı.")
+        if cur.fetchone(): raise HTTPException(400, "Email already exists")
 
-        # is_verified = 1 (Doğrulanmış) olarak kaydediyoruz.
-        # Böylece mail beklemek zorunda kalmazsın.
-        cur.execute(
-            f"INSERT INTO users (email, password, verification_code, is_verified) VALUES ({ph()}, {ph()}, {ph()}, {ph()})", 
-            (user.email, hashed, code, 1) 
-        )
+        # Geliştirme için is_verified=1 yapıyoruz
+        cur.execute(f"INSERT INTO users (email, password, verification_code, is_verified) VALUES ({ph()}, {ph()}, {ph()}, {ph()})", (user.email, hashed, code, 1))
         conn.commit()
-        
-        # Frontend'i Login ekranına yönlendirmek için "verification_needed" yerine "success" dönüyoruz olabilir
-        # Ama senin frontend yapına uyması için verification_needed dönüyorum, 
-        # kod olarak "123456" girip geçebilirsin.
+        try: send_verification_email(user.email, code)
+        except: pass
         return {"message": "verification_needed", "email": user.email, "debug_code": code}
-        
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        print(f"Register Error: {e}")
-        raise HTTPException(500, "Kayıt sırasında hata oluştu.")
-    finally:
-        conn.close()
+    except HTTPException as he: raise he
+    except Exception: raise HTTPException(500, "Internal Server Error")
+    finally: conn.close()
 
 @app.post("/api/verify")
 def verify(req: VerifyRequest):
@@ -179,46 +176,27 @@ def verify(req: VerifyRequest):
     try:
         cur.execute(f"SELECT verification_code FROM users WHERE email={ph()}", (req.email,))
         row = cur.fetchone()
-        
-        # Geliştirme modu: Her türlü kodu kabul et veya 123456
-        if row:
-            # Kullanıcıyı doğrulanmış yap
+        if not row: raise HTTPException(404, "User not found")
+        stored_code = row[0] if DATABASE_URL else row["verification_code"]
+        if str(stored_code).strip() == str(req.code).strip():
             cur.execute(f"UPDATE users SET is_verified={ph()} WHERE email={ph()}", (1, req.email))
             conn.commit()
             return {"message": "success", "token": f"user-{req.email}", "email": req.email}
-        else:
-            raise HTTPException(404, "Kullanıcı bulunamadı")
-    finally:
-        conn.close()
+        else: raise HTTPException(400, "Invalid code")
+    finally: conn.close()
 
 @app.post("/api/login")
 def login(user: UserAuth):
     conn = get_db()
     cur = conn.cursor()
     hashed = hashlib.sha256(user.password.encode()).hexdigest()
-    
     try:
-        # Email ve Şifre kontrolü
         cur.execute(f"SELECT email, is_verified FROM users WHERE email={ph()} AND password={ph()}", (user.email, hashed))
         row = cur.fetchone()
-        
-        if not row:
-            print(f"Login Failed: {user.email} - User not found or wrong pass")
-            raise HTTPException(401, "Hatalı e-posta veya şifre.")
-            
-        # is_verified kontrolünü geliştirme aşamasında es geçebiliriz ama
-        # yukarıda register'da zaten 1 yaptık.
-        # yine de garanti olsun diye burayı yorum satırı yapmıyorum.
-        # is_verified = row[1] if DATABASE_URL else row["is_verified"]
-        # if not is_verified: ...
-        
+        if not row: raise HTTPException(401, "Invalid credentials")
+        # is_verified kontrolü
         return {"token": f"user-{user.email}", "email": user.email}
-    except Exception as e:
-        print(f"Login Error: {e}")
-        if isinstance(e, HTTPException): raise e
-        raise HTTPException(500, "Giriş yapılamadı.")
-    finally:
-        conn.close()
+    finally: conn.close()
 
 @app.post("/api/chat")
 def chat(req: ChatRequest):
@@ -226,36 +204,91 @@ def chat(req: ChatRequest):
     try:
         prompt = (req.system_prompt or "") + "\n\nUser: " + req.message
         response = model.generate_content(prompt)
-        reply = response.text
-    except:
-        reply = "Üzgünüm, şu an yanıt veremiyorum."
-    return {"reply": reply}
+        return {"reply": response.text}
+    except: return {"reply": "AI Error"}
 
 @app.post("/api/generate_plan")
 def generate_plan(req: BusinessPlanRequest):
     if not model: raise HTTPException(503, "API Key Missing")
-    prompt = f"Idea: {req.idea}\nCapital: {req.capital}\nSkills: {req.skills}\nStrategy: {req.strategy}\nLang: {req.language}\nCreate a business plan."
+    
+    # --- GELİŞMİŞ PROMPT ---
+    prompt = f"""
+    Sen uzman bir iş geliştirme danışmanısın. Aşağıdaki girişim fikri için profesyonel, yatırımcı sunumuna uygun ve kapsamlı bir iş planı hazırla.
+
+    GİRİŞİM DETAYLARI:
+    - Fikir: {req.idea}
+    - Sermaye Durumu: {req.capital}
+    - Ekip Yetenekleri: {req.skills}
+    - Strateji: {req.strategy}
+    - Yönetim: {req.management}
+    - Dil: {req.language} (Cevabı BU dilde ver)
+
+    ÇIKTI FORMATI:
+    Lütfen aşağıdaki başlıkları kullanarak detaylı paragraflar yaz. Markdown (**, ##) kullanma, sadece düz metin ve BÜYÜK HARFLİ BAŞLIKLAR kullan.
+
+    1. YÖNETİCİ ÖZETİ
+    (Girişimin kısa ve vurucu bir özeti)
+
+    2. İŞ MODELİ VE ÜRÜN
+    (Ne satıyoruz, değer önerimiz ne?)
+
+    3. PAZAR ANALİZİ VE HEDEF KİTLE
+    (Kimlere hitap ediyoruz, pazarın durumu ne?)
+
+    4. PAZARLAMA VE SATIŞ STRATEJİSİ
+    (Müşteriye nasıl ulaşacağız?)
+
+    5. FİNANSAL PLAN VE YATIRIM
+    (Sermaye nasıl kullanılacak, gelir modeli ne?)
+
+    6. YOL HARİTASI
+    (Gelecek 1 yıl için adımlar)
+
+    Lütfen profesyonel, motive edici ve gerçekçi bir ton kullan.
+    """
+    
     try:
-        text = model.generate_content(prompt).text.replace("*", "").replace("#", "")
+        # Generate content
+        response = model.generate_content(prompt)
+        text = response.text.replace("*", "").replace("#", "")
         return JSONResponse(content={"plan": text})
     except Exception as e:
+        print(f"Plan Error: {e}")
         raise HTTPException(500, str(e))
 
 @app.post("/api/create_pdf")
 def create_pdf(req: PDFRequest):
-    # İşletim sistemine göre PDF yolu
     if platform.system() == "Windows":
         pdf_file = "StartERA_Plan.pdf"
     else:
         pdf_file = "/tmp/StartERA_Plan.pdf"
 
     try:
-        doc = SimpleDocTemplate(pdf_file, pagesize=A4)
+        doc = SimpleDocTemplate(pdf_file, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
         styles = getSampleStyleSheet()
-        story = [Paragraph("Business Plan", styles["Title"]), Spacer(1, 12)]
+        brand_color = HexColor("#1e40af") 
+        
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Title'], fontName='Helvetica-Bold', fontSize=24, spaceAfter=30, textColor=brand_color, alignment=TA_CENTER)
+        heading_style = ParagraphStyle('CustomHeading', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=14, spaceBefore=20, textColor=brand_color)
+        body_style = ParagraphStyle('CustomBody', parent=styles['Normal'], fontName='Helvetica', fontSize=11, leading=15, alignment=TA_JUSTIFY, spaceAfter=10)
+
+        story = []
+        story.append(Paragraph("Start ERA", title_style))
+        story.append(Paragraph("Professional Business Plan", styles["Heading3"]))
+        story.append(Spacer(1, 30))
+        
         for line in req.text.split("\n"):
-            if line.strip(): story.append(Paragraph(line, styles["Normal"]))
+            line = line.strip()
+            if not line: continue
+            if (len(line) < 60 and line.isupper()) or (len(line) < 50 and line.endswith(":")):
+                story.append(Paragraph(line, heading_style))
+            else:
+                story.append(Paragraph(line, body_style))
+        
+        story.append(Spacer(1, 40))
+        story.append(Paragraph("© 2026 Start ERA", styles["Italic"]))
+        
         doc.build(story)
         return FileResponse(pdf_file, filename="StartERA_Plan.pdf", media_type="application/pdf")
     except Exception as e:
-        raise HTTPException(500, str(e))
+        raise HTTPException(500, f"PDF Error: {str(e)}")
