@@ -28,11 +28,11 @@ load_dotenv()
 API_KEY = os.getenv("GOOGLE_API_KEY")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# E-posta Ayarları
-MAIL_SERVER = os.getenv("MAIL_SERVER", "mail.plan-iq.net")
+# --- E-POSTA AYARLARI ---
+MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
 MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
 MAIL_USERNAME = os.getenv("MAIL_USERNAME", "dev@plan-iq.net")
-MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
+MAIL_PASSWORD = os.getenv("MAIL_PASSWORD") # Gmail için "App Password" olmalı
 
 # AI Model
 MODEL_NAME = "gemini-2.5-flash"
@@ -58,11 +58,6 @@ app.add_middleware(
 
 # -------------------- DATABASE CONNECTION --------------------
 def get_db_connection():
-    """
-    Veritabanı bağlantısını yönetir.
-    1. DATABASE_URL varsa (Vercel Postgres) onu kullanır.
-    2. Yoksa yerel SQLite dosyasını kullanır.
-    """
     if DATABASE_URL:
         try:
             conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
@@ -71,8 +66,6 @@ def get_db_connection():
             print(f"❌ Postgres Bağlantı Hatası: {e}")
             pass
     
-    # SQLite Fallback (Yerel Geliştirme İçin)
-    # Vercel'de /tmp klasörü kullanılır ama geçicidir.
     if platform.system() == "Windows":
         db_path = "chatbot.db"
     else:
@@ -83,19 +76,16 @@ def get_db_connection():
     return conn, "sqlite"
 
 def ph():
-    """Veritabanı türüne göre placeholder döndürür"""
     conn, db_type = get_db_connection()
     conn.close()
     return "%s" if db_type == "postgres" else "?"
 
 def init_db():
-    """Veritabanı tablolarını oluşturur"""
     conn, db_type = get_db_connection()
     cur = conn.cursor()
     
     try:
         if db_type == "postgres":
-            # PostgreSQL Tablo Yapısı
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
@@ -114,7 +104,6 @@ def init_db():
                 );
             """)
         else:
-            # SQLite Tablo Yapısı
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -134,13 +123,11 @@ def init_db():
             """)
         
         conn.commit()
-        print(f"✅ Veritabanı başarıyla başlatıldı ({db_type}).")
     except Exception as e:
         print(f"❌ DB Init Error: {e}")
     finally:
         conn.close()
 
-# Uygulama başlarken veritabanını kur
 init_db()
 
 # -------------------- MODELS --------------------
@@ -170,14 +157,14 @@ class PDFRequest(BaseModel):
 # -------------------- EMAIL --------------------
 def send_verification_email(to_email, code):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
-        print("⚠️ Mail şifresi eksik, e-posta gönderilemedi.")
+        print("\n⚠️  MAIL HATASI: .env dosyasında MAIL_USERNAME veya MAIL_PASSWORD eksik.")
         return False
         
     msg = MIMEMultipart()
     msg['From'] = MAIL_USERNAME
     msg['To'] = to_email
     msg['Subject'] = "Start ERA - Dogrulama Kodunuz"
-    msg.attach(MIMEText(f"Kodunuz: {code}", 'plain', 'utf-8'))
+    msg.attach(MIMEText(f"Start ERA Giriş Kodunuz: {code}", 'plain', 'utf-8'))
 
     try:
         server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
@@ -185,9 +172,11 @@ def send_verification_email(to_email, code):
         server.login(MAIL_USERNAME, MAIL_PASSWORD)
         server.sendmail(MAIL_USERNAME, to_email, msg.as_string())
         server.quit()
+        print(f"✅ MAIL GÖNDERİLDİ: {to_email}")
         return True
     except Exception as e:
-        print(f"Mail Error: {e}")
+        print(f"\n❌ MAIL GÖNDERME HATASI: {str(e)}")
+        print("💡 İPUCU: Gmail kullanıyorsanız 'App Password' oluşturup .env dosyasına yazmalısınız.\n")
         return False
 
 # -------------------- ROUTES --------------------
@@ -201,25 +190,24 @@ def register(user: UserAuth):
     conn, db_type = get_db_connection()
     cur = conn.cursor()
     
-    # E-postayı normalize et (küçük harf, boşluksuz)
     clean_email = user.email.strip().lower()
     hashed = hashlib.sha256(user.password.encode()).hexdigest()
     code = str(random.randint(100000, 999999))
     
-    print(f"📝 Kayıt İsteği: {clean_email} | Kod: {code}")
+    # 👇 BURASI ÇOK ÖNEMLİ: Kodu terminale basıyoruz
+    print("="*40)
+    print(f"📧 ALICI: {clean_email}")
+    print(f"🔑 DOĞRULAMA KODU: {code}")
+    print("="*40)
 
     placeholder = "%s" if db_type == "postgres" else "?"
 
     try:
-        # E-posta kontrolü
         cur.execute(f"SELECT id FROM users WHERE email={placeholder}", (clean_email,))
         if cur.fetchone():
             raise HTTPException(400, "Bu e-posta zaten kayıtlı.")
 
-        # Kayıt Ekle
-        # is_verified = 1 (Geliştirme aşaması için otomatik onaylı yapıyoruz)
-        # Postgres için TRUE, SQLite için 1
-        verified_val = True if db_type == "postgres" else 1
+        verified_val = False if db_type == "postgres" else 0
         
         cur.execute(
             f"INSERT INTO users (email, password, verification_code, is_verified) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})", 
@@ -227,13 +215,13 @@ def register(user: UserAuth):
         )
         conn.commit()
         
-        # Mail göndermeyi dene (Hata verirse akışı bozma)
+        # Mail göndermeyi dene ama hata verirse kod terminalde göründüğü için devam et
         try:
             send_verification_email(clean_email, code)
         except:
             pass
         
-        return {"message": "success", "email": clean_email, "debug_code": code}
+        return {"message": "success", "email": clean_email}
         
     except HTTPException as he:
         raise he
@@ -252,37 +240,27 @@ def login(user: UserAuth):
     hashed = hashlib.sha256(user.password.encode()).hexdigest()
     placeholder = "%s" if db_type == "postgres" else "?"
     
-    print(f"🔑 Giriş Denemesi: {clean_email}")
-    
     try:
-        # Kullanıcıyı bul
         if db_type == "postgres":
             cur.execute(f"SELECT * FROM users WHERE email={placeholder}", (clean_email,))
-            user_data = cur.fetchone() # RealDictCursor sözlük döner
-            if not user_data:
-                print("❌ Kullanıcı veritabanında bulunamadı.")
-                raise HTTPException(401, "Kullanıcı bulunamadı.")
-            
+            user_data = cur.fetchone()
+            if not user_data: raise HTTPException(401, "Kullanıcı bulunamadı.")
             stored_password = user_data['password']
-            
+            is_verified = user_data['is_verified']
         else:
-            # SQLite (Tuple döner)
             cur.execute(f"SELECT email, password, is_verified FROM users WHERE email={placeholder}", (clean_email,))
             user_data = cur.fetchone()
-            if not user_data:
-                print("❌ Kullanıcı veritabanında bulunamadı.")
-                raise HTTPException(401, "Kullanıcı bulunamadı.")
-            
-            stored_password = user_data[1] # password kolonu
+            if not user_data: raise HTTPException(401, "Kullanıcı bulunamadı.")
+            stored_password = user_data[1]
+            is_verified = user_data[2]
 
-        # Şifre Kontrolü
         if stored_password != hashed:
-            print("❌ Şifre uyuşmuyor.")
             raise HTTPException(401, "Hatalı şifre.")
             
-        print("✅ Giriş Başarılı!")
+        if not is_verified:
+             raise HTTPException(403, "Lütfen önce e-posta adresinizi doğrulayın.")
+
         return {"token": f"user-{clean_email}", "email": clean_email}
-        
     except HTTPException as he:
         raise he
     except Exception as e:
@@ -299,7 +277,6 @@ def verify(req: VerifyRequest):
     placeholder = "%s" if db_type == "postgres" else "?"
     
     try:
-        # Kodu Çek
         if db_type == "postgres":
             cur.execute(f"SELECT verification_code FROM users WHERE email={placeholder}", (clean_email,))
             row = cur.fetchone()
@@ -312,7 +289,7 @@ def verify(req: VerifyRequest):
         if not stored_code:
             raise HTTPException(404, "Kullanıcı bulunamadı")
         
-        # Kod Eşleştirme
+        # Kod Eşleştirme (String olarak karşılaştırıyoruz)
         if str(stored_code).strip() == str(req.code).strip():
             verified_val = True if db_type == "postgres" else 1
             cur.execute(f"UPDATE users SET is_verified={placeholder} WHERE email={placeholder}", (verified_val, clean_email))
