@@ -8,16 +8,9 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import google.generativeai as genai
 
-# Yeni Google GenAI kütüphanesi (google-genai) veya eskisi (google-generativeai)
-# Şimdilik uyarıyı görmezden gelip mevcut yapıyı koruyalım, çünkü yeni pakete geçiş
-# kodda köklü değişiklikler gerektirebilir. Ancak import hatası almamak için try-except kullanıyoruz.
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
-
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
@@ -31,27 +24,25 @@ from reportlab.lib.colors import HexColor
 
 load_dotenv()
 
-# --- ORTAM DEĞİŞKENLERİ ---
 API_KEY = os.getenv("GOOGLE_API_KEY")
 DATABASE_URL = os.getenv("POSTGRES_URL") or os.getenv("DATABASE_URL")
-
 MAIL_SERVER = os.getenv("MAIL_SERVER", "mail.plan-iq.net")
 MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
 MAIL_USERNAME = os.getenv("MAIL_USERNAME")
 MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
-MODEL_NAME = "gemini-2.0-flash" # Model adını güncelledim (veya 1.5-flash)
+MODEL_NAME = "gemini-2.5-flash"
 
 try:
-    if API_KEY and genai:
+    if API_KEY:
         genai.configure(api_key=API_KEY)
         model = genai.GenerativeModel(MODEL_NAME)
     else:
         model = None
-except Exception as e:
+except:
     model = None
 
-# Vercel root_path ayarı
-app = FastAPI(docs_url="/api/docs", openapi_url="/api/openapi.json", root_path="/api")
+# Docs URL'lerini de /api altına alıyoruz
+app = FastAPI(docs_url="/api/docs", openapi_url="/api/openapi.json")
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,26 +51,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -------------------- VERİTABANI BAĞLANTISI --------------------
+# -------------------- VERİTABANI --------------------
 def get_db_connection():
     if DATABASE_URL:
         try:
-            conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor, sslmode='require')
-            return conn, "postgres"
-        except Exception as e:
-            print(f"❌ Postgres Bağlantı Hatası: {e}")
-            pass 
+            return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor, sslmode='require'), "postgres"
+        except:
+            pass
     
-    if platform.system() == "Windows":
-        db_path = "chatbot.db"
-    else:
-        db_path = "/tmp/chatbot.db"
-        
+    db_path = "chatbot.db" if platform.system() == "Windows" else "/tmp/chatbot.db"
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn, "sqlite"
 
-def get_placeholder(db_type):
+def ph(db_type):
     return "%s" if db_type == "postgres" else "?"
 
 def init_db():
@@ -96,14 +81,6 @@ def init_db():
                     is_verified BOOLEAN DEFAULT FALSE
                 );
             """)
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS chat_history (
-                    id SERIAL PRIMARY KEY,
-                    role TEXT,
-                    message TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
         else:
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS users (
@@ -114,19 +91,9 @@ def init_db():
                     is_verified INTEGER DEFAULT 0
                 );
             """)
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS chat_history (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    role TEXT,
-                    message TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
-        
         conn.commit()
-        print(f"✅ Veritabanı Tabloları Hazır ({db_type})")
     except Exception as e:
-        print(f"❌ DB Init Hatası: {e}")
+        print(f"DB Init Error: {e}")
     finally:
         conn.close()
 
@@ -156,15 +123,14 @@ class BusinessPlanRequest(BaseModel):
 class PDFRequest(BaseModel):
     text: str
 
-# -------------------- EMAIL --------------------
-def send_verification_email(to_email, code):
-    if not MAIL_USERNAME or not MAIL_PASSWORD:
-        return False
+# -------------------- E-POSTA --------------------
+def send_email(to_email, code):
+    if not MAIL_USERNAME or not MAIL_PASSWORD: return False
     msg = MIMEMultipart()
     msg['From'] = MAIL_USERNAME
     msg['To'] = to_email
-    msg['Subject'] = "Start ERA - Dogrulama Kodunuz"
-    msg.attach(MIMEText(f"Giriş Kodunuz: {code}", 'plain'))
+    msg['Subject'] = "Start ERA Kodu"
+    msg.attach(MIMEText(f"Kod: {code}", 'plain'))
     try:
         server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
         server.starttls()
@@ -175,7 +141,7 @@ def send_verification_email(to_email, code):
     except:
         return False
 
-# -------------------- ROTALAR --------------------
+# -------------------- API ROTALARI (MANUEL /api PREFIX) --------------------
 
 @app.get("/api/health")
 def health():
@@ -185,128 +151,104 @@ def health():
 def register(user: UserAuth):
     conn, db_type = get_db_connection()
     cur = conn.cursor()
-    
     clean_email = user.email.strip().lower()
     hashed = hashlib.sha256(user.password.encode()).hexdigest()
     code = str(random.randint(100000, 999999))
-    ph = get_placeholder(db_type)
-    
-    print(f"KAYIT: {clean_email} | KOD: {code}")
+    p = ph(db_type)
 
     try:
-        cur.execute(f"SELECT id FROM users WHERE email={ph}", (clean_email,))
-        if cur.fetchone():
-            raise HTTPException(400, "Bu e-posta zaten kayıtlı.")
+        cur.execute(f"SELECT id FROM users WHERE email={p}", (clean_email,))
+        if cur.fetchone(): raise HTTPException(400, "Email already exists")
 
         verified_val = False if db_type == "postgres" else 0
-        
-        cur.execute(
-            f"INSERT INTO users (email, password, verification_code, is_verified) VALUES ({ph}, {ph}, {ph}, {ph})", 
-            (clean_email, hashed, code, verified_val)
-        )
+        cur.execute(f"INSERT INTO users (email, password, verification_code, is_verified) VALUES ({p}, {p}, {p}, {p})", 
+                   (clean_email, hashed, code, verified_val))
         conn.commit()
-        
-        try:
-            send_verification_email(clean_email, code)
-        except:
-            pass
-        
-        return {"message": "verification_needed", "email": clean_email, "debug_code": code}
-        
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        print(f"Register Error: {e}")
-        raise HTTPException(500, "Sunucu hatası.")
-    finally:
-        conn.close()
+        send_email(clean_email, code)
+        return {"message": "success", "email": clean_email}
+    except HTTPException as he: raise he
+    except: raise HTTPException(500, "Server Error")
+    finally: conn.close()
 
 @app.post("/api/verify")
 def verify(req: VerifyRequest):
-    if req.code == "123456":
-        return {"message": "success", "token": f"demo-{req.email}", "email": req.email}
-
+    if req.code == "123456": return {"message": "success", "token": "demo", "email": req.email}
+    
     conn, db_type = get_db_connection()
     cur = conn.cursor()
-    clean_email = req.email.strip().lower()
-    ph = get_placeholder(db_type)
-    
+    p = ph(db_type)
     try:
-        cur.execute(f"SELECT verification_code FROM users WHERE email={ph}", (clean_email,))
+        cur.execute(f"SELECT verification_code FROM users WHERE email={p}", (req.email,))
         row = cur.fetchone()
+        if not row: raise HTTPException(404, "User not found")
         
-        if not row:
-             raise HTTPException(404, "Kullanıcı bulunamadı.")
-             
-        stored_code = row['verification_code'] if db_type == "postgres" else row[0]
-        
-        if str(stored_code).strip() == str(req.code).strip():
+        stored = row['verification_code'] if db_type == "postgres" else row[0]
+        if str(stored).strip() == str(req.code).strip():
             verified_val = True if db_type == "postgres" else 1
-            cur.execute(f"UPDATE users SET is_verified={ph} WHERE email={ph}", (verified_val, clean_email))
+            cur.execute(f"UPDATE users SET is_verified={p} WHERE email={p}", (verified_val, req.email))
             conn.commit()
-            return {"message": "success", "token": f"user-{clean_email}", "email": clean_email}
-        else:
-            raise HTTPException(400, "Hatalı kod.")
-    finally:
-        conn.close()
+            return {"message": "success", "token": f"user-{req.email}", "email": req.email}
+        else: raise HTTPException(400, "Invalid code")
+    finally: conn.close()
 
 @app.post("/api/login")
 def login(user: UserAuth):
-    clean_email = user.email.strip().lower()
-    hashed = hashlib.sha256(user.password.encode()).hexdigest()
-    
-    if clean_email == "dev@plan-iq.net" and user.password == "Omar12omar12":
-        return {"token": "master-token", "email": clean_email}
-
     conn, db_type = get_db_connection()
     cur = conn.cursor()
-    ph = get_placeholder(db_type)
-    
+    clean_email = user.email.strip().lower()
+    hashed = hashlib.sha256(user.password.encode()).hexdigest()
+    p = ph(db_type)
+
+    # Master User
+    if clean_email == "dev@plan-iq.net" and user.password == "Omar12omar12":
+        return {"token": "master", "email": clean_email}
+
     try:
         if db_type == "postgres":
-            cur.execute(f"SELECT * FROM users WHERE email={ph}", (clean_email,))
-            row = cur.fetchone() 
-            if not row: raise HTTPException(401, "Hatalı e-posta veya şifre.")
+            cur.execute(f"SELECT * FROM users WHERE email={p}", (clean_email,))
+            row = cur.fetchone()
+            if not row: raise HTTPException(401, "Invalid credentials")
             stored_pass = row['password']
             is_verified = row['is_verified']
         else:
-            cur.execute(f"SELECT password, is_verified FROM users WHERE email={ph}", (clean_email,))
+            cur.execute(f"SELECT password, is_verified FROM users WHERE email={p}", (clean_email,))
             row = cur.fetchone()
-            if not row: raise HTTPException(401, "Hatalı e-posta veya şifre.")
+            if not row: raise HTTPException(401, "Invalid credentials")
             stored_pass = row[0]
             is_verified = row[1]
             
-        if stored_pass != hashed:
-            raise HTTPException(401, "Hatalı e-posta veya şifre.")
-            
-        if not is_verified:
-             raise HTTPException(403, "Lütfen önce e-posta adresinizi doğrulayın.")
+        if stored_pass != hashed: raise HTTPException(401, "Invalid credentials")
+        if not is_verified: raise HTTPException(403, "Not verified")
 
         return {"token": f"user-{clean_email}", "email": clean_email}
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        print(f"Login Error: {e}")
-        raise HTTPException(500, "Giriş hatası.")
-    finally:
-        conn.close()
+    finally: conn.close()
 
-@app.post("/api/chat")
-def chat(req: ChatRequest):
-    if not model: return {"reply": "API Key Eksik"}
-    try:
-        res = model.generate_content(req.message)
-        return {"reply": res.text}
-    except:
-        return {"reply": "Hata oluştu."}
+# --- PLAN & PDF ---
 
 @app.post("/api/generate_plan")
 def generate_plan(req: BusinessPlanRequest):
     if not model: raise HTTPException(503, "API Key Missing")
-    prompt = f"Girişim Fikri: {req.idea}\nSermaye: {req.capital}\nDil: {req.language}\nBana detaylı iş planı yaz."
+    
+    prompt = f"""
+    Sen uzman bir iş danışmanısın.
+    DİL: {req.language}
+    GİRİŞİM: {req.idea}
+    SERMAYE: {req.capital}
+    YETENEKLER: {req.skills}
+    
+    Lütfen profesyonel bir iş planı yaz. Bölümler:
+    1. YÖNETİCİ ÖZETİ
+    2. İŞ MODELİ
+    3. PAZAR ANALİZİ
+    4. FİNANSAL PLAN
+    
+    Sadece düz metin kullan, markdown kullanma.
+    """
     try:
-        res = model.generate_content(prompt)
-        return JSONResponse(content={"plan": res.text})
+        # Metin üret
+        text = model.generate_content(prompt).text.replace("*", "").replace("#", "")
+        # JSON döndür (PDF DEĞİL!)
+        return JSONResponse(content={"plan": text})
     except Exception as e:
         raise HTTPException(500, str(e))
 

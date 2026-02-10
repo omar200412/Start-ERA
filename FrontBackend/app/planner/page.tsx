@@ -4,9 +4,14 @@ import React, { useState, useEffect, useRef, createContext, useContext } from "r
 import toast, { Toaster } from "react-hot-toast";
 
 // --- API URL (Güvenli) ---
-const API_URL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_URL)
-  ? process.env.NEXT_PUBLIC_API_URL
-  : "http://127.0.0.1:8000";
+const getApiUrl = () => {
+  if (typeof window === 'undefined') return "";
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return "http://127.0.0.1:8000/api";
+  }
+  return "/api";
+};
+const API_URL = getApiUrl();
 
 // --- MOCK ROUTER ---
 const useRouter = () => {
@@ -293,43 +298,38 @@ function PlannerContent() {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/generate_plan`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) });
-      
-      // Hata kontrolü
-      if (!res.ok) {
-          throw new Error("API Connection Error");
-      }
-      
+      if (!res.ok) throw new Error("API Connection Error");
       const data = await res.json();
       setPlanResult(data.plan);
       toast.success(t.toast_success);
     } catch {
-      // HATA DURUMUNDA GÖSTERİLECEK DETAYLI DEMO PLAN
-      // Bu kısım backend çalışmasa bile kullanıcının sistemin gücünü görmesini sağlar.
-      toast.success("Demo Modu: Örnek plan oluşturuldu.", { icon: '✨' });
+      // --- DETAYLI FALLBACK (DEMO) PLAN ---
+      // Kullanıcının girdilerini kullanarak dinamik ve gerçekçi bir plan oluşturuyoruz.
+      toast.success("Örnek plan başarıyla oluşturuldu (Demo Modu)", { icon: '✨' });
       
       const fallbackPlan = `
 1. YÖNETİCİ ÖZETİ
-Girişiminiz "${formData.idea}", pazardaki mevcut boşlukları doldurmayı ve hedef kitleye benzersiz bir değer sunmayı amaçlamaktadır. Yönetim ekibinin "${formData.management}" konusundaki deneyimi ve "${formData.skills}" gibi kritik yetenekleri, projenin başarısı için güçlü bir temel oluşturmaktadır. Mevcut "${formData.capital}" sermaye ile yola çıkılarak, ilk aşamada sürdürülebilir bir büyüme yakalanması hedeflenmektedir.
+"${formData.idea}" girişimi, sektördeki önemli bir ihtiyacı karşılamayı ve benzersiz bir değer önerisi sunmayı hedeflemektedir. "${formData.management}" tarafından yönetilen ve "${formData.skills}" yetkinliklerine sahip güçlü bir ekip ile yola çıkılmaktadır. Başlangıç sermayesi olarak belirlenen "${formData.capital}" tutarı, projenin ilk aşamalarını finanse etmek ve pazara giriş yapmak için stratejik olarak kullanılacaktır.
 
 2. İŞ MODELİ VE ÜRÜN
-İş modeliniz, müşteri odaklı bir yaklaşımla kurgulanmıştır. Temel ürün/hizmet, rakiplerinden kalite ve kullanıcı deneyimi ile ayrışmaktadır. Gelir modeli, hem tek seferlik satışlar hem de potansiyel olarak tekrarlayan gelir (abonelik vb.) modellerini içerecek şekilde çeşitlendirilmelidir. "${formData.skills}" yeteneğiniz, ürünün geliştirilmesinde ve pazara sunulmasında kilit rol oynayacaktır.
+İş modelimiz, müşteri odaklılık ve sürdürülebilir büyüme üzerine kuruludur. Temel ürün/hizmetimiz, rakiplerinden kalite, kullanıcı deneyimi ve inovasyon ile ayrışmaktadır. Gelir modeli, pazar dinamiklerine uygun olarak çeşitlendirilmiş olup, hem kısa vadeli nakit akışı hem de uzun vadeli müşteri sadakati sağlamayı amaçlamaktadır. "${formData.skills}" alanındaki uzmanlığımız, ürünün sürekli geliştirilmesinde kritik rol oynayacaktır.
 
 3. PAZAR ANALİZİ VE HEDEF KİTLE
-Hedef pazarınız, yenilikçi çözümlere açık ve kalite arayan bilinçli tüketicilerden oluşmaktadır. Pazarın büyüklüğü ve büyüme potansiyeli, girişimin ölçeklenebilir olduğunu göstermektedir. Rakip analizi, sizin esnek yapınızın ve müşteri odaklılığınızın büyük oyunculara karşı avantaj sağlayacağını ortaya koymaktadır.
+Hedef pazarımız, yenilikçi çözümlere açık, kaliteye önem veren ve çözüm arayan bilinçli bir kitleyi kapsamaktadır. Pazar analizi, büyüme potansiyelinin yüksek olduğunu ve doğru konumlandırma ile önemli bir pazar payı elde edilebileceğini göstermektedir. Rekabet analizi, esnek yapımızın ve hızlı adaptasyon yeteneğimizin büyük oyunculara karşı avantaj sağlayacağını ortaya koymaktadır.
 
 4. PAZARLAMA VE SATIŞ STRATEJİSİ
-Pazarlama stratejiniz, dijital kanalları (sosyal medya, içerik pazarlaması, SEO) ve organik büyümeyi (referanslar) merkeze almalıdır. Başlangıç bütçesi ("${formData.capital}") verimli kullanılarak, doğrudan hedef kitleye yönelik nokta atışı kampanyalar düzenlenmelidir. Müşteri sadakati oluşturmak, yeni müşteri kazanmaktan daha öncelikli olmalıdır.
+Pazarlama stratejimiz, dijital kanalları (sosyal medya, SEO, içerik pazarlaması) etkin kullanarak marka bilinirliği oluşturmaya odaklanacaktır. Başlangıç bütçesi ("${formData.capital}") verimli kullanılarak, doğrudan hedef kitleye yönelik, ölçülebilir ve yüksek dönüşüm oranlı kampanyalar düzenlenecektir. Müşteri memnuniyeti ve referanslar, büyüme stratejimizin merkezinde yer alacaktır.
 
 5. FİNANSAL PLAN VE YATIRIM
-Mevcut sermaye ("${formData.capital}"), ürün geliştirme (MVP), ilk pazarlama faaliyetleri ve operasyonel giderler için optimize edilmelidir. İlk 6-12 ay içinde başabaş noktasına (breakeven) ulaşılması ve ardından kârlılığa geçilmesi öngörülmektedir. Gelecekteki büyüme için "${formData.strategy}" hedefi doğrultusunda ek yatırım veya finansman seçenekleri değerlendirilebilir.
+Mevcut sermaye ("${formData.capital}"), ürün geliştirme (MVP), pazarlama ve operasyonel giderler için optimize edilerek kullanılacaktır. İlk 6-12 ay içinde başabaş noktasına (breakeven) ulaşılması ve ardından kârlılığa geçilmesi öngörülmektedir. Gelecekteki büyüme hedefleri ("${formData.strategy}") doğrultusunda, stratejik yatırımlar ve finansman seçenekleri değerlendirilecektir.
 
 6. YOL HARİTASI (ROADMAP)
-- 1. Çeyrek: Ürün/Hizmetin lansmanı ve ilk müşteri geri bildirimlerinin toplanması.
-- 2. Çeyrek: Pazarlama faaliyetlerinin artırılması ve müşteri tabanının genişletilmesi.
-- 3. Çeyrek: Operasyonel verimliliğin artırılması ve ekibin büyütülmesi (ihtiyaç halinde).
-- 4. Çeyrek: "${formData.strategy}" hedefine ulaşılması ve yeni pazarlara açılma hazırlıkları.
+- 1. Çeyrek: Ürün/Hizmetin pazara sunulması (Lansman) ve ilk geri bildirimlerin alınması.
+- 2. Çeyrek: Pazarlama faaliyetlerinin yoğunlaştırılması ve müşteri tabanının genişletilmesi.
+- 3. Çeyrek: Operasyonel süreçlerin iyileştirilmesi ve verimliliğin artırılması.
+- 4. Çeyrek: "${formData.strategy}" hedefi doğrultusunda büyüme ve yeni pazarlara açılma hazırlıkları.
 
-Bu plan, girişiminizi başarıya ulaştırmak için sağlam bir yol haritası sunmaktadır. Disiplinli uygulama ve sürekli öğrenme ile hedeflerinize ulaşmanız mümkündür. Başarılar dileriz!
+Bu iş planı, girişiminizi başarıya ulaştırmak için sağlam bir temel ve yol haritası sunmaktadır. Vizyonunuz ve kararlılığınızla hedeflerinize ulaşacağınıza inancımız tamdır.
       `;
       setPlanResult(fallbackPlan);
     } finally { setLoading(false); }
