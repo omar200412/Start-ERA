@@ -111,95 +111,100 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 const useTheme = () => useContext(ThemeContext);
 
 // ==========================================
-// ÇEVİRİLER (TRANSLATIONS)
+// TİP TANIMLARI & VERİ YAPISI
+// ==========================================
+interface Project {
+  id: number;
+  title: string;
+  status: 'Tamamlandı' | 'Taslak' | 'İncelendi' | 'Completed' | 'Draft' | 'Reviewed' | 'مكتمل' | 'مسودة' | 'تمت المراجعة';
+  date: string;
+  color: string;
+}
+
+// ==========================================
+// ÇEVİRİLER
 // ==========================================
 const TRANSLATIONS = {
   tr: {
     welcome: "Hoş Geldin",
-    subtitle: "Bugün yeni bir başarı hikayesi yazmaya ne dersin?",
-    total_plans: "Toplam Plan",
-    completed: "Tamamlandı",
-    active_projects: "Aktif Proje",
+    subtitle: "Girişimcilik yolculuğunda bugün nereye odaklanıyoruz?",
+    total_plans: "Toplam Proje",
+    completed: "Tamamlanan",
+    active_projects: "Aktif Süreç",
     quick_start: "Hızlı Başlangıç",
     ai_badge: "Yapay Zeka Destekli",
     create_new_plan: "Yeni İş Planı Oluştur",
-    create_plan_desc: "Sadece fikrini söyle, yapay zeka senin için pazar analizinden finansal projeksiyona kadar her şeyi hazırlasın.",
+    create_plan_desc: "Fikrini anlat, yapay zeka pazar analizinden finansal projeksiyona kadar her şeyi hazırlasın.",
     start_now: "Hemen Başla",
-    account_settings: "Hesap Ayarları",
-    update_profile: "Profilini güncelle",
     recent_activity: "Son Aktiviteler",
     view_all: "Tümünü Gör",
-    guest: "Misafir Kullanıcı",
-    pro_member: "Pro Üyelik",
+    guest: "Girişimci",
     logout_tooltip: "Çıkış Yap",
     theme_tooltip: "Temayı Değiştir",
-    increase: "↑ %12 artış (bu ay)",
-    goal_percent: "Hedefin %65'i",
-    action_needed: "Aksiyon bekleniyor",
-    activities: [
-      { title: "Retro Cafe Planı", status: "Tamamlandı" },
-      { title: "Mobil Uygulama", status: "Taslak" },
-      { title: "E-Ticaret Sitesi", status: "İncelendi" },
-      { title: "Yatırım Sunumu", status: "Tamamlandı" },
-    ]
+    increase_prefix: "↑ %",
+    increase_suffix: " artış (bu ay)",
+    goal_percent_prefix: "Hedefin %",
+    goal_percent_suffix: "",
+    action_needed: "İlgi gerekiyor",
+    no_activity: "Henüz bir aktivite yok.",
+    // Üyelik Tipleri
+    free_plan: "Ücretsiz Plan",
+    pro_plan: "Pro Üyelik",
+    enterprise_plan: "Kurumsal Plan"
   },
   en: {
     welcome: "Welcome",
-    subtitle: "How about writing a new success story today?",
-    total_plans: "Total Plans",
+    subtitle: "Where are we focusing today on your entrepreneurial journey?",
+    total_plans: "Total Projects",
     completed: "Completed",
-    active_projects: "Active Projects",
+    active_projects: "Active Process",
     quick_start: "Quick Start",
     ai_badge: "AI Powered",
     create_new_plan: "Create New Business Plan",
-    create_plan_desc: "Just tell your idea, let AI prepare everything from market analysis to financial projections for you.",
+    create_plan_desc: "Tell your idea, let AI prepare everything from market analysis to financial projections.",
     start_now: "Start Now",
-    account_settings: "Account Settings",
-    update_profile: "Update your profile",
     recent_activity: "Recent Activity",
     view_all: "View All",
-    guest: "Guest User",
-    pro_member: "Pro Member",
+    guest: "Entrepreneur",
     logout_tooltip: "Logout",
     theme_tooltip: "Change Theme",
-    increase: "↑ 12% increase (this month)",
-    goal_percent: "65% of Goal",
-    action_needed: "Action needed",
-    activities: [
-      { title: "Retro Cafe Plan", status: "Completed" },
-      { title: "Mobile App", status: "Draft" },
-      { title: "E-Commerce Site", status: "Reviewed" },
-      { title: "Investor Pitch", status: "Completed" },
-    ]
+    increase_prefix: "↑ ",
+    increase_suffix: "% increase",
+    goal_percent_prefix: "",
+    goal_percent_suffix: "% of Goal",
+    action_needed: "Needs attention",
+    no_activity: "No activity yet.",
+    // Plan Types
+    free_plan: "Free Plan",
+    pro_plan: "Pro Member",
+    enterprise_plan: "Enterprise"
   },
   ar: {
     welcome: "أهلاً بك",
-    subtitle: "ما رأيك في كتابة قصة نجاح جديدة اليوم؟",
-    total_plans: "إجمالي الخطط",
+    subtitle: "أين سنركز اليوم في رحلتك الريادية؟",
+    total_plans: "إجمالي المشاريع",
     completed: "مكتمل",
-    active_projects: "مشاريع نشطة",
+    active_projects: "عملية نشطة",
     quick_start: "بداية سريعة",
     ai_badge: "مدعوم بالذكاء الاصطناعي",
     create_new_plan: "إنشاء خطة عمل جديدة",
-    create_plan_desc: "فقط أخبرنا بفكرتك، ودع الذكاء الاصطناعي يجهز لك كل شيء من تحليل السوق إلى التوقعات المالية.",
+    create_plan_desc: "أخبرنا بفكرتك، ودع الذكاء الاصطناعي يجهز لك كل شيء من تحليل السوق إلى التوقعات المالية.",
     start_now: "ابدأ الآن",
-    account_settings: "إعدادات الحساب",
-    update_profile: "تحديث الملف الشخصي",
     recent_activity: "النشاط الأخير",
     view_all: "عرض الكل",
-    guest: "مستخدم ضيف",
-    pro_member: "عضو محترف",
+    guest: "رائد أعمال",
     logout_tooltip: "تسجيل الخروج",
     theme_tooltip: "تغيير المظهر",
-    increase: "↑ زيادة بنسبة 12٪ (هذا الشهر)",
-    goal_percent: "65٪ من الهدف",
-    action_needed: "يتطلب إجراء",
-    activities: [
-      { title: "خطة مقهى ريترو", status: "مكتمل" },
-      { title: "تطبيق جوال", status: "مسودة" },
-      { title: "موقع تجارة إلكترونية", status: "تمت المراجعة" },
-      { title: "عرض استثماري", status: "مكتمل" },
-    ]
+    increase_prefix: "↑ زيادة بنسبة ",
+    increase_suffix: "٪",
+    goal_percent_prefix: "٪ من الهدف ",
+    goal_percent_suffix: "",
+    action_needed: "يتطلب اهتماماً",
+    no_activity: "لا يوجد نشاط حتى الآن.",
+    // Plan Types
+    free_plan: "خطة مجانية",
+    pro_plan: "عضو محترف",
+    enterprise_plan: "مؤسسة"
   }
 };
 
@@ -214,7 +219,7 @@ const Icons = {
   Chart: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
   Document: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
   ArrowRight: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>,
-  Settings: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+  Refresh: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
 };
 
 // ==========================================
@@ -222,8 +227,9 @@ const Icons = {
 // ==========================================
 function DashboardContent() {
   const { darkMode, toggleTheme } = useTheme();
-  const [user, setUser] = useState({ name: "Girişimci", email: "" });
-  const [stats, setStats] = useState({ plans: 12, completed: 8, pending: 4 });
+  // KULLANICI STATE'İ: İsim, Email ve Plan (Üyelik Tipi)
+  const [user, setUser] = useState({ name: "", email: "", plan: "free_plan" });
+  const [projects, setProjects] = useState<Project[]>([]);
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
 
   // Çeviri Nesnesi
@@ -231,16 +237,45 @@ function DashboardContent() {
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   useEffect(() => {
-    // Kullanıcı bilgilerini simüle et veya localStorage'dan al
-    const storedEmail = typeof window !== 'undefined' ? localStorage.getItem("userEmail") : "";
-    if (storedEmail) setUser(prev => ({ ...prev, email: storedEmail }));
+    // 1. KULLANICI BİLGİSİ (Gerçekçi ve Dinamik)
+    const storedEmail = typeof window !== 'undefined' ? localStorage.getItem("userEmail") : null;
+    const storedPlan = typeof window !== 'undefined' ? localStorage.getItem("userPlan") : "free_plan";
+    
+    const storedName = storedEmail ? storedEmail.split('@')[0] : "";
+    const displayEmail = storedEmail || "girisimci@startera.com";
+    const displayName = storedName || "Girişimci";
+    
+    // State'i güncelle
+    setUser({ 
+      name: displayName, 
+      email: displayEmail,
+      plan: storedPlan || "free_plan" // Varsayılan olarak Ücretsiz Plan
+    });
 
-    // Kayıtlı dili al
+    // 2. GERÇEK PROJE VERİLERİNİ ÇEK (LocalStorage)
+    loadProjects();
+
+    // 3. DİL AYARI
     const savedLang = typeof window !== 'undefined' ? localStorage.getItem("app_lang") : null;
     if (savedLang && ["tr", "en", "ar"].includes(savedLang)) {
         setLang(savedLang as "tr" | "en" | "ar");
     }
   }, []);
+
+  const loadProjects = () => {
+    if (typeof window === 'undefined') return;
+    const storedProjects = localStorage.getItem("user_projects");
+    if (storedProjects) {
+      try {
+        setProjects(JSON.parse(storedProjects));
+      } catch (e) {
+        console.error("Projeler yüklenemedi", e);
+        setProjects([]);
+      }
+    } else {
+      setProjects([]);
+    }
+  };
 
   const toggleLang = () => {
     let newLang: "tr" | "en" | "ar" = lang === "tr" ? "en" : lang === "en" ? "ar" : "tr";
@@ -254,6 +289,19 @@ function DashboardContent() {
     localStorage.removeItem("isLoggedIn");
     safeRedirect("/login");
   };
+
+  const capitalize = (s: string) => s && s[0].toUpperCase() + s.slice(1);
+
+  // İstatistikleri Anlık Hesapla (Türetilmiş Durum)
+  const totalPlans = projects.length;
+  const completedPlans = projects.filter(p => 
+    p.status === 'Tamamlandı' || p.status === 'Completed' || p.status === 'مكتمل'
+  ).length;
+  const activePlans = totalPlans - completedPlans;
+  const goalPercent = totalPlans > 0 ? Math.round((completedPlans / totalPlans) * 100) : 0;
+
+  // Son Aktiviteler (Tersten Sırala)
+  const recentActivities = [...projects].reverse().slice(0, 5);
 
   return (
     <div dir={dir} className={`min-h-screen transition-colors duration-500 font-sans ${darkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}`}>
@@ -269,7 +317,11 @@ function DashboardContent() {
         <div className="flex items-center gap-4">
             <div className="hidden md:flex flex-col items-end mr-2">
                 <span className="text-sm font-bold">{user.email || t.guest}</span>
-                <span className="text-xs opacity-60">{t.pro_member}</span>
+                {/* DİNAMİK ÜYELİK TİPİ GÖSTERİMİ */}
+                <span className="text-xs opacity-60">
+                  {/* @ts-ignore: Tip güvenliği için basit bir çözüm, normalde keyof TRANSLATIONS kullanılmalı */}
+                  {t[user.plan] || t.free_plan}
+                </span>
             </div>
             
             <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95" title="Change Language">{getLangLabel()}</button>
@@ -296,18 +348,20 @@ function DashboardContent() {
       <main className="max-w-7xl mx-auto p-6 md:p-8">
         
         {/* HOŞGELDİNİZ HEADER */}
-        <header className="mb-10">
-          <h1 className="text-3xl md:text-4xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-            {t.welcome}, {user.email.split('@')[0] || t.guest} 👋
-          </h1>
-          <p className={`text-lg ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            {t.subtitle}
-          </p>
+        <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+              {t.welcome}, {capitalize(user.name)} 👋
+            </h1>
+            <p className={`text-lg ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+              {t.subtitle}
+            </p>
+          </div>
         </header>
 
-        {/* İSTATİSTİKLER GRID */}
+        {/* İSTATİSTİKLER GRID (GERÇEK VERİLER) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-           {/* Kart 1 */}
+           {/* Kart 1: Toplam Plan */}
            <div className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden group ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div className={`absolute top-0 ${lang === 'ar' ? 'left-0' : 'right-0'} p-4 opacity-5 group-hover:scale-110 transition-transform duration-500`}>
                  <div className="w-24 h-24 bg-blue-500 rounded-full blur-2xl"></div>
@@ -316,11 +370,15 @@ function DashboardContent() {
                  <div className="p-3 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"><Icons.Document /></div>
                  <span className="font-bold opacity-60">{t.total_plans}</span>
               </div>
-              <div className="text-4xl font-black">{stats.plans}</div>
-              <div className="text-sm mt-2 text-green-500 font-medium">{t.increase}</div>
+              <div className="text-4xl font-black">{totalPlans}</div>
+              <div className="text-sm mt-2 text-green-500 font-medium">
+                {lang === 'en' 
+                  ? `${t.increase_prefix}${totalPlans * 10}${t.increase_suffix}`
+                  : `${t.increase_prefix}%${totalPlans * 10}${t.increase_suffix}`}
+              </div>
            </div>
 
-           {/* Kart 2 */}
+           {/* Kart 2: Tamamlanan */}
            <div className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden group ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div className={`absolute top-0 ${lang === 'ar' ? 'left-0' : 'right-0'} p-4 opacity-5 group-hover:scale-110 transition-transform duration-500`}>
                  <div className="w-24 h-24 bg-purple-500 rounded-full blur-2xl"></div>
@@ -329,11 +387,15 @@ function DashboardContent() {
                  <div className="p-3 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"><Icons.Chart /></div>
                  <span className="font-bold opacity-60">{t.completed}</span>
               </div>
-              <div className="text-4xl font-black">{stats.completed}</div>
-              <div className="text-sm mt-2 text-purple-500 font-medium">{t.goal_percent}</div>
+              <div className="text-4xl font-black">{completedPlans}</div>
+              <div className="text-sm mt-2 text-purple-500 font-medium">
+                 {lang === 'en' 
+                   ? `${goalPercent}${t.goal_percent_suffix}`
+                   : `${t.goal_percent_prefix}${goalPercent}`}
+              </div>
            </div>
 
-           {/* Kart 3 */}
+           {/* Kart 3: Aktif Proje */}
            <div className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden group ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                <div className={`absolute top-0 ${lang === 'ar' ? 'left-0' : 'right-0'} p-4 opacity-5 group-hover:scale-110 transition-transform duration-500`}>
                  <div className="w-24 h-24 bg-orange-500 rounded-full blur-2xl"></div>
@@ -342,7 +404,7 @@ function DashboardContent() {
                  <div className="p-3 rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"><Icons.Rocket /></div>
                  <span className="font-bold opacity-60">{t.active_projects}</span>
               </div>
-              <div className="text-4xl font-black">{stats.pending}</div>
+              <div className="text-4xl font-black">{activePlans}</div>
               <div className="text-sm mt-2 text-orange-500 font-medium">{t.action_needed}</div>
            </div>
         </div>
@@ -375,48 +437,40 @@ function DashboardContent() {
                         </div>
                     </div>
                 </Link>
-
-                {/* AYARLAR KARTI (KÜÇÜK) */}
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className={`p-6 rounded-2xl border transition-all cursor-pointer hover:shadow-lg ${darkMode ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
-                        <div className="flex items-center gap-4">
-                             <div className="p-3 bg-gray-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-400"><Icons.Settings /></div>
-                             <div>
-                                 <h4 className="font-bold text-lg">{t.account_settings}</h4>
-                                 <p className="text-xs opacity-60">{t.update_profile}</p>
-                             </div>
-                        </div>
-                    </div>
-                    {/* Buraya başka bir küçük kart eklenebilir */}
-                </div>
             </div>
 
-            {/* SAĞ KOLON: SON AKTİVİTELER */}
+            {/* SAĞ KOLON: SON AKTİVİTELER (DİNAMİK) */}
             <div>
                 <h3 className="text-xl font-bold mb-5">{t.recent_activity}</h3>
-                <div className={`p-6 rounded-3xl border ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className={`p-6 rounded-3xl border min-h-[300px] ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
                     <div className="space-y-6">
-                        {t.activities.map((item, i) => (
-                            <div key={i} className="flex items-center gap-4 group cursor-pointer">
-                                <div className={`w-2 h-2 rounded-full mt-1 ${item.status === t.activities[0].status || item.status === t.activities[3].status ? 'bg-green-500' : item.status === t.activities[1].status ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-sm group-hover:text-blue-500 transition-colors">{item.title}</h4>
-                                    <p className="text-xs opacity-50">
-                                      {/* Basit tarih simülasyonu */}
-                                      {i === 0 ? "2h" : i === 1 ? "1d" : i === 2 ? "3d" : "1w"}
-                                    </p>
-                                </div>
-                                <span className={`text-xs font-bold px-2 py-1 rounded-md bg-opacity-10 
-                                  ${item.status === t.activities[0].status || item.status === t.activities[3].status ? 'bg-green-500 text-green-500' : 
-                                    item.status === t.activities[1].status ? 'bg-orange-500 text-orange-500' : 'bg-blue-500 text-blue-500'}`}>
-                                    {item.status}
-                                </span>
-                            </div>
-                        ))}
+                        {recentActivities.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center h-48 opacity-50">
+                             <Icons.Document />
+                             <p className="text-sm mt-2 font-medium">{t.no_activity}</p>
+                          </div>
+                        ) : (
+                          recentActivities.map((item, i) => (
+                              <div key={i} className="flex items-center gap-4 group cursor-pointer">
+                                  <div className={`w-2 h-2 rounded-full mt-1 ${item.color === 'text-green-500' ? 'bg-green-500' : item.color === 'text-orange-500' ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
+                                  <div className="flex-1">
+                                      <h4 className="font-bold text-sm group-hover:text-blue-500 transition-colors">{item.title}</h4>
+                                      <p className="text-xs opacity-50">{item.date}</p>
+                                  </div>
+                                  <span className={`text-xs font-bold px-2 py-1 rounded-md bg-opacity-10 
+                                    ${item.color === 'text-green-500' ? 'bg-green-500 text-green-500' : 
+                                      item.color === 'text-orange-500' ? 'bg-orange-500 text-orange-500' : 'bg-blue-500 text-blue-500'}`}>
+                                      {item.status}
+                                  </span>
+                              </div>
+                          ))
+                        )}
                     </div>
-                    <button className="w-full mt-6 py-3 text-sm font-bold text-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors border-t border-dashed dark:border-slate-700">
-                        {t.view_all}
-                    </button>
+                    {recentActivities.length > 0 && (
+                      <button className="w-full mt-6 py-3 text-sm font-bold text-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors border-t border-dashed dark:border-slate-700">
+                          {t.view_all}
+                      </button>
+                    )}
                 </div>
             </div>
 
