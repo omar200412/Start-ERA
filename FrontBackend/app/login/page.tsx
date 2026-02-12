@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // import { useRouter } from 'next/navigation'; // Yönlendirme için (Next.js App Router)
 
 // ==========================================
@@ -27,6 +27,12 @@ const IconRefreshCw = ({ className }: { className?: string }) => (
 const IconArrowRight = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
 );
+const IconSun = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+);
+const IconMoon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+);
 
 
 export default function LoginPage() {
@@ -37,6 +43,10 @@ export default function LoginPage() {
   // 'VERIFY' -> Hesap onaylanmamışsa çıkacak olan kod girme formu
   const [step, setStep] = useState<'LOGIN' | 'VERIFY'>('LOGIN');
 
+  // --- TEMA (DARK/LIGHT) STATE'İ ---
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [mounted, setMounted] = useState(false); // Next.js Hydration hatasını önlemek için
+
   // --- FORM STATELERİ ---
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -46,6 +56,37 @@ export default function LoginPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
+
+  // SİSTEMİN/ÖNCEKİ SAYFANIN TEMASINI KONTROL ET
+  useEffect(() => {
+    setMounted(true);
+    const savedTheme = localStorage.getItem('theme');
+    
+    if (savedTheme === 'dark') {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    } else if (savedTheme === 'light') {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
+    } else {
+      // Eğer localStorage'da kayıt yoksa sistemin tercihine bak
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkMode(prefersDark);
+      if (prefersDark) document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    if (isDarkMode) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setIsDarkMode(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setIsDarkMode(true);
+    }
+  };
 
   // 1. GİRİŞ YAPMA İŞLEMİ
   const handleLogin = async (e: React.FormEvent) => {
@@ -141,33 +182,45 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans transition-colors duration-200 relative">
+      
+      {/* TEMA DEĞİŞTİRME BUTONU */}
+      {mounted && (
+        <button 
+          onClick={toggleTheme}
+          className="absolute top-4 right-4 p-2 rounded-full bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white shadow-sm border border-gray-200 dark:border-gray-700 transition-colors"
+          title={isDarkMode ? 'Açık Temaya Geç' : 'Koyu Temaya Geç'}
+        >
+          {isDarkMode ? <IconSun className="w-5 h-5" /> : <IconMoon className="w-5 h-5" />}
+        </button>
+      )}
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="h-12 w-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
             <IconLock className="h-8 w-8 text-white" />
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
           {step === 'LOGIN' ? 'Hesabınıza Giriş Yapın' : 'Hesabınızı Doğrulayın'}
         </h2>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl sm:rounded-2xl sm:px-10 border border-gray-100">
+        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow-xl sm:rounded-2xl sm:px-10 border border-gray-100 dark:border-gray-700 transition-colors duration-200">
           
           {/* HATA VE BİLGİLENDİRME MESAJLARI */}
           {error && (
-            <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-start">
-              <IconAlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="mb-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 rounded-md flex items-start">
+              <IconAlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 mt-0.5 mr-2 flex-shrink-0" />
+              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
             </div>
           )}
           
           {successMsg && (
-            <div className="mb-4 bg-green-50 border-l-4 border-green-500 p-4 rounded-md flex items-start">
-              <IconCheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 mr-2 flex-shrink-0" />
-              <p className="text-sm text-green-700">{successMsg}</p>
+            <div className="mb-4 bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 p-4 rounded-md flex items-start">
+              <IconCheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400 mt-0.5 mr-2 flex-shrink-0" />
+              <p className="text-sm text-green-700 dark:text-green-300">{successMsg}</p>
             </div>
           )}
 
@@ -177,34 +230,34 @@ export default function LoginPage() {
           {step === 'LOGIN' && (
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email Adresi</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email Adresi</label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <IconMail className="h-5 w-5 text-gray-400" />
+                    <IconMail className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                   </div>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-lg p-3 border outline-none transition-colors"
+                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 rounded-lg p-3 border outline-none transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
                     placeholder="ornek@mail.com"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Şifre</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Şifre</label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <IconKey className="h-5 w-5 text-gray-400" />
+                    <IconKey className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                   </div>
                   <input
                     type="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-lg p-3 border outline-none transition-colors"
+                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 rounded-lg p-3 border outline-none transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
                     placeholder="••••••••"
                   />
                 </div>
@@ -222,29 +275,28 @@ export default function LoginPage() {
 
           {/* =========================================
               ADIM 2: HESAP ONAY KODU GİRME EKRANI 
-              (Kullanıcı doğrulanmamışsa burası açılır)
               ========================================= */}
           {step === 'VERIFY' && (
             <div className="space-y-6">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-center">
-                <p className="text-sm text-blue-800 font-medium">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-100 dark:border-blue-800 text-center transition-colors">
+                <p className="text-sm text-blue-800 dark:text-blue-300 font-medium">
                   {email} adresinize ait hesabınız henüz onaylanmamış.
                 </p>
-                <p className="text-xs text-blue-600 mt-1">
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                   İşleme devam etmek için lütfen aktivasyon kodunu girin. (Test için 123456 yazın)
                 </p>
               </div>
 
               <form onSubmit={handleVerify} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 text-center mb-2">6 Haneli Kod</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 text-center mb-2">6 Haneli Kod</label>
                   <input
                     type="text"
                     required
                     maxLength={6}
                     value={activationCode}
                     onChange={(e) => setActivationCode(e.target.value)}
-                    className="focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-xl text-center font-mono tracking-widest border-gray-300 rounded-lg p-4 border outline-none transition-colors uppercase"
+                    className="focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-xl text-center font-mono tracking-widest border-gray-300 dark:border-gray-600 rounded-lg p-4 border outline-none transition-colors uppercase bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
                     placeholder="000000"
                   />
                 </div>
@@ -259,12 +311,12 @@ export default function LoginPage() {
               </form>
 
               {/* YENİDEN KOD İSTEME BUTONU */}
-              <div className="pt-4 border-t border-gray-100 flex flex-col items-center gap-3">
-                <p className="text-sm text-gray-500">Kodu bulamadınız mı?</p>
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-700 flex flex-col items-center gap-3">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Kodu bulamadınız mı?</p>
                 <button
                   onClick={handleResendCode}
                   disabled={loading}
-                  className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                  className="flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50 transition-colors"
                 >
                   <IconRefreshCw className="h-4 w-4 mr-1.5" />
                   Kodu Tekrar Gönder
@@ -275,7 +327,7 @@ export default function LoginPage() {
                  <button
                   type="button"
                   onClick={() => { setStep('LOGIN'); setError(''); setSuccessMsg(''); }}
-                  className="text-sm font-medium text-gray-500 hover:text-gray-700 flex items-center justify-center w-full"
+                  className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center justify-center w-full transition-colors"
                 >
                   <IconArrowRight className="h-4 w-4 mr-1 rotate-180" />
                   Normal Girişe Dön
