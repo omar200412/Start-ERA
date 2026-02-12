@@ -1,80 +1,245 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, createContext, useContext } from "react";
-import toast, { Toaster } from "react-hot-toast";
-import Chatbot from "../Chatbot"; // Ensure Chatbot is imported if needed or mocked internally
+import React, { useState, useEffect, createContext, useContext } from 'react';
 
-// --- API URL FIX ---
-const API_URL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_URL)
-  ? process.env.NEXT_PUBLIC_API_URL
-  : "http://127.0.0.1:8000";
+// ==========================================
+// YEREL TOAST SİSTEMİ (Bildirimler İçin)
+// ==========================================
+const toastEvents = {
+  listeners: [] as ((t: any) => void)[],
+  emit(toast: any) { this.listeners.forEach(l => l(toast)); },
+  subscribe(l: (t: any) => void) { this.listeners.push(l); return () => { this.listeners = this.listeners.filter(x => x !== l); }; }
+};
 
-// --- MOCK CONTEXT ---
-const ThemeAuthContext = createContext<any>(null);
-const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [darkMode, setDarkMode] = useState(false);
-  const user = "girisimci@startera.com"; 
-  const toggleTheme = () => setDarkMode(!darkMode);
-  const logout = () => {
-    toast.success("Çıkış yapıldı");
-    if (typeof window !== 'undefined') window.location.href = "/login";
-  };
+const toast = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'default', icon: 'ℹ️' });
+toast.success = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'success', icon: '✅' });
+toast.error = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'error', icon: '❌' });
+
+const Toaster = () => {
+  const [toasts, setToasts] = useState<any[]>([]);
+  useEffect(() => {
+    return toastEvents.subscribe((event) => {
+      setToasts(prev => [...prev, event]);
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== event.id)), 3000);
+    });
+  }, []);
+  
   return (
-    <ThemeAuthContext.Provider value={{ user, darkMode, toggleTheme, logout }}>
-      <div className={darkMode ? 'dark' : ''}>{children}</div>
-    </ThemeAuthContext.Provider>
+    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 items-end pointer-events-none">
+      {toasts.map(t => (
+        <div key={t.id} className="pointer-events-auto flex items-center gap-3 px-5 py-3 bg-white dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 animate-in slide-in-from-right-5 fade-in duration-300">
+          <span className="text-lg">{t.icon}</span>
+          <span className="text-sm font-bold">{t.msg}</span>
+        </div>
+      ))}
+    </div>
   );
 };
-const useThemeAuth = () => useContext(ThemeAuthContext);
 
-// --- ICONS ---
-const MoonIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" strokeWidth={2}/></svg>);
-const SunIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" strokeWidth={2}/></svg>);
-const HomeIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" strokeWidth={2}/></svg>);
-const LockIcon = () => (<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" strokeWidth={2}/></svg>);
-
-// --- CHATBOT BUTTON (Alternative to full Chatbot component if needed for layout) ---
-const ChatbotButton = () => (
-    <div className="fixed bottom-6 right-6 z-[60]">
-      <button onClick={() => toast("Asistan şu an müsait 🤖", { icon: '👋' })} className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition active:scale-95">🤖</button>
-    </div>
-);
-
-// --- TRANSLATIONS ---
-const TRANSLATIONS = {
-  tr: { 
-      home: "Ana Sayfa", hello: "Merhaba", subtitle: "Bugün hangi harika fikri hayata geçirmek istersin?", 
-      new_plan_title: "İş Planı Oluştur", new_plan_desc: "Fikrini saniyeler içinde profesyonel bir iş planına dönüştür.", 
-      idea_title: "İş Fikri Üretici", idea_desc: "Pazar boşluklarını analiz ederek karlı girişim fikirleri önerir.",
-      swot_title: "SWOT Analizi", swot_desc: "Girişiminin Güçlü, Zayıf yönlerini, Fırsatları ve Tehditleri raporlar.",
-      deck_title: "Yatırımcı Sunumu", deck_desc: "Yatırımcılardan fon almanı sağlayacak profesyonel sunum taslağı.",
-      coming_soon: "YAKINDA", logout_btn: "Çıkış Yap", start_btn: "Hemen Başla", locked: "Kilitli Özellik"
-  },
-  en: { 
-      home: "Home", hello: "Hello", subtitle: "Which great idea do you want to bring to life today?", 
-      new_plan_title: "Create Business Plan", new_plan_desc: "Turn your idea into a professional business plan in seconds.", 
-      idea_title: "Business Idea Generator", idea_desc: "AI suggests profitable startup ideas by analyzing market gaps.",
-      swot_title: "SWOT Analysis", swot_desc: "Analyze your startup's strengths, weaknesses, opportunities, and threats.",
-      deck_title: "Pitch Deck Creator", deck_desc: "Generate a professional pitch deck draft to get funded.",
-      coming_soon: "COMING SOON", logout_btn: "Logout", start_btn: "Start Now", locked: "Locked"
-  },
-  ar: { 
-      home: "الرئيسية", hello: "مرحباً", subtitle: "أي فكرة رائعة تريد تحقيقها اليوم؟", 
-      new_plan_title: "إنشاء خطة عمل", new_plan_desc: "حول فكرتك إلى خطة عمل احترافية في ثوانٍ.", 
-      idea_title: "مولد أفكار الأعمال", idea_desc: "يقترح الذكاء الاصطناعي أفكار عمل مربحة من خلال تحليل السوق.",
-      swot_title: "تحليل SWOT", swot_desc: "حلل نقاط القوة والضعف والفرص والتهديدات لمشروعك.",
-      deck_title: "عروض المستثمرين", deck_desc: "قم بإعداد مسودة عرض تقديمي احترافية للحصول على التمويل.",
-      coming_soon: "قريباً", logout_btn: "تسجيل الخروج", start_btn: "ابدأ الآن", locked: "مغلق"
+// ==========================================
+// MOCK ROUTER & LINK (Güvenli Yönlendirme)
+// ==========================================
+const safeRedirect = (path: string) => {
+  if (typeof window !== 'undefined') {
+      const isPreview = window.location.hostname.includes('googleusercontent') || 
+                        window.location.hostname.includes('scf') || 
+                        window.location.protocol === 'blob:';
+      
+      if (isPreview) {
+          console.log(`[Preview] Navigating to: ${path}`);
+          if (path === "/login") toast("Çıkış yapıldı (Demo)");
+          else if (path === "/planner") toast("Planner sayfasına gidiliyor... (Demo)");
+      } else {
+          window.location.href = path;
+      }
   }
 };
 
+const Link = ({ href, children, className, ...props }: any) => {
+  return (
+    <a 
+      href={href} 
+      className={className} 
+      onClick={(e) => {
+        const isPreview = typeof window !== 'undefined' && (window.location.hostname.includes('googleusercontent') || window.location.protocol === 'blob:');
+        if (isPreview) {
+            e.preventDefault();
+            if (href === "/planner") toast("Planner açılıyor...");
+            if (href === "/login") toast("Çıkış yapılıyor...");
+        }
+      }}
+      {...props}
+    >
+      {children}
+    </a>
+  );
+};
+
+// ==========================================
+// TEMA & CONTEXT
+// ==========================================
+const ThemeContext = createContext<any>(null);
+const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
+  const [darkMode, setDarkMode] = useState(false);
+  
+  useEffect(() => {
+      if (typeof window !== 'undefined') {
+          const theme = localStorage.getItem("theme");
+          if (theme === "dark" || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            setDarkMode(true);
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+      }
+  }, []);
+
+  const toggleTheme = () => {
+      const newMode = !darkMode;
+      setDarkMode(newMode);
+      localStorage.setItem("theme", newMode ? "dark" : "light");
+      if (newMode) document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
+  };
+
+  return (
+    <ThemeContext.Provider value={{ darkMode, toggleTheme }}>
+      <div className={`min-h-screen ${darkMode ? 'dark' : ''}`}>{children}</div>
+    </ThemeContext.Provider>
+  );
+};
+const useTheme = () => useContext(ThemeContext);
+
+// ==========================================
+// ÇEVİRİLER (TRANSLATIONS)
+// ==========================================
+const TRANSLATIONS = {
+  tr: {
+    welcome: "Hoş Geldin",
+    subtitle: "Bugün yeni bir başarı hikayesi yazmaya ne dersin?",
+    total_plans: "Toplam Plan",
+    completed: "Tamamlandı",
+    active_projects: "Aktif Proje",
+    quick_start: "Hızlı Başlangıç",
+    ai_badge: "Yapay Zeka Destekli",
+    create_new_plan: "Yeni İş Planı Oluştur",
+    create_plan_desc: "Sadece fikrini söyle, yapay zeka senin için pazar analizinden finansal projeksiyona kadar her şeyi hazırlasın.",
+    start_now: "Hemen Başla",
+    account_settings: "Hesap Ayarları",
+    update_profile: "Profilini güncelle",
+    recent_activity: "Son Aktiviteler",
+    view_all: "Tümünü Gör",
+    guest: "Misafir Kullanıcı",
+    pro_member: "Pro Üyelik",
+    logout_tooltip: "Çıkış Yap",
+    theme_tooltip: "Temayı Değiştir",
+    increase: "↑ %12 artış (bu ay)",
+    goal_percent: "Hedefin %65'i",
+    action_needed: "Aksiyon bekleniyor",
+    activities: [
+      { title: "Retro Cafe Planı", status: "Tamamlandı" },
+      { title: "Mobil Uygulama", status: "Taslak" },
+      { title: "E-Ticaret Sitesi", status: "İncelendi" },
+      { title: "Yatırım Sunumu", status: "Tamamlandı" },
+    ]
+  },
+  en: {
+    welcome: "Welcome",
+    subtitle: "How about writing a new success story today?",
+    total_plans: "Total Plans",
+    completed: "Completed",
+    active_projects: "Active Projects",
+    quick_start: "Quick Start",
+    ai_badge: "AI Powered",
+    create_new_plan: "Create New Business Plan",
+    create_plan_desc: "Just tell your idea, let AI prepare everything from market analysis to financial projections for you.",
+    start_now: "Start Now",
+    account_settings: "Account Settings",
+    update_profile: "Update your profile",
+    recent_activity: "Recent Activity",
+    view_all: "View All",
+    guest: "Guest User",
+    pro_member: "Pro Member",
+    logout_tooltip: "Logout",
+    theme_tooltip: "Change Theme",
+    increase: "↑ 12% increase (this month)",
+    goal_percent: "65% of Goal",
+    action_needed: "Action needed",
+    activities: [
+      { title: "Retro Cafe Plan", status: "Completed" },
+      { title: "Mobile App", status: "Draft" },
+      { title: "E-Commerce Site", status: "Reviewed" },
+      { title: "Investor Pitch", status: "Completed" },
+    ]
+  },
+  ar: {
+    welcome: "أهلاً بك",
+    subtitle: "ما رأيك في كتابة قصة نجاح جديدة اليوم؟",
+    total_plans: "إجمالي الخطط",
+    completed: "مكتمل",
+    active_projects: "مشاريع نشطة",
+    quick_start: "بداية سريعة",
+    ai_badge: "مدعوم بالذكاء الاصطناعي",
+    create_new_plan: "إنشاء خطة عمل جديدة",
+    create_plan_desc: "فقط أخبرنا بفكرتك، ودع الذكاء الاصطناعي يجهز لك كل شيء من تحليل السوق إلى التوقعات المالية.",
+    start_now: "ابدأ الآن",
+    account_settings: "إعدادات الحساب",
+    update_profile: "تحديث الملف الشخصي",
+    recent_activity: "النشاط الأخير",
+    view_all: "عرض الكل",
+    guest: "مستخدم ضيف",
+    pro_member: "عضو محترف",
+    logout_tooltip: "تسجيل الخروج",
+    theme_tooltip: "تغيير المظهر",
+    increase: "↑ زيادة بنسبة 12٪ (هذا الشهر)",
+    goal_percent: "65٪ من الهدف",
+    action_needed: "يتطلب إجراء",
+    activities: [
+      { title: "خطة مقهى ريترو", status: "مكتمل" },
+      { title: "تطبيق جوال", status: "مسودة" },
+      { title: "موقع تجارة إلكترونية", status: "تمت المراجعة" },
+      { title: "عرض استثماري", status: "مكتمل" },
+    ]
+  }
+};
+
+// ==========================================
+// İKONLAR
+// ==========================================
+const Icons = {
+  Sun: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
+  Moon: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>,
+  Logout: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>,
+  Rocket: () => <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
+  Chart: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
+  Document: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+  ArrowRight: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>,
+  Settings: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+};
+
+// ==========================================
+// DASHBOARD İÇERİĞİ
+// ==========================================
 function DashboardContent() {
-  const { user, darkMode, toggleTheme, logout } = useThemeAuth();
+  const { darkMode, toggleTheme } = useTheme();
+  const [user, setUser] = useState({ name: "Girişimci", email: "" });
+  const [stats, setStats] = useState({ plans: 12, completed: 8, pending: 4 });
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
 
+  // Çeviri Nesnesi
+  const t = TRANSLATIONS[lang];
+  const dir = lang === "ar" ? "rtl" : "ltr";
+
   useEffect(() => {
-    const savedLang = localStorage.getItem("app_lang") as "tr" | "en" | "ar";
-    if (savedLang && ["tr", "en", "ar"].includes(savedLang)) setLang(savedLang);
+    // Kullanıcı bilgilerini simüle et veya localStorage'dan al
+    const storedEmail = typeof window !== 'undefined' ? localStorage.getItem("userEmail") : "";
+    if (storedEmail) setUser(prev => ({ ...prev, email: storedEmail }));
+
+    // Kayıtlı dili al
+    const savedLang = typeof window !== 'undefined' ? localStorage.getItem("app_lang") : null;
+    if (savedLang && ["tr", "en", "ar"].includes(savedLang)) {
+        setLang(savedLang as "tr" | "en" | "ar");
+    }
   }, []);
 
   const toggleLang = () => {
@@ -84,83 +249,188 @@ function DashboardContent() {
   };
 
   const getLangLabel = () => (lang === "tr" ? "EN" : lang === "en" ? "AR" : "TR");
-  const t = TRANSLATIONS[lang];
-  const dir = lang === "ar" ? "rtl" : "ltr";
+
+  const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    safeRedirect("/login");
+  };
 
   return (
-    <div dir={dir} className={`min-h-screen p-8 font-sans transition-all duration-700 relative overflow-hidden ${darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-         <div className={`absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-20 animate-pulse ${darkMode ? 'bg-blue-900' : 'bg-blue-300'}`}></div>
-         <div className={`absolute top-[40%] -right-[10%] w-[50%] h-[70%] rounded-full blur-[130px] opacity-20 animate-pulse delay-1000 ${darkMode ? 'bg-purple-900' : 'bg-indigo-300'}`}></div>
-         <div className={`absolute -bottom-[20%] left-[20%] w-[70%] h-[50%] rounded-full blur-[110px] opacity-15 animate-pulse delay-2000 ${darkMode ? 'bg-emerald-900' : 'bg-teal-300'}`}></div>
-      </div>
-
-      <Toaster position="top-center" />
-      <ChatbotButton />
-
-      <nav className={`px-8 py-5 flex flex-col md:flex-row justify-between items-center backdrop-blur-xl sticky top-0 z-40 border-b mb-10 transition-colors rounded-2xl ${darkMode ? "bg-slate-900/60 border-slate-800" : "bg-white/60 border-slate-200"}`}>
-        <a href="/" className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-80 transition cursor-pointer mb-4 md:mb-0 no-underline">Start ERA</a>
+    <div dir={dir} className={`min-h-screen transition-colors duration-500 font-sans ${darkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}`}>
+      <Toaster />
+      
+      {/* ÜST BAR (NAVBAR) */}
+      <nav className={`px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-xl border-b transition-colors ${darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-slate-200"}`}>
+        <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">S</div>
+            <span className="font-bold text-xl tracking-tight hidden sm:block">Start ERA</span>
+        </div>
+        
         <div className="flex items-center gap-4">
-             <a href="/" className={`flex items-center gap-2 font-bold text-sm px-4 py-2.5 rounded-xl border transition-all hover:shadow-lg no-underline active:scale-95 ${darkMode ? 'border-slate-700 hover:bg-slate-800 text-slate-200' : 'border-slate-200 hover:bg-white text-slate-700 bg-white/50'}`}>
-                <HomeIcon /><span>{t.home}</span>
-             </a>
-             <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95 px-2 w-10 text-center" title="Change Language">{getLangLabel()}</button>
-             <button onClick={toggleTheme} className={`p-2.5 rounded-xl transition-all active:scale-95 ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm hover:shadow-md border border-slate-100'}`}>
-                {darkMode ? <SunIcon /> : <MoonIcon />}
-             </button>
-             <button onClick={logout} className="text-sm font-bold text-red-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-xl transition-colors">{t.logout_btn}</button>
+            <div className="hidden md:flex flex-col items-end mr-2">
+                <span className="text-sm font-bold">{user.email || t.guest}</span>
+                <span className="text-xs opacity-60">{t.pro_member}</span>
+            </div>
+            
+            <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95" title="Change Language">{getLangLabel()}</button>
+
+            <button 
+                onClick={toggleTheme} 
+                className={`p-2.5 rounded-xl transition-all active:scale-95 ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm hover:shadow-md border border-slate-100'}`}
+                title={t.theme_tooltip}
+            >
+                {darkMode ? <Icons.Sun /> : <Icons.Moon />}
+            </button>
+            
+            <button 
+                onClick={handleLogout} 
+                className="p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 transition-all active:scale-95"
+                title={t.logout_tooltip}
+            >
+                <Icons.Logout />
+            </button>
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h1 className={`text-4xl md:text-5xl font-black mb-3 tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-            {t.hello}, <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">{user?.split('@')[0]}</span> 👋
-        </h1>
-        <p className={`mb-12 text-lg font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t.subtitle}</p>
+      {/* ANA İÇERİK */}
+      <main className="max-w-7xl mx-auto p-6 md:p-8">
         
-        <div className="grid md:grid-cols-2 gap-8">
-          <a href="/planner" className={`group relative p-1 rounded-[32px] bg-gradient-to-br from-blue-500 to-indigo-600 shadow-2xl hover:shadow-blue-500/30 transition-all hover:-translate-y-2 no-underline active:scale-[0.99]`}>
-            <div className={`relative h-full p-8 rounded-[30px] flex flex-col justify-between ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
-                <div>
-                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-4xl mb-6 shadow-lg ${darkMode ? 'bg-slate-800 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>📄</div>
-                    <h3 className={`text-2xl font-bold mb-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>{t.new_plan_title}</h3>
-                    <p className={`text-base leading-relaxed mb-8 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t.new_plan_desc}</p>
-                </div>
-                <div className={`font-bold text-lg flex items-center gap-2 group-hover:gap-4 transition-all text-blue-600 ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
-                    {t.start_btn} <span className={`transition-transform ${lang === 'ar' ? 'rotate-180' : ''}`}>→</span>
-                </div>
-            </div>
-          </a>
+        {/* HOŞGELDİNİZ HEADER */}
+        <header className="mb-10">
+          <h1 className="text-3xl md:text-4xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+            {t.welcome}, {user.email.split('@')[0] || t.guest} 👋
+          </h1>
+          <p className={`text-lg ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            {t.subtitle}
+          </p>
+        </header>
 
-          {[
-            { icon: "💡", title: t.idea_title, desc: t.idea_desc, badge: "yellow" },
-            { icon: "📊", title: t.swot_title, desc: t.swot_desc, badge: "orange" },
-            { icon: "🎤", title: t.deck_title, desc: t.deck_desc, badge: "purple" }
-          ].map((item, idx) => (
-            <div key={idx} className={`relative p-8 rounded-[32px] border border-dashed transition-all hover:bg-slate-50/50 dark:hover:bg-slate-900/50 ${darkMode ? 'bg-slate-900/40 border-slate-700' : 'bg-white/60 border-slate-300'}`}>
-                <div className={`absolute top-5 right-5 text-white text-[10px] font-bold px-3 py-1 rounded-full animate-pulse uppercase tracking-wide shadow-lg ${
-                    item.badge === 'yellow' ? 'bg-yellow-500' : item.badge === 'orange' ? 'bg-orange-500' : 'bg-purple-500'
-                }`}>
-                    {t.coming_soon}
-                </div>
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-6 grayscale opacity-60 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>{item.icon}</div>
-                <h3 className={`text-xl font-bold mb-3 opacity-70 ${darkMode ? 'text-white' : 'text-slate-900'}`}>{item.title}</h3>
-                <p className={`text-sm opacity-60 mb-6 leading-relaxed ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{item.desc}</p>
-                <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <LockIcon /> <span>{t.locked}</span>
+        {/* İSTATİSTİKLER GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+           {/* Kart 1 */}
+           <div className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden group ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className={`absolute top-0 ${lang === 'ar' ? 'left-0' : 'right-0'} p-4 opacity-5 group-hover:scale-110 transition-transform duration-500`}>
+                 <div className="w-24 h-24 bg-blue-500 rounded-full blur-2xl"></div>
+              </div>
+              <div className="flex items-center gap-4 mb-4">
+                 <div className="p-3 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"><Icons.Document /></div>
+                 <span className="font-bold opacity-60">{t.total_plans}</span>
+              </div>
+              <div className="text-4xl font-black">{stats.plans}</div>
+              <div className="text-sm mt-2 text-green-500 font-medium">{t.increase}</div>
+           </div>
+
+           {/* Kart 2 */}
+           <div className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden group ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className={`absolute top-0 ${lang === 'ar' ? 'left-0' : 'right-0'} p-4 opacity-5 group-hover:scale-110 transition-transform duration-500`}>
+                 <div className="w-24 h-24 bg-purple-500 rounded-full blur-2xl"></div>
+              </div>
+              <div className="flex items-center gap-4 mb-4">
+                 <div className="p-3 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"><Icons.Chart /></div>
+                 <span className="font-bold opacity-60">{t.completed}</span>
+              </div>
+              <div className="text-4xl font-black">{stats.completed}</div>
+              <div className="text-sm mt-2 text-purple-500 font-medium">{t.goal_percent}</div>
+           </div>
+
+           {/* Kart 3 */}
+           <div className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden group ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+               <div className={`absolute top-0 ${lang === 'ar' ? 'left-0' : 'right-0'} p-4 opacity-5 group-hover:scale-110 transition-transform duration-500`}>
+                 <div className="w-24 h-24 bg-orange-500 rounded-full blur-2xl"></div>
+              </div>
+              <div className="flex items-center gap-4 mb-4">
+                 <div className="p-3 rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"><Icons.Rocket /></div>
+                 <span className="font-bold opacity-60">{t.active_projects}</span>
+              </div>
+              <div className="text-4xl font-black">{stats.pending}</div>
+              <div className="text-sm mt-2 text-orange-500 font-medium">{t.action_needed}</div>
+           </div>
+        </div>
+
+        {/* HIZLI AKSİYONLAR & SON AKTİVİTELER */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* SOL KOLON: PLANNER'A GİT (BÜYÜK KART) */}
+            <div className="lg:col-span-2">
+                <h3 className="text-xl font-bold mb-5 flex items-center gap-2">{t.quick_start}</h3>
+                <Link href="/planner" className="block group">
+                    <div className={`relative p-8 rounded-[32px] overflow-hidden border transition-all duration-300 hover:shadow-2xl ${darkMode ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700 hover:border-blue-500/50' : 'bg-gradient-to-br from-white to-blue-50 border-slate-200 hover:border-blue-300'}`}>
+                        <div className={`absolute top-0 ${lang === 'ar' ? 'left-0' : 'right-0'} w-64 h-64 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full blur-[80px] opacity-20 group-hover:opacity-30 transition-opacity`}></div>
+                        
+                        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                            <div>
+                                <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 text-xs font-bold uppercase tracking-wider mb-3">{t.ai_badge}</div>
+                                <h2 className="text-3xl font-black mb-2">{t.create_new_plan}</h2>
+                                <p className={`max-w-md ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                                    {t.create_plan_desc}
+                                </p>
+                            </div>
+                            <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                                <Icons.Rocket />
+                            </div>
+                        </div>
+                        
+                        <div className="mt-8 flex items-center gap-2 font-bold text-blue-600 dark:text-blue-400 group-hover:gap-4 transition-all">
+                            {t.start_now} <span className={lang === 'ar' ? 'rotate-180' : ''}><Icons.ArrowRight /></span>
+                        </div>
+                    </div>
+                </Link>
+
+                {/* AYARLAR KARTI (KÜÇÜK) */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className={`p-6 rounded-2xl border transition-all cursor-pointer hover:shadow-lg ${darkMode ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                        <div className="flex items-center gap-4">
+                             <div className="p-3 bg-gray-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-400"><Icons.Settings /></div>
+                             <div>
+                                 <h4 className="font-bold text-lg">{t.account_settings}</h4>
+                                 <p className="text-xs opacity-60">{t.update_profile}</p>
+                             </div>
+                        </div>
+                    </div>
+                    {/* Buraya başka bir küçük kart eklenebilir */}
                 </div>
             </div>
-          ))}
+
+            {/* SAĞ KOLON: SON AKTİVİTELER */}
+            <div>
+                <h3 className="text-xl font-bold mb-5">{t.recent_activity}</h3>
+                <div className={`p-6 rounded-3xl border ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
+                    <div className="space-y-6">
+                        {t.activities.map((item, i) => (
+                            <div key={i} className="flex items-center gap-4 group cursor-pointer">
+                                <div className={`w-2 h-2 rounded-full mt-1 ${item.status === t.activities[0].status || item.status === t.activities[3].status ? 'bg-green-500' : item.status === t.activities[1].status ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-sm group-hover:text-blue-500 transition-colors">{item.title}</h4>
+                                    <p className="text-xs opacity-50">
+                                      {/* Basit tarih simülasyonu */}
+                                      {i === 0 ? "2h" : i === 1 ? "1d" : i === 2 ? "3d" : "1w"}
+                                    </p>
+                                </div>
+                                <span className={`text-xs font-bold px-2 py-1 rounded-md bg-opacity-10 
+                                  ${item.status === t.activities[0].status || item.status === t.activities[3].status ? 'bg-green-500 text-green-500' : 
+                                    item.status === t.activities[1].status ? 'bg-orange-500 text-orange-500' : 'bg-blue-500 text-blue-500'}`}>
+                                    {item.status}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                    <button className="w-full mt-6 py-3 text-sm font-bold text-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors border-t border-dashed dark:border-slate-700">
+                        {t.view_all}
+                    </button>
+                </div>
+            </div>
+
         </div>
-      </div>
+
+      </main>
     </div>
   );
 }
 
 export default function App() {
   return (
-    <ThemeAuthProvider>
+    <ThemeProvider>
       <DashboardContent />
-    </ThemeAuthProvider>
+    </ThemeProvider>
   );
 }

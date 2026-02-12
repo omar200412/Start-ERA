@@ -1,9 +1,54 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect, useRef, createContext, useContext } from "react";
-import toast, { Toaster } from "react-hot-toast";
 
-// --- API URL (Güvenli) ---
+// ==========================================
+// YEREL TOAST SİSTEMİ (Harici paket bağımlılığını kaldırmak için)
+// ==========================================
+const toastEvents = {
+  listeners: [] as ((t: any) => void)[],
+  emit(toast: any) { this.listeners.forEach(l => l(toast)); },
+  subscribe(l: (t: any) => void) { this.listeners.push(l); return () => { this.listeners = this.listeners.filter(x => x !== l); }; }
+};
+
+const toast = (msg: string, opts?: any) => toastEvents.emit({ id: Date.now(), msg, type: 'default', icon: opts?.icon });
+toast.success = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'success', icon: '✅' });
+toast.error = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'error', icon: '❌' });
+toast.loading = (msg: string) => { const id = Date.now(); toastEvents.emit({ id, msg, type: 'loading', icon: '⏳' }); return id; };
+toast.dismiss = (id: number) => toastEvents.emit({ id, type: 'dismiss' });
+
+const Toaster = () => {
+  const [toasts, setToasts] = useState<any[]>([]);
+  useEffect(() => {
+    return toastEvents.subscribe((event) => {
+      if (event.type === 'dismiss') {
+        setToasts(prev => prev.filter(t => t.id !== event.id));
+      } else {
+        setToasts(prev => [...prev, event]);
+        if (event.type !== 'loading') {
+          setTimeout(() => setToasts(prev => prev.filter(t => t.id !== event.id)), 3000);
+        }
+      }
+    });
+  }, []);
+  
+  return (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none">
+      {toasts.map(t => (
+        <div key={t.id} className="pointer-events-auto flex items-center gap-3 px-6 py-3 bg-white dark:bg-slate-800 text-slate-800 dark:text-white rounded-full shadow-2xl border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-5 fade-in duration-300">
+          <span className="text-xl">{t.icon}</span>
+          <span className="text-sm font-bold">{t.msg}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ==========================================
+// AYARLAR & MOCK YAPILAR
+// ==========================================
+
+// API URL (Güvenli)
 const getApiUrl = () => {
   if (typeof window === 'undefined') return "";
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -13,20 +58,21 @@ const getApiUrl = () => {
 };
 const API_URL = getApiUrl();
 
-// --- MOCK ROUTER (AKILLI YÖNLENDİRME) ---
+// MOCK ROUTER (Önizleme Ortamı İçin Güvenli Yönlendirme)
 const useRouter = () => {
   return {
     push: (path: string) => {
       if (typeof window !== 'undefined') {
-         // Önizleme ortamı kontrolü (googleusercontent veya blob)
-         const isPreview = window.location.hostname.includes('googleusercontent') || window.location.protocol === 'blob:';
+         // Önizleme ortamı kontrolü
+         const isPreview = window.location.hostname.includes('googleusercontent') || 
+                           window.location.hostname.includes('scf') || 
+                           window.location.protocol === 'blob:';
          
          if (isPreview) {
              console.log(`[Preview] Navigating to: ${path}`);
              if (path === "/login") toast("Giriş yapmanız gerekiyor (Demo)", { icon: '🔒' });
              else if (path === "/dashboard") toast("Dashboard'a yönlendiriliyor... (Demo)", { icon: '🏠' });
          } else {
-             // GERÇEK ORTAM (Localhost / Vercel) -> Yönlendir
              window.location.href = path;
          }
       }
@@ -34,22 +80,20 @@ const useRouter = () => {
   };
 };
 
-// --- MOCK LINK (AKILLI LINK) ---
+// MOCK LINK
 const Link = ({ href, children, className, ...props }: any) => {
   return (
     <a 
       href={href} 
       className={className} 
       onClick={(e) => {
-        const isPreview = window.location.hostname.includes('googleusercontent') || window.location.protocol === 'blob:';
+        const isPreview = typeof window !== 'undefined' && (window.location.hostname.includes('googleusercontent') || window.location.protocol === 'blob:');
         
         if (isPreview) {
-            // Sadece önizleme ortamında yönlendirmeyi engelle
             e.preventDefault();
             console.log("Link clicked (Demo):", href);
             if (href === "/dashboard") toast("Dashboard'a dönülüyor... (Demo)", { icon: '🏠' });
         }
-        // Gerçek ortamda hiçbir şey yapma, bırak <a> etiketi çalışsın
       }}
       {...props}
     >
@@ -67,7 +111,12 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
       if (typeof window !== 'undefined') {
           const theme = localStorage.getItem("theme");
-          if (theme === "dark") setDarkMode(true);
+          if (theme === "dark" || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            setDarkMode(true);
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
       }
   }, []);
 
@@ -75,17 +124,19 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
       const newMode = !darkMode;
       setDarkMode(newMode);
       localStorage.setItem("theme", newMode ? "dark" : "light");
+      if (newMode) document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
   };
 
   return (
     <ThemeAuthContext.Provider value={{ user, darkMode, toggleTheme }}>
-      <div className={darkMode ? 'dark' : ''}>{children}</div>
+      <div className={`min-h-screen ${darkMode ? 'dark' : ''}`}>{children}</div>
     </ThemeAuthContext.Provider>
   );
 };
 const useThemeAuth = () => useContext(ThemeAuthContext);
 
-// --- CHATBOT BİLEŞENİ (Inline) ---
+// --- CHATBOT BİLEŞENİ ---
 const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
@@ -106,16 +157,18 @@ const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
     setIsTyping(true);
 
     try {
-      const res = await fetch(`${API_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: currentInput }),
-      });
-      if (!res.ok) throw new Error("API Hatası");
-      const data = await res.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      // Simüle edilmiş yanıt
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const replies = [
+        "Harika bir fikir! Bunun pazar payı oldukça yüksek olabilir.",
+        "Sermaye konusunda melek yatırımcıları düşündünüz mü?",
+        "Ekibinize bir yazılımcı dahil etmek süreci hızlandırabilir.",
+        "Rakip analizi yaparken SWOT tablosunu unutmayın."
+      ];
+      const randomReply = replies[Math.floor(Math.random() * replies.length)];
+      setMessages((prev) => [...prev, { role: "assistant", content: randomReply }]);
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "⚠️ Şu an demo modundayız. Yapay zeka bağlantısı kurulamadığında bu mesajı görüyorsunuz." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "⚠️ Şu an demo modundayız." }]);
     } finally {
       setIsTyping(false);
     }
@@ -124,38 +177,31 @@ const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
   return (
     <div className="fixed bottom-6 right-6 z-[60]">
       {isOpen ? (
-        <div className={`w-80 md:w-96 h-[500px] flex flex-col rounded-2xl shadow-2xl border ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+        <div className={`w-80 md:w-96 h-[500px] flex flex-col rounded-2xl shadow-2xl border transition-colors ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
           <div className="p-4 bg-blue-600 text-white rounded-t-2xl flex justify-between items-center">
             <span className="font-bold">Start ERA AI 🚀</span>
             <button onClick={() => setIsOpen(false)}>✕</button>
           </div>
           <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-4">
-            {messages.length === 0 && <p className="text-center text-sm opacity-50 mt-10">Nasıl yardımcı olabilirim?</p>}
+            {messages.length === 0 && <p className="text-center text-sm opacity-50 mt-10">Fikrinizi geliştirmek için bana sorabilirsiniz!</p>}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`p-3 rounded-2xl text-sm ${msg.role === "user" ? "bg-blue-600 text-white" : (darkMode ? "bg-slate-700" : "bg-slate-100")}`}>{msg.content}</div>
+                <div className={`p-3 rounded-2xl text-sm max-w-[80%] ${msg.role === "user" ? "bg-blue-600 text-white" : (darkMode ? "bg-slate-700" : "bg-slate-100")}`}>{msg.content}</div>
               </div>
             ))}
-            {isTyping && <div className="text-xs animate-pulse">...</div>}
+            {isTyping && <div className="text-xs animate-pulse opacity-50">Yazıyor...</div>}
           </div>
           <div className="p-4 border-t dark:border-slate-700 flex gap-2">
-            <input className={`flex-1 p-2 rounded-lg outline-none text-sm ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`} placeholder="Mesaj yaz..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} />
-            <button onClick={handleSend} className="p-2 bg-blue-600 text-white rounded-lg">🚀</button>
+            <input className={`flex-1 p-2 rounded-lg outline-none text-sm border ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`} placeholder="Mesaj yaz..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} />
+            <button onClick={handleSend} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">🚀</button>
           </div>
         </div>
       ) : (
-        <button onClick={() => setIsOpen(true)} className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition">💬</button>
+        <button onClick={() => setIsOpen(true)} className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition animate-bounce-slow">💬</button>
       )}
     </div>
   );
 };
-
-// --- CHATBOT BUTTON ---
-const ChatbotButton = () => (
-    <div className="fixed bottom-6 right-6 z-[60]">
-      <button onClick={() => toast("Yardım asistanı 🤖", { icon: '👋' })} className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition active:scale-95">🤖</button>
-    </div>
-);
 
 // --- DİĞER BİLEŞENLER ---
 const TypewriterEffect = ({ text, speed = 5 }: { text: string, speed?: number }) => {
@@ -259,12 +305,9 @@ function PlannerContent() {
   const [formData, setFormData] = useState({ idea: "", capital: "", skills: "", strategy: "", management: "", language: "tr" });
   const router = useRouter();
 
+  // Dil ayarını yükle
   useEffect(() => {
     if (typeof window !== 'undefined') {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            router.push("/login");
-        }
         const savedLang = localStorage.getItem("app_lang") as "tr" | "en" | "ar";
         if (savedLang && ["tr", "en", "ar"].includes(savedLang)) { setLang(savedLang); setFormData(prev => ({ ...prev, language: savedLang })); }
     }
@@ -304,22 +347,19 @@ function PlannerContent() {
   const generatePlan = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/generate_plan`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) });
+      // Gerçek API isteği simülasyonu
+      // const res = await fetch(`${API_URL}/generate_plan`, ...);
       
-      // Hata kontrolü
-      if (!res.ok) {
-          throw new Error("API Connection Error");
-      }
+      // Hata fırlatarak fallback mekanizmasını test edelim (veya gerçek API yoksa)
+      throw new Error("Demo Mode");
       
-      const data = await res.json();
-      setPlanResult(data.plan);
-      toast.success(t.toast_success);
     } catch {
       // --- DETAYLI FALLBACK (DEMO) PLAN ---
       // Kullanıcının girdilerini kullanarak dinamik ve gerçekçi bir plan oluşturuyoruz.
-      toast.success("Örnek plan başarıyla oluşturuldu (Demo Modu)", { icon: '✨' });
-      
-      const fallbackPlan = `
+      setTimeout(() => {
+        toast.success("İş planı başarıyla oluşturuldu! (Demo)");
+        
+        const fallbackPlan = `
 1. YÖNETİCİ ÖZETİ
 "${formData.idea}" girişimi, sektördeki önemli bir ihtiyacı karşılamayı ve benzersiz bir değer önerisi sunmayı hedeflemektedir. "${formData.management}" tarafından yönetilen ve "${formData.skills}" yetkinliklerine sahip güçlü bir ekip ile yola çıkılmaktadır. Başlangıç sermayesi olarak belirlenen "${formData.capital}" tutarı, projenin ilk aşamalarını finanse etmek ve pazara giriş yapmak için stratejik olarak kullanılacaktır.
 
@@ -342,34 +382,45 @@ Mevcut sermaye ("${formData.capital}"), ürün geliştirme (MVP), pazarlama ve o
 - 4. Çeyrek: "${formData.strategy}" hedefi doğrultusunda büyüme ve yeni pazarlara açılma hazırlıkları.
 
 Bu iş planı, girişiminizi başarıya ulaştırmak için sağlam bir temel ve yol haritası sunmaktadır. Vizyonunuz ve kararlılığınızla hedeflerinize ulaşacağınıza inancımız tamdır.
-      `;
-      setPlanResult(fallbackPlan);
-    } finally { setLoading(false); }
+        `;
+        setPlanResult(fallbackPlan);
+        setLoading(false);
+      }, 5000); // 5 saniye bekleme efekti
+    } 
   };
 
   const downloadPDF = async () => {
     if (!planResult) return;
     const tid = toast.loading(t.toast_pdf_preparing);
-    try {
-        const res = await fetch(`${API_URL}/create_pdf`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: planResult }) });
-        if (!res.ok) throw new Error("PDF Error");
-        const blob = await res.blob();
+    
+    // PDF İndirme Simülasyonu
+    setTimeout(() => {
+        toast.dismiss(tid);
+        // Basit bir text dosyası indirerek PDF simülasyonu yapalım
+        const blob = new Blob([planResult], { type: "text/plain;charset=utf-8" });
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a"); a.href = url; a.download = "StartERA_Plan.pdf"; document.body.appendChild(a); a.click(); a.remove();
+        const a = document.createElement("a"); 
+        a.href = url; 
+        a.download = "StartERA_Plan.txt"; // Gerçek PDF kütüphanesi olmadığı için txt
+        document.body.appendChild(a); 
+        a.click(); 
+        a.remove();
         toast.success(t.toast_pdf_success);
-    } catch { toast.error(t.toast_pdf_error); } finally { toast.dismiss(tid); }
+    }, 1500);
   };
 
   if (!user) return <div className="flex h-screen items-center justify-center text-slate-500">Lütfen giriş yapın.</div>;
 
   return (
-    <div dir={dir} className={`min-h-screen transition-all duration-700 relative overflow-hidden ${darkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`}>
+    <div dir={dir} className={`min-h-screen transition-all duration-700 relative overflow-hidden font-sans ${darkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`}>
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
          <div className={`absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-20 animate-pulse ${darkMode ? 'bg-blue-900' : 'bg-blue-300'}`}></div>
          <div className={`absolute top-[40%] -right-[10%] w-[50%] h-[70%] rounded-full blur-[130px] opacity-20 animate-pulse delay-1000 ${darkMode ? 'bg-purple-900' : 'bg-indigo-300'}`}></div>
       </div>
-      <Toaster position="top-center" />
+      
+      <Toaster />
       <Chatbot lang={lang} darkMode={darkMode} />
+      
       <nav className={`px-8 py-5 flex justify-between items-center backdrop-blur-lg sticky top-0 z-40 border-b transition-colors ${darkMode ? "bg-slate-900/60 border-slate-800" : "bg-white/60 border-slate-200"}`}>
         <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">S</div>
@@ -378,9 +429,10 @@ Bu iş planı, girişiminizi başarıya ulaştırmak için sağlam bir temel ve 
         <div className="flex items-center gap-4">
              <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95" title="Change Language">{getLangLabel()}</button>
              <button onClick={toggleTheme} className={`p-2.5 rounded-xl transition-all active:scale-95 ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm hover:shadow-md border border-slate-100'}`}>{darkMode ? <SunIcon /> : <MoonIcon />}</button>
-             <Link href="/dashboard" className={`px-5 py-2.5 rounded-xl font-bold text-sm border transition-all hover:shadow-lg no-underline active:scale-95 ${darkMode ? "border-slate-700 hover:bg-slate-800 text-slate-200" : "border-slate-200 hover:bg-white text-slate-900 bg-white/50"}`}>{t.nav_back}</Link>
+             <Link href="/dashboard" className={`px-5 py-2.5 rounded-xl font-bold text-sm border transition-all hover:shadow-lg no-underline active:scale-95 flex items-center ${darkMode ? "border-slate-700 hover:bg-slate-800 text-slate-200" : "border-slate-200 hover:bg-white text-slate-900 bg-white/50"}`}>{t.nav_back}</Link>
         </div>
       </nav>
+
       <div className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-5xl mx-auto min-h-[calc(100vh-80px)]">
         {planResult ? (
             <div className={`relative w-full p-[1px] rounded-[32px] bg-gradient-to-br from-blue-500/30 via-purple-500/30 to-pink-500/30 shadow-2xl animate-in fade-in zoom-in-95 duration-700`}>
