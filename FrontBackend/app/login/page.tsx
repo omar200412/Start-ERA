@@ -1,19 +1,33 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, Lock, Key, AlertCircle, CheckCircle2, RefreshCw, ArrowRight } from 'lucide-react';
 // import { useRouter } from 'next/navigation'; // Yönlendirme için (Next.js App Router)
 
-// --- TYPE ÇAKIŞMASI ÇÖZÜMÜ ---
-// lucide-react ikonlarının TypeScript "Not a valid JSX element" hatasını 
-// önlemek için ElementType olarak tanımlıyoruz.
-const IconMail = Mail as React.ElementType;
-const IconLock = Lock as React.ElementType;
-const IconKey = Key as React.ElementType;
-const IconAlertCircle = AlertCircle as React.ElementType;
-const IconCheckCircle2 = CheckCircle2 as React.ElementType;
-const IconRefreshCw = RefreshCw as React.ElementType;
-const IconArrowRight = ArrowRight as React.ElementType;
+// ==========================================
+// İKONLAR (lucide-react paketi yerine yerel SVG olarak eklendi - Build Hatası Çözümü)
+// ==========================================
+const IconMail = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+);
+const IconLock = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+);
+const IconKey = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>
+);
+const IconAlertCircle = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+);
+const IconCheckCircle2 = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+);
+const IconRefreshCw = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+);
+const IconArrowRight = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+);
+
 
 export default function LoginPage() {
   // const router = useRouter(); // Başarılı girişte yönlendirmek için
