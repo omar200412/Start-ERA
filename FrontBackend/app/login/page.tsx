@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-// import { useRouter } from 'next/navigation'; // Yönlendirme için (Next.js App Router)
+import { useRouter } from 'next/navigation'; // Yönlendirme için aktif edildi
 
 // ==========================================
 // İKONLAR (lucide-react paketi yerine yerel SVG olarak eklendi - Build Hatası Çözümü)
@@ -29,7 +29,7 @@ const IconMoon = ({ className }: { className?: string }) => (
 );
 
 export default function LoginPage() {
-  // const router = useRouter(); // Başarılı girişte yönlendirmek için
+  const router = useRouter(); // Yönlendirme objesi aktif edildi
 
   // --- TEMA (DARK/LIGHT) STATE'İ ---
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
@@ -92,7 +92,8 @@ export default function LoginPage() {
       // Eğer kullanıcı adı/şifre doğruysa:
       setSuccessMsg('Giriş başarılı! Yönlendiriliyorsunuz...');
       
-      // router.push('/dashboard'); // Başarılıysa dashboarda at
+      // Başarılı girişten sonra yönlendirme yapılıyor:
+      router.push('/dashboard'); 
 
     } catch (err: any) {
       setError(err.response?.data?.message || 'Giriş yapılırken bir hata oluştu.');
