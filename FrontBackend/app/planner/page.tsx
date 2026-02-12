@@ -63,7 +63,6 @@ const useRouter = () => {
   return {
     push: (path: string) => {
       if (typeof window !== 'undefined') {
-         // Önizleme ortamı kontrolü
          const isPreview = window.location.hostname.includes('googleusercontent') || 
                            window.location.hostname.includes('scf') || 
                            window.location.protocol === 'blob:';
@@ -106,16 +105,23 @@ const Link = ({ href, children, className, ...props }: any) => {
 const ThemeAuthContext = createContext<any>(null);
 const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [darkMode, setDarkMode] = useState(false);
-  const user = "girisimci@startera.com"; 
+  const [user, setUser] = useState({ email: "girisimci@startera.com" });
   
   useEffect(() => {
       if (typeof window !== 'undefined') {
+          // Tema Yükle
           const theme = localStorage.getItem("theme");
           if (theme === "dark" || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             setDarkMode(true);
             document.documentElement.classList.add('dark');
           } else {
             document.documentElement.classList.remove('dark');
+          }
+
+          // Kullanıcı Yükle (Gerçekçi)
+          const storedEmail = localStorage.getItem("userEmail");
+          if (storedEmail) {
+            setUser({ email: storedEmail });
           }
       }
   }, []);
@@ -157,7 +163,6 @@ const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
     setIsTyping(true);
 
     try {
-      // Simüle edilmiş yanıt
       await new Promise(resolve => setTimeout(resolve, 1000));
       const replies = [
         "Harika bir fikir! Bunun pazar payı oldukça yüksek olabilir.",
@@ -204,19 +209,6 @@ const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
 };
 
 // --- DİĞER BİLEŞENLER ---
-const TypewriterEffect = ({ text, speed = 5 }: { text: string, speed?: number }) => {
-  const [displayedText, setDisplayedText] = useState("");
-  useEffect(() => {
-    let i = 0;
-    const timer = setInterval(() => {
-      if (i < text.length) { setDisplayedText((prev) => prev + text.charAt(i)); i++; } 
-      else clearInterval(timer);
-    }, speed);
-    return () => clearInterval(timer);
-  }, [text, speed]);
-  return <div className="whitespace-pre-wrap leading-relaxed">{displayedText}</div>;
-};
-
 const LoadingOverlay = ({ messages }: { messages: string[] }) => {
   const [message, setMessage] = useState(messages[0]);
   useEffect(() => {
@@ -248,7 +240,7 @@ const TRANSLATIONS = {
     start_magic: "Sihri Başlat", generating: "Plan Yazılıyor...", success_title: "İş Planın Hazır!",
     success_desc: (idea: string) => `Yapay zeka, "${idea}" fikrin için stratejiyi oluşturdu.`,
     download_pdf: "PDF Olarak İndir", new_plan: "Yeni Plan Oluştur",
-    toast_success: "İş planınız başarıyla oluşturuldu!", toast_error: "Bir hata oluştu",
+    toast_success: "İş planınız başarıyla oluşturuldu ve kaydedildi!", toast_error: "Bir hata oluştu",
     toast_pdf_preparing: "PDF hazırlanıyor...", toast_pdf_success: "PDF İndirildi!", toast_pdf_error: "PDF oluşturulamadı.",
     err_empty: "Bu alan boş bırakılamaz.", err_capital: "Lütfen geçerli bir tutar girin.", err_short: "Yapay zekanın iyi çalışması için biraz daha detay verin.",
     loading_messages: ["Pazar verileri taranıyor...", "Rakip analizi yapılıyor...", "Finansal projeksiyonlar hesaplanıyor...", "SWOT tablosu oluşturuluyor...", "Yatırımcı sunumu için strateji belirleniyor...", "Son dokunuşlar yapılıyor ✨"],
@@ -265,7 +257,7 @@ const TRANSLATIONS = {
     start_magic: "Start Magic", generating: "Writing Plan...", success_title: "Business Plan Ready!",
     success_desc: (idea: string) => `AI has created a strategy for your "${idea}" idea.`,
     download_pdf: "Download PDF", new_plan: "Create New Plan",
-    toast_success: "Business plan created successfully!", toast_error: "An error occurred",
+    toast_success: "Business plan created and saved successfully!", toast_error: "An error occurred",
     toast_pdf_preparing: "Preparing PDF...", toast_pdf_success: "PDF Downloaded!", toast_pdf_error: "Could not generate PDF.",
     err_empty: "This field cannot be empty.", err_capital: "Please enter a valid amount.", err_short: "Please provide a bit more detail.",
     loading_messages: ["Scanning market data...", "Analyzing competitors...", "Calculating financial projections...", "Creating SWOT table...", "Strategizing for investor pitch...", "Adding final touches ✨"],
@@ -282,7 +274,7 @@ const TRANSLATIONS = {
     start_magic: "ابدأ السحر", generating: "جاري كتابة الخطة...", success_title: "خطة العمل جاهزة!",
     success_desc: (idea: string) => `قام الذكاء الاصطناعي بإنشاء استراتيجية لفكرتك "${idea}".`,
     download_pdf: "تحميل PDF", new_plan: "إنشاء خطة جديدة",
-    toast_success: "تم إنشاء خطة العمل بنجاح!", toast_error: "حدث خطأ",
+    toast_success: "تم إنشاء وحفظ خطة العمل بنجاح!", toast_error: "حدث خطأ",
     toast_pdf_preparing: "جاري تحضير PDF...", toast_pdf_success: "تم تحميل PDF!", toast_pdf_error: "تعذر إنشاء PDF.",
     err_empty: "لا يمكن ترك هذا الحقل فارغًا.", err_capital: "يرجى إدخال مبلغ صالح.", err_short: "يرجى تقديم مزيد من التفاصيل.",
     loading_messages: ["جاري مسح بيانات السوق...", "تحليل المنافسين...", "حساب التوقعات المالية...", "إنشاء جدول SWOT...", "وضع استراتيجية لعرض المستثمرين...", "إضافة اللمسات الأخيرة ✨"],
@@ -301,11 +293,11 @@ function PlannerContent() {
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [planResult, setPlanResult] = useState<string | null>(null);
+  // planResult artık bir obje dizisi tutacak
+  const [planResult, setPlanResult] = useState<{ title: string; content: string }[] | null>(null);
   const [formData, setFormData] = useState({ idea: "", capital: "", skills: "", strategy: "", management: "", language: "tr" });
   const router = useRouter();
 
-  // Dil ayarını yükle
   useEffect(() => {
     if (typeof window !== 'undefined') {
         const savedLang = localStorage.getItem("app_lang") as "tr" | "en" | "ar";
@@ -347,45 +339,46 @@ function PlannerContent() {
   const generatePlan = async () => {
     setLoading(true);
     try {
-      // Gerçek API isteği simülasyonu
-      // const res = await fetch(`${API_URL}/generate_plan`, ...);
-      
-      // Hata fırlatarak fallback mekanizmasını test edelim (veya gerçek API yoksa)
       throw new Error("Demo Mode");
-      
     } catch {
-      // --- DETAYLI FALLBACK (DEMO) PLAN ---
-      // Kullanıcının girdilerini kullanarak dinamik ve gerçekçi bir plan oluşturuyoruz.
       setTimeout(() => {
-        toast.success("İş planı başarıyla oluşturuldu! (Demo)");
+        // BLOKLAR HALİNDE PLAN OLUŞTURMA
+        const fallbackPlan = [
+          { 
+            title: "YÖNETİCİ ÖZETİ (EXECUTIVE SUMMARY)", 
+            content: `"${formData.idea}" girişimi, sektördeki önemli bir ihtiyacı karşılamayı ve benzersiz bir değer önerisi sunmayı hedeflemektedir. "${formData.management}" liderliğindeki ekip ve "${formData.skills}" yetkinlikleri ile pazara güçlü bir giriş yapılacaktır.`
+          },
+          { 
+            title: "İŞ MODELİ VE STRATEJİ", 
+            content: `İş modelimiz, sürdürülebilir büyüme, müşteri sadakati ve yenilikçi çözümler üzerine kuruludur. Rakiplerimizden, sunduğumuz özelleştirilmiş deneyim ve "${formData.skills}" konusundaki derin uzmanlığımızla ayrışmaktayız.`
+          },
+          { 
+            title: "FİNANSAL PLAN VE YATIRIM", 
+            content: `Mevcut "${formData.capital}" sermaye; MVP geliştirme, dijital pazarlama kampanyaları ve ilk operasyonel giderler için stratejik olarak kullanılacaktır. İlk 12 ay sonunda başabaş noktasına (breakeven) ulaşılması ve ardından kârlılığa geçilmesi öngörülmektedir.`
+          },
+          { 
+            title: "GELECEK VİZYONU VE HEDEFLER", 
+            content: `"${formData.strategy}" vizyonu doğrultusunda, markamızın sektörde güvenilir bir lider konumuna gelmesi hedeflenmektedir. Orta vadede yeni pazarlara açılma ve ürün gamını genişletme planları mevcuttur.`
+          }
+        ];
         
-        const fallbackPlan = `
-1. YÖNETİCİ ÖZETİ
-"${formData.idea}" girişimi, sektördeki önemli bir ihtiyacı karşılamayı ve benzersiz bir değer önerisi sunmayı hedeflemektedir. "${formData.management}" tarafından yönetilen ve "${formData.skills}" yetkinliklerine sahip güçlü bir ekip ile yola çıkılmaktadır. Başlangıç sermayesi olarak belirlenen "${formData.capital}" tutarı, projenin ilk aşamalarını finanse etmek ve pazara giriş yapmak için stratejik olarak kullanılacaktır.
-
-2. İŞ MODELİ VE ÜRÜN
-İş modelimiz, müşteri odaklılık ve sürdürülebilir büyüme üzerine kuruludur. Temel ürün/hizmetimiz, rakiplerinden kalite, kullanıcı deneyimi ve inovasyon ile ayrışmaktadır. Gelir modeli, pazar dinamiklerine uygun olarak çeşitlendirilmiş olup, hem kısa vadeli nakit akışı hem de uzun vadeli müşteri sadakati sağlamayı amaçlamaktadır. "${formData.skills}" alanındaki uzmanlığımız, ürünün sürekli geliştirilmesinde kritik rol oynayacaktır.
-
-3. PAZAR ANALİZİ VE HEDEF KİTLE
-Hedef pazarımız, yenilikçi çözümlere açık, kaliteye önem veren ve çözüm arayan bilinçli bir kitleyi kapsamaktadır. Pazar analizi, büyüme potansiyelinin yüksek olduğunu ve doğru konumlandırma ile önemli bir pazar payı elde edilebileceğini göstermektedir. Rekabet analizi, esnek yapımızın ve hızlı adaptasyon yeteneğimizin büyük oyunculara karşı avantaj sağlayacağını ortaya koymaktadır.
-
-4. PAZARLAMA VE SATIŞ STRATEJİSİ
-Pazarlama stratejimiz, dijital kanalları (sosyal medya, SEO, içerik pazarlaması) etkin kullanarak marka bilinirliği oluşturmaya odaklanacaktır. Başlangıç bütçesi ("${formData.capital}") verimli kullanılarak, doğrudan hedef kitleye yönelik, ölçülebilir ve yüksek dönüşüm oranlı kampanyalar düzenlenecektir. Müşteri memnuniyeti ve referanslar, büyüme stratejimizin merkezinde yer alacaktır.
-
-5. FİNANSAL PLAN VE YATIRIM
-Mevcut sermaye ("${formData.capital}"), ürün geliştirme (MVP), pazarlama ve operasyonel giderler için optimize edilerek kullanılacaktır. İlk 6-12 ay içinde başabaş noktasına (breakeven) ulaşılması ve ardından kârlılığa geçilmesi öngörülmektedir. Gelecekteki büyüme hedefleri ("${formData.strategy}") doğrultusunda, stratejik yatırımlar ve finansman seçenekleri değerlendirilecektir.
-
-6. YOL HARİTASI (ROADMAP)
-- 1. Çeyrek: Ürün/Hizmetin pazara sunulması (Lansman) ve ilk geri bildirimlerin alınması.
-- 2. Çeyrek: Pazarlama faaliyetlerinin yoğunlaştırılması ve müşteri tabanının genişletilmesi.
-- 3. Çeyrek: Operasyonel süreçlerin iyileştirilmesi ve verimliliğin artırılması.
-- 4. Çeyrek: "${formData.strategy}" hedefi doğrultusunda büyüme ve yeni pazarlara açılma hazırlıkları.
-
-Bu iş planı, girişiminizi başarıya ulaştırmak için sağlam bir temel ve yol haritası sunmaktadır. Vizyonunuz ve kararlılığınızla hedeflerinize ulaşacağınıza inancımız tamdır.
-        `;
         setPlanResult(fallbackPlan);
+
+        if (typeof window !== 'undefined') {
+            const newProject = {
+                id: Date.now(),
+                title: formData.idea.length > 30 ? formData.idea.substring(0, 30) + "..." : formData.idea,
+                status: lang === 'en' ? 'Completed' : lang === 'ar' ? 'مكتمل' : 'Tamamlandı',
+                date: lang === 'en' ? 'Just now' : lang === 'ar' ? 'الآن' : 'Az önce',
+                color: 'text-green-500'
+            };
+            const existingProjects = JSON.parse(localStorage.getItem("user_projects") || "[]");
+            localStorage.setItem("user_projects", JSON.stringify([...existingProjects, newProject]));
+        }
+
+        toast.success(t.toast_success);
         setLoading(false);
-      }, 5000); // 5 saniye bekleme efekti
+      }, 3000); 
     } 
   };
 
@@ -393,15 +386,16 @@ Bu iş planı, girişiminizi başarıya ulaştırmak için sağlam bir temel ve 
     if (!planResult) return;
     const tid = toast.loading(t.toast_pdf_preparing);
     
-    // PDF İndirme Simülasyonu
     setTimeout(() => {
         toast.dismiss(tid);
-        // Basit bir text dosyası indirerek PDF simülasyonu yapalım
-        const blob = new Blob([planResult], { type: "text/plain;charset=utf-8" });
+        // Blokları metin formatına çevir
+        const textContent = planResult.map(p => `${p.title}\n\n${p.content}\n\n`).join('-------------------\n\n');
+        
+        const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a"); 
         a.href = url; 
-        a.download = "StartERA_Plan.txt"; // Gerçek PDF kütüphanesi olmadığı için txt
+        a.download = "StartERA_Plan.txt"; 
         document.body.appendChild(a); 
         a.click(); 
         a.remove();
@@ -427,6 +421,7 @@ Bu iş planı, girişiminizi başarıya ulaştırmak için sağlam bir temel ve 
             <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Start ERA</span>
         </div>
         <div className="flex items-center gap-4">
+             <div className="hidden md:block text-sm font-medium opacity-70 mr-2">{user.email}</div>
              <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95" title="Change Language">{getLangLabel()}</button>
              <button onClick={toggleTheme} className={`p-2.5 rounded-xl transition-all active:scale-95 ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm hover:shadow-md border border-slate-100'}`}>{darkMode ? <SunIcon /> : <MoonIcon />}</button>
              <Link href="/dashboard" className={`px-5 py-2.5 rounded-xl font-bold text-sm border transition-all hover:shadow-lg no-underline active:scale-95 flex items-center ${darkMode ? "border-slate-700 hover:bg-slate-800 text-slate-200" : "border-slate-200 hover:bg-white text-slate-900 bg-white/50"}`}>{t.nav_back}</Link>
@@ -442,10 +437,17 @@ Bu iş planı, girişiminizi başarıya ulaştırmak için sağlam bir temel ve 
                         <h2 className={`text-4xl md:text-5xl font-black mb-4 tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>{t.success_title}</h2>
                         <p className={`text-lg font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{t.success_desc(formData.idea.substring(0, 25) + "...")}</p>
                     </div>
-                    <div className={`relative p-8 md:p-14 rounded-2xl shadow-inner overflow-y-auto max-h-[60vh] mb-10 font-serif text-base leading-loose border transition-colors scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 ${darkMode ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-900"}`}>
-                        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-70"></div>
-                        <TypewriterEffect text={planResult} speed={3} />
+                    
+                    {/* YENİ BLOK TASARIMI */}
+                    <div className="grid gap-6 w-full mb-10">
+                       {planResult.map((section, idx) => (
+                          <div key={idx} className={`p-6 rounded-2xl border shadow-sm transition-all hover:shadow-md ${darkMode ? "bg-slate-800/50 border-slate-700" : "bg-white/60 border-slate-100"}`}>
+                             <h3 className="text-xl font-bold mb-3 text-blue-600 dark:text-blue-400">{section.title}</h3>
+                             <p className={`leading-relaxed text-lg ${darkMode ? "text-slate-300" : "text-slate-700"}`}>{section.content}</p>
+                          </div>
+                       ))}
                     </div>
+
                     <div className="flex flex-col sm:flex-row gap-5 justify-center items-center">
                         <button onClick={downloadPDF} className="group relative px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-xl hover:shadow-blue-500/30 transition-all transform hover:-translate-y-1 w-full sm:w-auto overflow-hidden">
                             <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
