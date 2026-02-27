@@ -121,6 +121,8 @@ interface Project {
   status: 'Tamamlandı' | 'Taslak' | 'İncelendi' | 'Completed' | 'Draft' | 'Reviewed' | 'مكتمل' | 'مسودة' | 'تمت المراجعة';
   date: string;
   color: string;
+  // Plan içeriklerini tutmak için alan (yeni oluşturulanlarda kullanılacak)
+  planContent?: { title: string; content: string }[];
 }
 
 // ==========================================
@@ -152,6 +154,8 @@ const TRANSLATIONS = {
     action_needed: "İlgi gerekiyor",
     no_activity: "Henüz bir aktivite yok.",
     opening_plan: "İş planı açılıyor...",
+    close: "Kapat",
+    missing_content: "Bu planın içerik detayları bulunamadı. Lütfen 'Yeni İş Planı Oluştur' seçeneği ile yeni bir plan oluşturun.",
   },
   en: {
     welcome: "Welcome",
@@ -178,6 +182,8 @@ const TRANSLATIONS = {
     action_needed: "Needs attention",
     no_activity: "No activity yet.",
     opening_plan: "Opening business plan...",
+    close: "Close",
+    missing_content: "Content details for this plan could not be found. Please generate a new one.",
   },
   ar: {
     welcome: "أهلاً بك",
@@ -204,6 +210,8 @@ const TRANSLATIONS = {
     action_needed: "يتطلب اهتماماً",
     no_activity: "لا يوجد نشاط حتى الآن.",
     opening_plan: "جاري فتح خطة العمل...",
+    close: "إغلاق",
+    missing_content: "لم يتم العثور على تفاصيل المحتوى لهذه الخطة. يرجى إنشاء واحدة جديدة.",
   }
 };
 
@@ -218,7 +226,8 @@ const Icons = {
   Rocket: () => <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
   Chart: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
   Document: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
-  ArrowRight: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+  ArrowRight: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>,
+  Close: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
 };
 
 // ==========================================
@@ -229,6 +238,9 @@ function DashboardContent() {
   const [user, setUser] = useState({ name: "", email: "" });
   const [projects, setProjects] = useState<Project[]>([]);
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
+  
+  // Modal için state
+  const [viewingProject, setViewingProject] = useState<Project | null>(null);
 
   // Çeviri Nesnesi
   const t = TRANSLATIONS[lang];
@@ -281,11 +293,8 @@ function DashboardContent() {
   };
 
   const handleActivityClick = (project: Project) => {
-    toast.success(t.opening_plan);
-    // Yönlendirme (örneğin plan sayfasına projenin ID'si ile gidilebilir)
-    setTimeout(() => {
-        safeRedirect(`/planner?id=${project.id}`);
-    }, 1000);
+    toast(t.opening_plan, { icon: '📂' });
+    setViewingProject(project); // Planı Modalda Göster
   };
 
   const capitalize = (s: string) => s && s[0].toUpperCase() + s.slice(1);
@@ -304,6 +313,50 @@ function DashboardContent() {
   return (
     <div dir={dir} className={`min-h-screen transition-colors duration-500 font-sans ${darkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}`}>
       <Toaster />
+
+      {/* PROJE DETAY MODALI (PLAN GÖRÜNTÜLEYİCİ) */}
+      {viewingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className={`relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-[32px] shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b dark:border-slate-800">
+                <div>
+                  <h2 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">{viewingProject.title}</h2>
+                  <p className="text-sm opacity-50">{viewingProject.date} - {viewingProject.status}</p>
+                </div>
+                <button onClick={() => setViewingProject(null)} className="p-3 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 transition-colors">
+                    <Icons.Close />
+                </button>
+            </div>
+
+            {/* Modal Body (İçerik) */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+                {viewingProject.planContent && viewingProject.planContent.length > 0 ? (
+                    viewingProject.planContent.map((section, idx) => (
+                        <div key={idx} className={`p-6 rounded-2xl border shadow-sm ${darkMode ? "bg-slate-800/50 border-slate-700" : "bg-slate-50 border-slate-100"}`}>
+                            <h3 className="text-xl font-bold mb-4 text-blue-600 dark:text-blue-400 border-b border-slate-200 dark:border-slate-700 pb-2">{section.title}</h3>
+                            <p className={`leading-relaxed text-lg whitespace-pre-wrap ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{section.content}</p>
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center py-16 px-4">
+                        <div className="text-6xl mb-4">📄</div>
+                        <h3 className="text-xl font-bold mb-2 text-slate-400">{t.missing_content}</h3>
+                    </div>
+                )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t dark:border-slate-800 flex justify-end gap-4">
+                <button onClick={() => setViewingProject(null)} className={`px-6 py-3 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 ${darkMode ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'}`}>
+                    {t.close}
+                </button>
+            </div>
+
+          </div>
+        </div>
+      )}
       
       {/* ÜST BAR (NAVBAR) */}
       <nav className={`px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-xl border-b transition-colors ${darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-slate-200"}`}>
