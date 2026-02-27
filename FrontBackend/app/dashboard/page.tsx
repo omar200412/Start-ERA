@@ -11,7 +11,7 @@ const toastEvents = {
   subscribe(l: (t: any) => void) { this.listeners.push(l); return () => { this.listeners = this.listeners.filter(x => x !== l); }; }
 };
 
-const toast = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'default', icon: 'ℹ️' });
+const toast = (msg: string, opts?: any) => toastEvents.emit({ id: Date.now(), msg, type: 'default', icon: opts?.icon || 'ℹ️' });
 toast.success = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'success', icon: '✅' });
 toast.error = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'error', icon: '❌' });
 
@@ -37,7 +37,7 @@ const Toaster = () => {
 };
 
 // ==========================================
-// MOCK ROUTER & LINK (Güvenli Yönlendirme)
+// MOCK ROUTER & LINK
 // ==========================================
 const safeRedirect = (path: string) => {
   if (typeof window !== 'undefined') {
@@ -47,8 +47,9 @@ const safeRedirect = (path: string) => {
       
       if (isPreview) {
           console.log(`[Preview] Navigating to: ${path}`);
-          if (path === "/login") toast("Çıkış yapıldı (Demo)");
-          else if (path === "/planner") toast("Planner sayfasına gidiliyor... (Demo)");
+          if (path === "/login") toast("Çıkış yapıldı (Demo)", { icon: '🔒' });
+          else if (path === "/planner") toast("Planner sayfasına gidiliyor... (Demo)", { icon: '🚀' });
+          else if (path === "/") toast("Ana sayfaya dönülüyor... (Demo)", { icon: '🏠' });
       } else {
           window.location.href = path;
       }
@@ -64,8 +65,9 @@ const Link = ({ href, children, className, ...props }: any) => {
         const isPreview = typeof window !== 'undefined' && (window.location.hostname.includes('googleusercontent') || window.location.protocol === 'blob:');
         if (isPreview) {
             e.preventDefault();
-            if (href === "/planner") toast("Planner açılıyor...");
-            if (href === "/login") toast("Çıkış yapılıyor...");
+            if (href === "/planner") toast("Planner açılıyor...", { icon: '🚀' });
+            if (href === "/login") toast("Çıkış yapılıyor...", { icon: '🔒' });
+            if (href === "/") toast("Ana sayfaya dönülüyor... (Demo)", { icon: '🏠' });
         }
       }}
       {...props}
@@ -139,18 +141,16 @@ const TRANSLATIONS = {
     recent_activity: "Son Aktiviteler",
     view_all: "Tümünü Gör",
     guest: "Girişimci",
+    pro_member: "Pro Üyelik",
     logout_tooltip: "Çıkış Yap",
     theme_tooltip: "Temayı Değiştir",
+    home_tooltip: "Ana Sayfaya Dön",
     increase_prefix: "↑ %",
     increase_suffix: " artış (bu ay)",
     goal_percent_prefix: "Hedefin %",
     goal_percent_suffix: "",
     action_needed: "İlgi gerekiyor",
     no_activity: "Henüz bir aktivite yok.",
-    // Üyelik Tipleri
-    free_plan: "Ücretsiz Plan",
-    pro_plan: "Pro Üyelik",
-    enterprise_plan: "Kurumsal Plan"
   },
   en: {
     welcome: "Welcome",
@@ -166,18 +166,16 @@ const TRANSLATIONS = {
     recent_activity: "Recent Activity",
     view_all: "View All",
     guest: "Entrepreneur",
+    pro_member: "Pro Member",
     logout_tooltip: "Logout",
     theme_tooltip: "Change Theme",
+    home_tooltip: "Go to Home",
     increase_prefix: "↑ ",
     increase_suffix: "% increase",
     goal_percent_prefix: "",
     goal_percent_suffix: "% of Goal",
     action_needed: "Needs attention",
     no_activity: "No activity yet.",
-    // Plan Types
-    free_plan: "Free Plan",
-    pro_plan: "Pro Member",
-    enterprise_plan: "Enterprise"
   },
   ar: {
     welcome: "أهلاً بك",
@@ -193,18 +191,16 @@ const TRANSLATIONS = {
     recent_activity: "النشاط الأخير",
     view_all: "عرض الكل",
     guest: "رائد أعمال",
+    pro_member: "عضو محترف",
     logout_tooltip: "تسجيل الخروج",
     theme_tooltip: "تغيير المظهر",
+    home_tooltip: "العودة للرئيسية",
     increase_prefix: "↑ زيادة بنسبة ",
     increase_suffix: "٪",
     goal_percent_prefix: "٪ من الهدف ",
     goal_percent_suffix: "",
     action_needed: "يتطلب اهتماماً",
     no_activity: "لا يوجد نشاط حتى الآن.",
-    // Plan Types
-    free_plan: "خطة مجانية",
-    pro_plan: "عضو محترف",
-    enterprise_plan: "مؤسسة"
   }
 };
 
@@ -212,6 +208,7 @@ const TRANSLATIONS = {
 // İKONLAR
 // ==========================================
 const Icons = {
+  Home: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>,
   Sun: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
   Moon: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>,
   Logout: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>,
@@ -219,7 +216,6 @@ const Icons = {
   Chart: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
   Document: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
   ArrowRight: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>,
-  Refresh: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
 };
 
 // ==========================================
@@ -227,8 +223,7 @@ const Icons = {
 // ==========================================
 function DashboardContent() {
   const { darkMode, toggleTheme } = useTheme();
-  // KULLANICI STATE'İ: İsim, Email ve Plan (Üyelik Tipi)
-  const [user, setUser] = useState({ name: "", email: "", plan: "free_plan" });
+  const [user, setUser] = useState({ name: "", email: "" });
   const [projects, setProjects] = useState<Project[]>([]);
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
 
@@ -237,20 +232,12 @@ function DashboardContent() {
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   useEffect(() => {
-    // 1. KULLANICI BİLGİSİ (Gerçekçi ve Dinamik)
+    // 1. KULLANICI BİLGİSİ
     const storedEmail = typeof window !== 'undefined' ? localStorage.getItem("userEmail") : null;
-    const storedPlan = typeof window !== 'undefined' ? localStorage.getItem("userPlan") : "free_plan";
-    
     const storedName = storedEmail ? storedEmail.split('@')[0] : "";
     const displayEmail = storedEmail || "girisimci@startera.com";
     const displayName = storedName || "Girişimci";
-    
-    // State'i güncelle
-    setUser({ 
-      name: displayName, 
-      email: displayEmail,
-      plan: storedPlan || "free_plan" // Varsayılan olarak Ücretsiz Plan
-    });
+    setUser({ name: displayName, email: displayEmail });
 
     // 2. GERÇEK PROJE VERİLERİNİ ÇEK (LocalStorage)
     loadProjects();
@@ -292,7 +279,7 @@ function DashboardContent() {
 
   const capitalize = (s: string) => s && s[0].toUpperCase() + s.slice(1);
 
-  // İstatistikleri Anlık Hesapla (Türetilmiş Durum)
+  // İstatistikleri Anlık Hesapla
   const totalPlans = projects.length;
   const completedPlans = projects.filter(p => 
     p.status === 'Tamamlandı' || p.status === 'Completed' || p.status === 'مكتمل'
@@ -310,25 +297,32 @@ function DashboardContent() {
       {/* ÜST BAR (NAVBAR) */}
       <nav className={`px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-xl border-b transition-colors ${darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-slate-200"}`}>
         <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">S</div>
+            <Link href="/" className="group cursor-pointer">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">S</div>
+            </Link>
             <span className="font-bold text-xl tracking-tight hidden sm:block">Start ERA</span>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden md:flex flex-col items-end mr-2">
                 <span className="text-sm font-bold">{user.email || t.guest}</span>
-                {/* DİNAMİK ÜYELİK TİPİ GÖSTERİMİ */}
-                <span className="text-xs opacity-60">
-                  {/* @ts-ignore: Tip güvenliği için basit bir çözüm, normalde keyof TRANSLATIONS kullanılmalı */}
-                  {t[user.plan] || t.free_plan}
-                </span>
+                <span className="text-xs opacity-60">{t.pro_member}</span>
             </div>
             
-            <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95" title="Change Language">{getLangLabel()}</button>
+            <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95 px-2" title="Change Language">{getLangLabel()}</button>
+
+            {/* ANA SAYFAYA DÖN BUTONU */}
+            <Link 
+                href="/" 
+                className={`p-2.5 rounded-xl transition-all active:scale-95 flex items-center justify-center ${darkMode ? 'bg-slate-800 text-blue-400 hover:bg-slate-700' : 'bg-white text-blue-600 shadow-sm hover:shadow-md border border-slate-100'}`}
+                title={t.home_tooltip}
+            >
+                <Icons.Home />
+            </Link>
 
             <button 
                 onClick={toggleTheme} 
-                className={`p-2.5 rounded-xl transition-all active:scale-95 ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm hover:shadow-md border border-slate-100'}`}
+                className={`p-2.5 rounded-xl transition-all active:scale-95 flex items-center justify-center ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm hover:shadow-md border border-slate-100'}`}
                 title={t.theme_tooltip}
             >
                 {darkMode ? <Icons.Sun /> : <Icons.Moon />}
@@ -336,7 +330,7 @@ function DashboardContent() {
             
             <button 
                 onClick={handleLogout} 
-                className="p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 transition-all active:scale-95"
+                className="p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 transition-all active:scale-95 flex items-center justify-center"
                 title={t.logout_tooltip}
             >
                 <Icons.Logout />
@@ -442,8 +436,8 @@ function DashboardContent() {
             {/* SAĞ KOLON: SON AKTİVİTELER (DİNAMİK) */}
             <div>
                 <h3 className="text-xl font-bold mb-5">{t.recent_activity}</h3>
-                <div className={`p-6 rounded-3xl border min-h-[300px] ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
-                    <div className="space-y-6">
+                <div className={`p-6 rounded-3xl border min-h-[300px] flex flex-col ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
+                    <div className="space-y-6 flex-1">
                         {recentActivities.length === 0 ? (
                           <div className="flex flex-col items-center justify-center h-48 opacity-50">
                              <Icons.Document />
@@ -467,7 +461,7 @@ function DashboardContent() {
                         )}
                     </div>
                     {recentActivities.length > 0 && (
-                      <button className="w-full mt-6 py-3 text-sm font-bold text-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors border-t border-dashed dark:border-slate-700">
+                      <button className="w-full mt-6 pt-4 text-sm font-bold text-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors border-t border-dashed dark:border-slate-700">
                           {t.view_all}
                       </button>
                     )}
