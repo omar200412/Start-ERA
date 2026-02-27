@@ -48,7 +48,7 @@ const safeRedirect = (path: string) => {
       if (isPreview) {
           console.log(`[Preview] Navigating to: ${path}`);
           if (path === "/login") toast("Çıkış yapıldı (Demo)", { icon: '🔒' });
-          else if (path === "/planner") toast("Planner sayfasına gidiliyor... (Demo)", { icon: '🚀' });
+          else if (path.startsWith("/planner")) toast("Planner sayfasına gidiliyor... (Demo)", { icon: '🚀' });
           else if (path === "/") toast("Ana sayfaya dönülüyor... (Demo)", { icon: '🏠' });
       } else {
           window.location.href = path;
@@ -65,7 +65,7 @@ const Link = ({ href, children, className, ...props }: any) => {
         const isPreview = typeof window !== 'undefined' && (window.location.hostname.includes('googleusercontent') || window.location.protocol === 'blob:');
         if (isPreview) {
             e.preventDefault();
-            if (href === "/planner") toast("Planner açılıyor...", { icon: '🚀' });
+            if (href.startsWith("/planner")) toast("Planner açılıyor...", { icon: '🚀' });
             if (href === "/login") toast("Çıkış yapılıyor...", { icon: '🔒' });
             if (href === "/") toast("Ana sayfaya dönülüyor... (Demo)", { icon: '🏠' });
         }
@@ -151,6 +151,7 @@ const TRANSLATIONS = {
     goal_percent_suffix: "",
     action_needed: "İlgi gerekiyor",
     no_activity: "Henüz bir aktivite yok.",
+    opening_plan: "İş planı açılıyor...",
   },
   en: {
     welcome: "Welcome",
@@ -176,6 +177,7 @@ const TRANSLATIONS = {
     goal_percent_suffix: "% of Goal",
     action_needed: "Needs attention",
     no_activity: "No activity yet.",
+    opening_plan: "Opening business plan...",
   },
   ar: {
     welcome: "أهلاً بك",
@@ -201,6 +203,7 @@ const TRANSLATIONS = {
     goal_percent_suffix: "",
     action_needed: "يتطلب اهتماماً",
     no_activity: "لا يوجد نشاط حتى الآن.",
+    opening_plan: "جاري فتح خطة العمل...",
   }
 };
 
@@ -275,6 +278,14 @@ function DashboardContent() {
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
     safeRedirect("/login");
+  };
+
+  const handleActivityClick = (project: Project) => {
+    toast.success(t.opening_plan);
+    // Yönlendirme (örneğin plan sayfasına projenin ID'si ile gidilebilir)
+    setTimeout(() => {
+        safeRedirect(`/planner?id=${project.id}`);
+    }, 1000);
   };
 
   const capitalize = (s: string) => s && s[0].toUpperCase() + s.slice(1);
@@ -437,7 +448,7 @@ function DashboardContent() {
             <div>
                 <h3 className="text-xl font-bold mb-5">{t.recent_activity}</h3>
                 <div className={`p-6 rounded-3xl border min-h-[300px] flex flex-col ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
-                    <div className="space-y-6 flex-1">
+                    <div className="space-y-4 flex-1">
                         {recentActivities.length === 0 ? (
                           <div className="flex flex-col items-center justify-center h-48 opacity-50">
                              <Icons.Document />
@@ -445,10 +456,14 @@ function DashboardContent() {
                           </div>
                         ) : (
                           recentActivities.map((item, i) => (
-                              <div key={i} className="flex items-center gap-4 group cursor-pointer">
+                              <div 
+                                key={i} 
+                                onClick={() => handleActivityClick(item)}
+                                className={`flex items-center gap-4 group cursor-pointer p-3 -mx-3 rounded-2xl transition-all ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
+                              >
                                   <div className={`w-2 h-2 rounded-full mt-1 ${item.color === 'text-green-500' ? 'bg-green-500' : item.color === 'text-orange-500' ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
                                   <div className="flex-1">
-                                      <h4 className="font-bold text-sm group-hover:text-blue-500 transition-colors">{item.title}</h4>
+                                      <h4 className="font-bold text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.title}</h4>
                                       <p className="text-xs opacity-50">{item.date}</p>
                                   </div>
                                   <span className={`text-xs font-bold px-2 py-1 rounded-md bg-opacity-10 
