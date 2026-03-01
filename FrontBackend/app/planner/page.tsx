@@ -116,8 +116,8 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 const useThemeAuth = () => useContext(ThemeAuthContext);
 
-// --- CHATBOT BİLEŞENİ ---
-const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
+// --- CHATBOT BİLEŞENİ (GERÇEK YAPAY ZEKA) ---
+const Chatbot = ({ lang, darkMode, contextData }: { lang: string, darkMode: boolean, contextData: any }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
   const [input, setInput] = useState("");
@@ -137,21 +137,52 @@ const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
     setIsTyping(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      let reply = "Bu konuda detaylı bir analiz yapmam için biraz daha bilgi verebilir misin?";
-      const lowerInput = currentInput.toLowerCase();
+      const apiKey = ""; // Sistem tarafından sağlanacak
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
-      if (lowerInput.includes("kira") || lowerInput.includes("fiyat")) {
-        reply = "Kira fiyatları semtten semte çok değişiyor. İstanbul'da popüler bir caddede m2 fiyatı 1.000 TL'yi aşabilirken, ara sokaklarda 400-500 TL bandında olabilir.";
-      } else if (lowerInput.includes("maaş") || lowerInput.includes("personel")) {
-        reply = "2025 yılı itibarıyla nitelikli personel için asgari ücretin en az %30 üzerinde bir teklif sunmanız, çalışan sadakati açısından kritiktir.";
-      } else if (lowerInput.includes("vergi") || lowerInput.includes("stopaj")) {
-        reply = "Kira stopajı (%20) ve KDV gibi giderleri nakit akışı tablonuza mutlaka ekleyin. Birçok girişimci bu görünmez giderler yüzünden nakit sıkışıklığı yaşıyor.";
-      }
+      let promptLang = "Türkçe";
+      if (lang === "en") promptLang = "İngilizce";
+      if (lang === "ar") promptLang = "Arapça";
 
+      const systemInstruction = `Sen uzman bir iş geliştirme danışmanısın. Cevaplarını kesinlikle ${promptLang} dilinde ver. Kullanıcının iş fikri: "${contextData.idea}". Sermayesi: "${contextData.capital}". Hedefi: "${contextData.strategy}". Sorulara kısa, net ve gerçekçi tavsiyelerle yanıt ver.`;
+
+      const formattedMessages = messages.map(m => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }]
+      }));
+      formattedMessages.push({ role: "user", parts: [{ text: currentInput }] });
+
+      const payload = {
+        systemInstruction: { parts: [{ text: systemInstruction }] },
+        contents: formattedMessages,
+        tools: [{ google_search: {} }] // Gerçek veriler için Google Search
+      };
+
+      // Exponential Backoff
+      const fetchWithBackoff = async (retries = 5, delay = 1000) => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error("API Hatası");
+            return await res.json();
+          } catch (error) {
+            if (i === retries - 1) throw error;
+            await new Promise(r => setTimeout(r, delay));
+            delay *= 2;
+          }
+        }
+      };
+
+      const result = await fetchWithBackoff();
+      const reply = result.candidates?.[0]?.content?.parts?.[0]?.text || "Üzgünüm, şu an cevap veremiyorum.";
+      
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Bağlantı hatası." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Bağlantı hatası oluştu, lütfen daha sonra tekrar deneyin." }]);
     } finally {
       setIsTyping(false);
     }
@@ -166,13 +197,13 @@ const Chatbot = ({ lang, darkMode }: { lang: string, darkMode: boolean }) => {
             <button onClick={() => setIsOpen(false)}>✕</button>
           </div>
           <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-4">
-            {messages.length === 0 && <p className="text-center text-sm opacity-50 mt-10">İş fikrinizle ilgili aklınıza takılanları sorun!</p>}
+            {messages.length === 0 && <p className="text-center text-sm opacity-50 mt-10">İş fikrinizle ilgili aklınıza takılanları sorun! Gerçek zamanlı piyasa analizi yapabilirim.</p>}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`p-3 rounded-2xl text-sm max-w-[80%] ${msg.role === "user" ? "bg-blue-600 text-white" : (darkMode ? "bg-slate-700" : "bg-slate-100")}`}>{msg.content}</div>
+                <div className={`p-3 rounded-2xl text-sm max-w-[80%] whitespace-pre-wrap ${msg.role === "user" ? "bg-blue-600 text-white" : (darkMode ? "bg-slate-700" : "bg-slate-100")}`}>{msg.content}</div>
               </div>
             ))}
-            {isTyping && <div className="text-xs animate-pulse opacity-50">Yazıyor...</div>}
+            {isTyping && <div className="text-xs animate-pulse opacity-50">Araştırıyor...</div>}
           </div>
           <div className="p-4 border-t dark:border-slate-700 flex gap-2">
             <input className={`flex-1 p-2 rounded-lg outline-none text-sm border ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`} placeholder="Bir soru sor..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} />
@@ -210,8 +241,8 @@ const ResearchLoading = ({ status }: { status: string }) => {
       </div>
       <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 animate-pulse">Start ERA AI</h3>
       <div className="mt-4 flex flex-col items-center gap-2">
-        <span className="text-sm font-bold text-slate-600 dark:text-slate-300 animate-fade-in">{status}</span>
-        <div className="w-48 h-1 bg-slate-200 rounded-full overflow-hidden">
+        <span className="text-sm font-bold text-slate-600 dark:text-slate-300 animate-fade-in text-center max-w-sm">{status}</span>
+        <div className="w-48 h-1 bg-slate-200 rounded-full overflow-hidden mt-2">
             <div className="h-full bg-blue-600 animate-progress"></div>
         </div>
       </div>
@@ -234,6 +265,8 @@ const TRANSLATIONS = {
     toast_success: "İş planı oluşturuldu ve panele kaydedildi!",
     toast_pdf_preparing: "Rapor derleniyor...", toast_pdf_success: "Rapor İndirildi!",
     err_empty: "Bu alan boş bırakılamaz.",
+    status_gathering: "İnternet üzerinden gerçek zamanlı veriler taranıyor...",
+    status_generating: "Rapor derleniyor, lütfen bekleyin...",
     questions: [
       { id: 1, key: "idea", title: "Hayalindeki Girişim Nedir?", subtitle: "Konum ve sektör belirtirsen (Örn: Şirinevler'de Kafe) nokta atışı kira analizi yapabilirim.", ph: "Örn: Kadıköy Moda'da 3. nesil kahveci açmak istiyorum..." },
       { id: 2, key: "capital", title: "Başlangıç Sermayesi", subtitle: "2025-2026 ekonomik verilerine göre bütçeni değerlendireceğim.", ph: "Örn: 1.500.000 TL" },
@@ -250,6 +283,8 @@ const TRANSLATIONS = {
     toast_success: "Plan created and saved to dashboard!",
     toast_pdf_preparing: "Compiling report...", toast_pdf_success: "Report Downloaded!",
     err_empty: "This field cannot be empty.",
+    status_gathering: "Scanning real-time data from the internet...",
+    status_generating: "Compiling the report, please wait...",
     questions: [
       { id: 1, key: "idea", title: "Startup Idea", subtitle: "Mention location & sector (e.g. Cafe in Şirinevler) for precise rent analysis.", ph: "Ex: Coffee shop in Şirinevler square..." },
       { id: 2, key: "capital", title: "Capital", subtitle: "I will evaluate budget based on 2025-2026 economic data.", ph: "Ex: 1,500,000 TL" },
@@ -266,6 +301,8 @@ const TRANSLATIONS = {
     toast_success: "تم إنشاء الخطة وحفظها!",
     toast_pdf_preparing: "جاري تجميع التقرير...", toast_pdf_success: "تم تحميل التقرير!",
     err_empty: "هذا الحقل مطلوب.",
+    status_gathering: "جاري مسح البيانات في الوقت الفعلي من الإنترنت...",
+    status_generating: "جاري تجميع التقرير، يرجى الانتظار...",
     questions: [
       { id: 1, key: "idea", title: "فكرة المشروع", subtitle: "اذكر الموقع والقطاع (مثلاً: مقهى في شيرين إيفلر) لتحليل دقيق.", ph: "مثال: مقهى في ميدان شيرين إيفلر..." },
       { id: 2, key: "capital", title: "رأس المال", subtitle: "سأقيم الميزانية بناءً على البيانات الاقتصادية لعام 2025-2026.", ph: "مثال: 1,500,000 ليرة" },
@@ -281,6 +318,7 @@ function PlannerContent() {
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
   const [step, setStep] = useState(1);
   
+  // YENİ STATE YAPILARI
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("");
   const [planResult, setPlanResult] = useState<{ title: string; content: string }[] | null>(null);
@@ -323,104 +361,120 @@ function PlannerContent() {
     }
   };
 
-  const normalizeInput = (text: string) => {
-    return text.toLowerCase()
-      .replace(/ğ/g, "g").replace(/ü/g, "u").replace(/ş/g, "s")
-      .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ç/g, "c");
-  };
-
+  // --- GERÇEK YAPAY ZEKA API ÇAĞRISI (GEMINI) ---
   const generateSmartPlan = async () => {
     setLoading(true);
+    setLoadingStatus(t.status_gathering);
     
-    setLoadingStatus(lang === 'tr' ? "İş fikri ve detaylı konum analiz ediliyor..." : "Analyzing business idea & detailed location...");
-    await new Promise(r => setTimeout(r, 1500));
+    try {
+      const apiKey = ""; // Sistem çalışma anında ekleyecek
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
-    const ideaNormalized = normalizeInput(formData.idea);
-    let sector = "Genel Hizmet";
-    let location = "İstanbul Geneli";
-    
-    if (ideaNormalized.includes("sirinevler")) location = "Şirinevler (Bahçelievler)";
-    else if (ideaNormalized.includes("bahcelievler")) location = "Bahçelievler";
-    else if (ideaNormalized.includes("kadikoy") || ideaNormalized.includes("moda")) location = "Kadıköy (Moda/Caferağa)";
-    else if (ideaNormalized.includes("besiktas")) location = "Beşiktaş";
-    else if (ideaNormalized.includes("sisli") || ideaNormalized.includes("mecidiyekoy")) location = "Şişli/Mecidiyeköy";
+      let promptLang = "Türkçe";
+      if (lang === "en") promptLang = "İngilizce";
+      if (lang === "ar") promptLang = "Arapça";
 
-    if (ideaNormalized.includes("kahve") || ideaNormalized.includes("cafe") || ideaNormalized.includes("kafe") || ideaNormalized.includes("restoran")) sector = "Yeme-İçme (Kafe/Restoran)";
-    else if (ideaNormalized.includes("yazilim") || ideaNormalized.includes("app") || ideaNormalized.includes("teknoloji")) sector = "Teknoloji/Yazılım";
-    else if (ideaNormalized.includes("market") || ideaNormalized.includes("bakkal")) sector = "Perakende";
+      const promptText = `Sen uzman bir iş geliştirme danışmanı ve finansal analistsin. Görevin, kullanıcının verdiği bilgilere dayanarak Google Arama üzerinden GERÇEK ve GÜNCEL (2025/2026) verileri toplayıp detaylı bir iş planı oluşturmak.
 
-    setLoadingStatus(lang === 'tr' ? `"${location}" bölgesi için 2025/2026 kira ve maaş verileri taranıyor...` : `Scanning current rent & salary data for "${location}"...`);
-    await new Promise(r => setTimeout(r, 2000));
+      Kullanıcı Bilgileri:
+      - Fikir ve Konum: ${formData.idea}
+      - Sermaye: ${formData.capital}
+      - Yetenekler: ${formData.skills}
+      - Hedef/Strateji: ${formData.strategy}
+      - Yönetim Ekibi: ${formData.management}
 
-    let rentAdvice = "";
-    let staffAdvice = "";
-    const minWage = 28000; 
-    const staffCostMultiplier = 1.65; 
+      İstenen Format:
+      Yanıtını JSON formatında, aşağıdaki 4 bölümden oluşan bir dizi (ARRAY) olarak ver. SADECE JSON ÇIKTISI ÜRET, BAŞKA METİN EKLEME. Dil kesinlikle ${promptLang} olmalıdır.
 
-    if (location.includes("Şirinevler")) {
-        rentAdvice = "Şirinevler Meydan ve E-5 kenarı yaya trafiği açısından İstanbul'un en yoğun noktalarındandır. 50-80 m2 bir dükkan için ana cadde kiraları 70.000 TL - 140.000 TL arasında değişmektedir.";
-    } else if (location.includes("Kadıköy")) {
-        rentAdvice = "Kadıköy (Moda/Caferağa) bölgesi, genç nüfusun ve beyaz yakalıların uğrak noktasıdır. 50m2 dükkan için kira ortalaması 85.000 TL - 150.000 TL arasındadır.";
-    } else {
-        rentAdvice = `${location} bölgesinde ortalama ticari kira metrekare fiyatı 700-1.100 TL bandındadır.`;
-    }
-
-    if (sector.includes("Kafe") || sector.includes("Perakende")) {
-        staffAdvice = `Güncel piyasa koşullarında (Baz Asgari Ücret: ${minWage.toLocaleString()} TL):\n• Deneyimli Barista/Tezgahtar: 32.000 TL - 38.000 TL Net\n• Servis Personeli: ${minWage.toLocaleString()} TL - 30.000 TL + Tip\nBir personelin işverene toplam maliyeti yaklaşık ${(minWage * staffCostMultiplier).toLocaleString()} TL'dir.`;
-    } else {
-        staffAdvice = `Sektörünüzde nitelikli personel için asgari ücretin (${minWage.toLocaleString()} TL) en az %30-40 üzerinde bir başlangıç maaşı teklif etmelisiniz.`;
-    }
-
-    setLoadingStatus(lang === 'tr' ? "Yönetici özeti ve strateji raporu hazırlanıyor..." : "Preparing executive summary & strategy report...");
-    await new Promise(r => setTimeout(r, 1500));
-
-    const generatedPlan = [
+      İstenen JSON Yapısı:
+      [
         {
-            title: lang === 'tr' ? "1. YÖNETİCİ ÖZETİ (EXECUTIVE SUMMARY)" : "1. EXECUTIVE SUMMARY",
-            content: lang === 'tr' 
-                ? `Bu iş planı, "${formData.idea}" fikrinin ${location} lokasyonunda hayata geçirilmesi için hazırlanmıştır. Sektör olarak ${sector} alanında faaliyet gösterilecek olup, "${formData.management}" liderliğindeki yönetim kadrosu ve "${formData.skills}" yetkinlikleri ile pazardaki boşluğun doldurulması hedeflenmektedir.`
-                : `This plan outlines the launch of "${formData.idea}" in ${location}. Targeting the ${sector} sector.`
+          "title": "1. YÖNETİCİ ÖZETİ (EXECUTIVE SUMMARY)",
+          "content": "Girişimin amacı, konumu, hedef kitlesi ve ekibin güçlü yönlerinin gerçekçi bir özeti."
         },
         {
-            title: lang === 'tr' ? "2. İŞ MODELİ VE STRATEJİ (BUSINESS MODEL & STRATEGY)" : "2. BUSINESS MODEL & STRATEGY",
-            content: lang === 'tr'
-                ? `İş modelimiz, müşteri memnuniyeti odaklı sürdürülebilir büyüme üzerine kuruludur.\n\nKonum Analizi ve Kira Stratejisi:\n${rentAdvice}\n\nİnsan Kaynakları Stratejisi:\n${staffAdvice}`
-                : `Our model focuses on sustainable growth.\n\nLocation & Rent Analysis:\n${rentAdvice}\n\nHR Strategy:\n${staffAdvice}`
+          "title": "2. İŞ MODELİ VE STRATEJİ",
+          "content": "Pazar analizi. Özellikle belirtilen konumdaki GÜNCEL KİRA FİYATLARI (Google'dan araştır), rekabet durumu ve müşteri çekme stratejisi."
         },
         {
-            title: lang === 'tr' ? "3. FİNANSAL PLAN VE YATIRIM (FINANCIAL PLAN & INVESTMENT)" : "3. FINANCIAL PLAN & INVESTMENT",
-            content: lang === 'tr'
-                ? `Başlangıç Sermayesi: ${formData.capital}\n\nYatırım Dağılımı (Tahmini):\n- Kira, Depozito ve Emlak Komisyonu: %15-20\n- Dekorasyon ve Tadilat: %30\n- Ekipman ve Teknoloji: %25\n- İlk 3 Aylık Personel Maaşları ve İşletme Giderleri: %20\n- Pazarlama ve Lansman: %10\n\nFinansal Öngörü: 8-12 ay içinde başabaş noktasına ulaşılması öngörülmektedir.`
-                : `Capital: ${formData.capital}\n\nAllocation:\n- Rent/Deposit: 20%\n- Renovation: 30%\n- Equipment: 25%\n- OpEx (3 months): 20%\n- Marketing: 5%`
+          "title": "3. FİNANSAL PLAN VE YATIRIM",
+          "content": "Sermayenin(${formData.capital}) nasıl dağıtılacağı. GÜNCEL ASGARİ ÜCRET VE PERSONEL MAAŞLARINI (Google'dan araştır) dikkate alarak aylık gider tahmini ve başabaş noktası (breakeven) süresi."
         },
         {
-            title: lang === 'tr' ? "4. HEDEF VE VİZYON (GOAL & VISION)" : "4. GOAL & VISION",
-            content: lang === 'tr'
-                ? `Kısa Vadeli Hedef (1 Yıl): "${formData.strategy}" hedefine ulaşmak ve bölgede marka bilinirliğini %40 seviyesine çıkarmak.\n\nUzun Vadeli Vizyon: 3 yıl içinde franchise verilebilir bir yapıya kavuşturmak.`
-                : `Short Term Goal (1 Year): Achieve "${formData.strategy}".\n\nLong Term Vision: Prepare for franchising within 3 years.`
+          "title": "4. HEDEF VE VİZYON",
+          "content": "Belirtilen hedefe (${formData.strategy}) ulaşmak için atılması gereken somut adımlar ve risk yönetimi."
         }
-    ];
+      ]`;
 
-    setPlanResult(generatedPlan);
+      const payload = {
+        contents: [{ parts: [{ text: promptText }] }],
+        tools: [{ google_search: {} }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                title: { type: "STRING" },
+                content: { type: "STRING" }
+              },
+              required: ["title", "content"]
+            }
+          }
+        }
+      };
 
-    // ===================================================================
-    // DİKKAT: ARTIK planContent BİLGİSİNİ DE VERİTABANINA KAYDEDİYORUZ
-    // ===================================================================
-    if (typeof window !== 'undefined') {
-        const newProject = {
-            id: Date.now(),
-            title: formData.idea.length > 25 ? formData.idea.substring(0, 25) + "..." : formData.idea,
-            status: lang === 'en' ? 'Completed' : lang === 'ar' ? 'مكتمل' : 'Tamamlandı',
-            date: lang === 'en' ? 'Just now' : lang === 'ar' ? 'الآن' : 'Az önce',
-            color: 'text-green-500',
-            planContent: generatedPlan // <- BU KISIM EKLENDİ!
-        };
-        const existingProjects = JSON.parse(localStorage.getItem("user_projects") || "[]");
-        localStorage.setItem("user_projects", JSON.stringify([...existingProjects, newProject]));
+      // Exponential Backoff ile API İsteği
+      const fetchWithBackoff = async (retries = 5, delay = 1000) => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error(`HTTP Hata: ${res.status}`);
+            return await res.json();
+          } catch (error) {
+            if (i === retries - 1) throw error;
+            await new Promise(r => setTimeout(r, delay));
+            delay *= 2;
+          }
+        }
+      };
+
+      setLoadingStatus(t.status_generating);
+      const result = await fetchWithBackoff();
+
+      const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!jsonText) throw new Error("Yapay zeka boş yanıt döndürdü.");
+
+      const generatedPlan = JSON.parse(jsonText);
+      setPlanResult(generatedPlan);
+
+      // Veriyi Dashboard için Kaydet
+      if (typeof window !== 'undefined') {
+          const newProject = {
+              id: Date.now(),
+              title: formData.idea.length > 30 ? formData.idea.substring(0, 30) + "..." : formData.idea,
+              status: lang === 'en' ? 'Completed' : lang === 'ar' ? 'مكتمل' : 'Tamamlandı',
+              date: lang === 'en' ? 'Just now' : lang === 'ar' ? 'الآن' : 'Az önce',
+              color: 'text-green-500',
+              planContent: generatedPlan // Dashboard'da okunabilmesi için
+          };
+          const existingProjects = JSON.parse(localStorage.getItem("user_projects") || "[]");
+          localStorage.setItem("user_projects", JSON.stringify([newProject, ...existingProjects]));
+      }
+
+      toast.success(t.toast_success);
+
+    } catch (error) {
+      console.error(error);
+      toast.error(lang === 'tr' ? "Plan oluşturulamadı, lütfen daha sonra tekrar deneyin." : "Could not generate plan, please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    toast.success(t.toast_success);
-    setLoading(false);
   };
 
   const downloadPDF = async () => {
@@ -452,7 +506,7 @@ function PlannerContent() {
       </div>
       
       <Toaster />
-      <Chatbot lang={lang} darkMode={darkMode} />
+      <Chatbot lang={lang} darkMode={darkMode} contextData={formData} />
       
       <nav className={`px-8 py-5 flex justify-between items-center backdrop-blur-lg sticky top-0 z-40 border-b transition-colors ${darkMode ? "bg-slate-900/60 border-slate-800" : "bg-white/60 border-slate-200"}`}>
         <div className="flex items-center gap-3">
