@@ -121,7 +121,6 @@ interface Project {
   status: 'Tamamlandı' | 'Taslak' | 'İncelendi' | 'Completed' | 'Draft' | 'Reviewed' | 'مكتمل' | 'مسودة' | 'تمت المراجعة';
   date: string;
   color: string;
-  // Kaydedilen plan verileri bu dizide tutulur
   planContent?: { title: string; content: string }[];
 }
 
@@ -418,7 +417,7 @@ function DashboardContent() {
           </div>
         </header>
 
-        {/* İSTATİSTİKLER GRID */}
+        {/* İSTATİSTİKLER GRID (GERÇEK VERİLER) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
            {/* Kart 1: Toplam Plan */}
            <div className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden group ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
@@ -471,7 +470,7 @@ function DashboardContent() {
         {/* HIZLI AKSİYONLAR & SON AKTİVİTELER */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {/* SOL KOLON: PLANNER'A GİT */}
+            {/* SOL KOLON: PLANNER'A GİT (BÜYÜK KART) */}
             <div className="lg:col-span-2">
                 <h3 className="text-xl font-bold mb-5 flex items-center gap-2">{t.quick_start}</h3>
                 <Link href="/planner" className="block group">
@@ -498,7 +497,7 @@ function DashboardContent() {
                 </Link>
             </div>
 
-            {/* SAĞ KOLON: SON AKTİVİTELER */}
+            {/* SAĞ KOLON: SON AKTİVİTELER (DİNAMİK) */}
             <div>
                 <h3 className="text-xl font-bold mb-5">{t.recent_activity}</h3>
                 <div className={`p-6 rounded-3xl border min-h-[300px] flex flex-col ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
