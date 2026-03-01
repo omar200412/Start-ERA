@@ -11,7 +11,7 @@ const toastEvents = {
   subscribe(l: (t: any) => void) { this.listeners.push(l); return () => { this.listeners = this.listeners.filter(x => x !== l); }; }
 };
 
-const toast = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'default', icon: 'ℹ️' });
+const toast = (msg: string, opts?: any) => toastEvents.emit({ id: Date.now(), msg, type: 'default', icon: opts?.icon || 'ℹ️' });
 toast.success = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'success', icon: '✅' });
 toast.error = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'error', icon: '❌' });
 
@@ -37,7 +37,7 @@ const Toaster = () => {
 };
 
 // ==========================================
-// MOCK ROUTER & LINK (Güvenli Yönlendirme)
+// MOCK ROUTER & LINK
 // ==========================================
 const safeRedirect = (path: string) => {
   if (typeof window !== 'undefined') {
@@ -47,8 +47,9 @@ const safeRedirect = (path: string) => {
       
       if (isPreview) {
           console.log(`[Preview] Navigating to: ${path}`);
-          if (path === "/login") toast("Çıkış yapıldı (Demo)");
-          else if (path === "/planner") toast("Planner sayfasına gidiliyor... (Demo)");
+          if (path === "/login") toast("Çıkış yapıldı (Demo)", { icon: '🔒' });
+          else if (path.startsWith("/planner")) toast("Planner sayfasına gidiliyor... (Demo)", { icon: '🚀' });
+          else if (path === "/") toast("Ana sayfaya dönülüyor... (Demo)", { icon: '🏠' });
       } else {
           window.location.href = path;
       }
@@ -64,8 +65,9 @@ const Link = ({ href, children, className, ...props }: any) => {
         const isPreview = typeof window !== 'undefined' && (window.location.hostname.includes('googleusercontent') || window.location.protocol === 'blob:');
         if (isPreview) {
             e.preventDefault();
-            if (href === "/planner") toast("Planner açılıyor...");
-            if (href === "/login") toast("Çıkış yapılıyor...");
+            if (href.startsWith("/planner")) toast("Planner açılıyor...", { icon: '🚀' });
+            if (href === "/login") toast("Çıkış yapılıyor...", { icon: '🔒' });
+            if (href === "/") toast("Ana sayfaya dönülüyor... (Demo)", { icon: '🏠' });
         }
       }}
       {...props}
@@ -119,6 +121,8 @@ interface Project {
   status: 'Tamamlandı' | 'Taslak' | 'İncelendi' | 'Completed' | 'Draft' | 'Reviewed' | 'مكتمل' | 'مسودة' | 'تمت المراجعة';
   date: string;
   color: string;
+  // Kaydedilen plan verileri bu dizide tutulur
+  planContent?: { title: string; content: string }[];
 }
 
 // ==========================================
@@ -139,18 +143,19 @@ const TRANSLATIONS = {
     recent_activity: "Son Aktiviteler",
     view_all: "Tümünü Gör",
     guest: "Girişimci",
+    pro_member: "Pro Üyelik",
     logout_tooltip: "Çıkış Yap",
     theme_tooltip: "Temayı Değiştir",
+    home_tooltip: "Ana Sayfaya Dön",
     increase_prefix: "↑ %",
     increase_suffix: " artış (bu ay)",
     goal_percent_prefix: "Hedefin %",
     goal_percent_suffix: "",
     action_needed: "İlgi gerekiyor",
     no_activity: "Henüz bir aktivite yok.",
-    // Üyelik Tipleri
-    free_plan: "Ücretsiz Plan",
-    pro_plan: "Pro Üyelik",
-    enterprise_plan: "Kurumsal Plan"
+    opening_plan: "İş planı açılıyor...",
+    close: "Kapat",
+    missing_content: "Bu planın içerik detayları bulunamadı. Lütfen 'Yeni İş Planı Oluştur' seçeneği ile yeni bir plan oluşturun.",
   },
   en: {
     welcome: "Welcome",
@@ -166,18 +171,19 @@ const TRANSLATIONS = {
     recent_activity: "Recent Activity",
     view_all: "View All",
     guest: "Entrepreneur",
+    pro_member: "Pro Member",
     logout_tooltip: "Logout",
     theme_tooltip: "Change Theme",
+    home_tooltip: "Go to Home",
     increase_prefix: "↑ ",
     increase_suffix: "% increase",
     goal_percent_prefix: "",
     goal_percent_suffix: "% of Goal",
     action_needed: "Needs attention",
     no_activity: "No activity yet.",
-    // Plan Types
-    free_plan: "Free Plan",
-    pro_plan: "Pro Member",
-    enterprise_plan: "Enterprise"
+    opening_plan: "Opening business plan...",
+    close: "Close",
+    missing_content: "Content details for this plan could not be found. Please generate a new one.",
   },
   ar: {
     welcome: "أهلاً بك",
@@ -193,18 +199,19 @@ const TRANSLATIONS = {
     recent_activity: "النشاط الأخير",
     view_all: "عرض الكل",
     guest: "رائد أعمال",
+    pro_member: "عضو محترف",
     logout_tooltip: "تسجيل الخروج",
     theme_tooltip: "تغيير المظهر",
+    home_tooltip: "العودة للرئيسية",
     increase_prefix: "↑ زيادة بنسبة ",
     increase_suffix: "٪",
     goal_percent_prefix: "٪ من الهدف ",
     goal_percent_suffix: "",
     action_needed: "يتطلب اهتماماً",
     no_activity: "لا يوجد نشاط حتى الآن.",
-    // Plan Types
-    free_plan: "خطة مجانية",
-    pro_plan: "عضو محترف",
-    enterprise_plan: "مؤسسة"
+    opening_plan: "جاري فتح خطة العمل...",
+    close: "إغلاق",
+    missing_content: "لم يتم العثور على تفاصيل المحتوى لهذه الخطة. يرجى إنشاء واحدة جديدة.",
   }
 };
 
@@ -212,6 +219,7 @@ const TRANSLATIONS = {
 // İKONLAR
 // ==========================================
 const Icons = {
+  Home: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>,
   Sun: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
   Moon: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>,
   Logout: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>,
@@ -219,7 +227,7 @@ const Icons = {
   Chart: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
   Document: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
   ArrowRight: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>,
-  Refresh: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+  Close: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
 };
 
 // ==========================================
@@ -227,30 +235,24 @@ const Icons = {
 // ==========================================
 function DashboardContent() {
   const { darkMode, toggleTheme } = useTheme();
-  // KULLANICI STATE'İ: İsim, Email ve Plan (Üyelik Tipi)
-  const [user, setUser] = useState({ name: "", email: "", plan: "free_plan" });
+  const [user, setUser] = useState({ name: "", email: "" });
   const [projects, setProjects] = useState<Project[]>([]);
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
+  
+  // AÇILIR PENCERE (MODAL) İÇİN STATE
+  const [viewingProject, setViewingProject] = useState<Project | null>(null);
 
   // Çeviri Nesnesi
   const t = TRANSLATIONS[lang];
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   useEffect(() => {
-    // 1. KULLANICI BİLGİSİ (Gerçekçi ve Dinamik)
+    // 1. KULLANICI BİLGİSİ
     const storedEmail = typeof window !== 'undefined' ? localStorage.getItem("userEmail") : null;
-    const storedPlan = typeof window !== 'undefined' ? localStorage.getItem("userPlan") : "free_plan";
-    
     const storedName = storedEmail ? storedEmail.split('@')[0] : "";
     const displayEmail = storedEmail || "girisimci@startera.com";
     const displayName = storedName || "Girişimci";
-    
-    // State'i güncelle
-    setUser({ 
-      name: displayName, 
-      email: displayEmail,
-      plan: storedPlan || "free_plan" // Varsayılan olarak Ücretsiz Plan
-    });
+    setUser({ name: displayName, email: displayEmail });
 
     // 2. GERÇEK PROJE VERİLERİNİ ÇEK (LocalStorage)
     loadProjects();
@@ -290,9 +292,15 @@ function DashboardContent() {
     safeRedirect("/login");
   };
 
+  // LİSTEDEN BİR PLANA TIKLANINCA ÇALIŞACAK FONKSİYON
+  const handleActivityClick = (project: Project) => {
+    toast(t.opening_plan, { icon: '📂' });
+    setViewingProject(project); // Planı Açılır Pencerede Göster
+  };
+
   const capitalize = (s: string) => s && s[0].toUpperCase() + s.slice(1);
 
-  // İstatistikleri Anlık Hesapla (Türetilmiş Durum)
+  // İstatistikleri Anlık Hesapla
   const totalPlans = projects.length;
   const completedPlans = projects.filter(p => 
     p.status === 'Tamamlandı' || p.status === 'Completed' || p.status === 'مكتمل'
@@ -306,29 +314,80 @@ function DashboardContent() {
   return (
     <div dir={dir} className={`min-h-screen transition-colors duration-500 font-sans ${darkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}`}>
       <Toaster />
+
+      {/* PROJE DETAY AÇILIR PENCERESİ (MODAL) */}
+      {viewingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className={`relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-[32px] shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+            
+            {/* Pencere Başlığı */}
+            <div className="flex justify-between items-center p-6 border-b dark:border-slate-800">
+                <div>
+                  <h2 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">{viewingProject.title}</h2>
+                  <p className="text-sm opacity-50">{viewingProject.date} - {viewingProject.status}</p>
+                </div>
+                <button onClick={() => setViewingProject(null)} className="p-3 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 transition-colors">
+                    <Icons.Close />
+                </button>
+            </div>
+
+            {/* Pencere İçeriği (Plan Detayları) */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+                {viewingProject.planContent && viewingProject.planContent.length > 0 ? (
+                    viewingProject.planContent.map((section, idx) => (
+                        <div key={idx} className={`p-6 rounded-2xl border shadow-sm ${darkMode ? "bg-slate-800/50 border-slate-700" : "bg-slate-50 border-slate-100"}`}>
+                            <h3 className="text-xl font-bold mb-4 text-blue-600 dark:text-blue-400 border-b border-slate-200 dark:border-slate-700 pb-2">{section.title}</h3>
+                            <p className={`leading-relaxed text-lg whitespace-pre-wrap ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{section.content}</p>
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center py-16 px-4">
+                        <div className="text-6xl mb-4">📄</div>
+                        <h3 className="text-xl font-bold mb-2 text-slate-400">{t.missing_content}</h3>
+                    </div>
+                )}
+            </div>
+
+            {/* Pencere Alt Kısmı */}
+            <div className="p-6 border-t dark:border-slate-800 flex justify-end gap-4">
+                <button onClick={() => setViewingProject(null)} className={`px-6 py-3 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 ${darkMode ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'}`}>
+                    {t.close}
+                </button>
+            </div>
+
+          </div>
+        </div>
+      )}
       
       {/* ÜST BAR (NAVBAR) */}
       <nav className={`px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-xl border-b transition-colors ${darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-slate-200"}`}>
         <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">S</div>
+            <Link href="/" className="group cursor-pointer">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">S</div>
+            </Link>
             <span className="font-bold text-xl tracking-tight hidden sm:block">Start ERA</span>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden md:flex flex-col items-end mr-2">
                 <span className="text-sm font-bold">{user.email || t.guest}</span>
-                {/* DİNAMİK ÜYELİK TİPİ GÖSTERİMİ */}
-                <span className="text-xs opacity-60">
-                  {/* @ts-ignore: Tip güvenliği için basit bir çözüm, normalde keyof TRANSLATIONS kullanılmalı */}
-                  {t[user.plan] || t.free_plan}
-                </span>
+                <span className="text-xs opacity-60">{t.pro_member}</span>
             </div>
             
-            <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95" title="Change Language">{getLangLabel()}</button>
+            <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95 px-2" title="Change Language">{getLangLabel()}</button>
+
+            {/* ANA SAYFAYA DÖN BUTONU */}
+            <Link 
+                href="/" 
+                className={`p-2.5 rounded-xl transition-all active:scale-95 flex items-center justify-center ${darkMode ? 'bg-slate-800 text-blue-400 hover:bg-slate-700' : 'bg-white text-blue-600 shadow-sm hover:shadow-md border border-slate-100'}`}
+                title={t.home_tooltip}
+            >
+                <Icons.Home />
+            </Link>
 
             <button 
                 onClick={toggleTheme} 
-                className={`p-2.5 rounded-xl transition-all active:scale-95 ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm hover:shadow-md border border-slate-100'}`}
+                className={`p-2.5 rounded-xl transition-all active:scale-95 flex items-center justify-center ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm hover:shadow-md border border-slate-100'}`}
                 title={t.theme_tooltip}
             >
                 {darkMode ? <Icons.Sun /> : <Icons.Moon />}
@@ -336,7 +395,7 @@ function DashboardContent() {
             
             <button 
                 onClick={handleLogout} 
-                className="p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 transition-all active:scale-95"
+                className="p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 transition-all active:scale-95 flex items-center justify-center"
                 title={t.logout_tooltip}
             >
                 <Icons.Logout />
@@ -351,7 +410,7 @@ function DashboardContent() {
         <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-              {t.welcome}, {capitalize(user.name)} 👋
+              {t.welcome}, {capitalize(user.name)}
             </h1>
             <p className={`text-lg ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
               {t.subtitle}
@@ -359,7 +418,7 @@ function DashboardContent() {
           </div>
         </header>
 
-        {/* İSTATİSTİKLER GRID (GERÇEK VERİLER) */}
+        {/* İSTATİSTİKLER GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
            {/* Kart 1: Toplam Plan */}
            <div className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden group ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
@@ -412,7 +471,7 @@ function DashboardContent() {
         {/* HIZLI AKSİYONLAR & SON AKTİVİTELER */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {/* SOL KOLON: PLANNER'A GİT (BÜYÜK KART) */}
+            {/* SOL KOLON: PLANNER'A GİT */}
             <div className="lg:col-span-2">
                 <h3 className="text-xl font-bold mb-5 flex items-center gap-2">{t.quick_start}</h3>
                 <Link href="/planner" className="block group">
@@ -439,11 +498,11 @@ function DashboardContent() {
                 </Link>
             </div>
 
-            {/* SAĞ KOLON: SON AKTİVİTELER (DİNAMİK) */}
+            {/* SAĞ KOLON: SON AKTİVİTELER */}
             <div>
                 <h3 className="text-xl font-bold mb-5">{t.recent_activity}</h3>
-                <div className={`p-6 rounded-3xl border min-h-[300px] ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
-                    <div className="space-y-6">
+                <div className={`p-6 rounded-3xl border min-h-[300px] flex flex-col ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
+                    <div className="space-y-4 flex-1">
                         {recentActivities.length === 0 ? (
                           <div className="flex flex-col items-center justify-center h-48 opacity-50">
                              <Icons.Document />
@@ -451,10 +510,14 @@ function DashboardContent() {
                           </div>
                         ) : (
                           recentActivities.map((item, i) => (
-                              <div key={i} className="flex items-center gap-4 group cursor-pointer">
+                              <div 
+                                key={i} 
+                                onClick={() => handleActivityClick(item)}
+                                className={`flex items-center gap-4 group cursor-pointer p-3 -mx-3 rounded-2xl transition-all ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
+                              >
                                   <div className={`w-2 h-2 rounded-full mt-1 ${item.color === 'text-green-500' ? 'bg-green-500' : item.color === 'text-orange-500' ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
                                   <div className="flex-1">
-                                      <h4 className="font-bold text-sm group-hover:text-blue-500 transition-colors">{item.title}</h4>
+                                      <h4 className="font-bold text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.title}</h4>
                                       <p className="text-xs opacity-50">{item.date}</p>
                                   </div>
                                   <span className={`text-xs font-bold px-2 py-1 rounded-md bg-opacity-10 
@@ -466,11 +529,6 @@ function DashboardContent() {
                           ))
                         )}
                     </div>
-                    {recentActivities.length > 0 && (
-                      <button className="w-full mt-6 py-3 text-sm font-bold text-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors border-t border-dashed dark:border-slate-700">
-                          {t.view_all}
-                      </button>
-                    )}
                 </div>
             </div>
 
