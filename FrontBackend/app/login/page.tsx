@@ -1,18 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // ==========================================
-// SMART API URL ROUTER
+// API URL (Vercel Desteği İçin Güncellendi)
 // ==========================================
-const getApiUrl = () => {
-  if (typeof window === 'undefined') return "";
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return "http://127.0.0.1:8000/api"; 
-  }
-  return "/api"; 
-};
-const API_URL = getApiUrl();
+const API_URL = "/api"; 
 
 // ==========================================
 // YEREL TOAST SİSTEMİ (Bildirimler İçin)
@@ -48,114 +41,51 @@ const Toaster = () => {
   );
 };
 
-// ==========================================
-// MOCK ROUTER & LINK
-// ==========================================
 const safeRedirect = (path: string) => {
   if (typeof window !== 'undefined') {
-      const isPreview = window.location.hostname.includes('googleusercontent') || 
-                        window.location.hostname.includes('scf') || 
-                        window.location.protocol === 'blob:';
-      
-      if (isPreview) {
-          console.log(`[Preview] Navigating to: ${path}`);
-          toast(`Yönlendiriliyor: ${path} (Demo)`);
-      } else {
-          window.location.href = path;
-      }
+    window.location.href = path;
   }
 };
 
 // ==========================================
-// ÇEVİRİLER (TR / EN / AR)
+// ÇEVİRİLER
 // ==========================================
 const TRANSLATIONS = {
   tr: {
-    app_name: "Start ERA",
-    title_login: "Giriş Yap",
-    title_register: "Kayıt Ol",
-    title_verify: "Kodu Doğrula",
-    subtitle_login: "Girişimcilik yolculuğuna devam et.",
-    subtitle_register: "Yeni bir başlangıç yap.",
-    subtitle_verify: "E-postanıza gönderilen 6 haneli kodu girin.",
-    label_name: "Ad Soyad",
-    label_email: "E-Posta Adresi",
-    label_password: "Şifre",
-    label_code: "Doğrulama Kodu",
-    ph_name: "Örn: Ömer Kaya",
-    ph_email: "ornek@sirket.com",
-    ph_code: "123456",
-    btn_login: "Giriş Yap",
-    btn_register: "Hesap Oluştur",
-    btn_verify: "Kodu Onayla",
-    processing: "İşleniyor...",
-    no_account: "Henüz hesabın yok mu?",
-    has_account: "Zaten hesabın var mı?",
-    link_register: "Kayıt Ol",
-    link_login: "Giriş Yap",
-    err_invalid: "Geçersiz email veya şifre (min 6 karakter).",
-    err_network: "Sunucuya bağlanılamadı.",
-    success_register: "Kod gönderildi! Lütfen e-postanızı kontrol edin.",
-    success_verify: "Hesap başarıyla doğrulandı! Giriş yapabilirsiniz.",
-    success_login: "Giriş başarılı! Yönlendiriliyorsunuz...",
+    app_name: "Start ERA", title_login: "Giriş Yap", title_register: "Kayıt Ol", title_verify: "Kodu Doğrula",
+    subtitle_login: "Girişimcilik yolculuğuna devam et.", subtitle_register: "Yeni bir başlangıç yap.",
+    subtitle_verify: "E-postanıza gönderilen 6 haneli kodu girin.", label_name: "Ad Soyad",
+    label_email: "E-Posta Adresi", label_password: "Şifre", label_code: "Doğrulama Kodu",
+    ph_name: "Örn: Ömer Kaya", ph_email: "ornek@sirket.com", ph_code: "123456",
+    btn_login: "Giriş Yap", btn_register: "Hesap Oluştur", btn_verify: "Kodu Onayla",
+    processing: "İşleniyor...", no_account: "Henüz hesabın yok mu?", has_account: "Zaten hesabın var mı?",
+    link_register: "Kayıt Ol", link_login: "Giriş Yap", err_invalid: "Geçersiz email veya şifre.",
+    err_network: "Sunucuya bağlanılamadı.", success_register: "Kod gönderildi!",
+    success_verify: "Doğrulandı!", success_login: "Giriş başarılı!"
   },
   en: {
-    app_name: "Start ERA",
-    title_login: "Sign In",
-    title_register: "Sign Up",
-    title_verify: "Verify Code",
-    subtitle_login: "Continue your entrepreneurial journey.",
-    subtitle_register: "Make a fresh start.",
-    subtitle_verify: "Enter the 6-digit code sent to your email.",
-    label_name: "Full Name",
-    label_email: "Email Address",
-    label_password: "Password",
-    label_code: "Verification Code",
-    ph_name: "Ex: Omar Kaya",
-    ph_email: "example@company.com",
-    ph_code: "123456",
-    btn_login: "Sign In",
-    btn_register: "Create Account",
-    btn_verify: "Verify Code",
-    processing: "Processing...",
-    no_account: "Don't have an account?",
-    has_account: "Already have an account?",
-    link_register: "Sign Up",
-    link_login: "Sign In",
-    err_invalid: "Invalid email or password (min 6 chars).",
-    err_network: "Could not connect to server.",
-    success_register: "Code sent! Please check your email.",
-    success_verify: "Account verified successfully! You can now log in.",
-    success_login: "Login successful! Redirecting...",
+    app_name: "Start ERA", title_login: "Sign In", title_register: "Sign Up", title_verify: "Verify Code",
+    subtitle_login: "Continue your journey.", subtitle_register: "Make a fresh start.",
+    subtitle_verify: "Enter the code.", label_name: "Full Name",
+    label_email: "Email Address", label_password: "Password", label_code: "Verification Code",
+    ph_name: "Ex: Omar Kaya", ph_email: "example@company.com", ph_code: "123456",
+    btn_login: "Sign In", btn_register: "Create Account", btn_verify: "Verify",
+    processing: "Processing...", no_account: "No account?", has_account: "Already have an account?",
+    link_register: "Sign Up", link_login: "Sign In", err_invalid: "Invalid email or password.",
+    err_network: "Network error.", success_register: "Code sent!",
+    success_verify: "Verified!", success_login: "Success!"
   },
   ar: {
-    app_name: "بداية العصر", 
-    title_login: "تسجيل الدخول",
-    title_register: "تسجيل جديد",
-    title_verify: "تأكيد الرمز",
-    subtitle_login: "أكمل رحلتك في ريادة الأعمال.",
-    subtitle_register: "ابدأ بداية جديدة.",
-    subtitle_verify: "أدخل الرمز المكون من 6 أرقام المرسل إلى بريدك الإلكتروني.",
-    label_name: "الاسم الكامل",
-    label_email: "البريد الإلكتروني",
-    label_password: "كلمة المرور",
-    label_code: "رمز التحقق",
-    ph_name: "مثال: عمر كايا",
-    ph_email: "example@company.com",
-    ph_code: "123456",
-    btn_login: "تسجيل دخول",
-    btn_register: "إنشاء حساب",
-    btn_verify: "تأكيد الرمز",
-    processing: "جاري المعالجة...",
-    no_account: "ليس لديك حساب؟",
-    has_account: "لديك حساب بالفعل؟",
-    link_register: "سجل الآن",
-    link_login: "دخول",
-    err_invalid: "البريد الإلكتروني أو كلمة المرور غير صحيحة (6 أحرف كحد أدنى).",
-    err_network: "تعذر الاتصال بالخادم.",
-    success_register: "تم إرسال الرمز! يرجى التحقق من بريدك الإلكتروني.",
-    success_verify: "تم التحقق من الحساب بنجاح! يمكنك الآن تسجيل الدخول.",
-    success_login: "تم الدخول بنجاح! جاري التوجيه...",
+    app_name: "بداية العصر", title_login: "تسجيل الدخول", title_register: "تسجيل جديد", title_verify: "تأكيد الرمز",
+    subtitle_login: "أكمل رحلتك.", subtitle_register: "ابدأ بداية جديدة.",
+    subtitle_verify: "أدخل الرمز.", label_name: "الاسم الكامل",
+    label_email: "البريد الإلكتروني", label_password: "كلمة المرور", label_code: "رمز التحقق",
+    ph_name: "مثال: عمر كايا", ph_email: "example@company.com", ph_code: "123456",
+    btn_login: "تسجيل دخول", btn_register: "إنشاء حساب", btn_verify: "تأكيد",
+    processing: "جاري المعالجة...", no_account: "ليس لديك حساب؟", has_account: "لديك حساب بالفعل؟",
+    link_register: "سجل الآن", link_login: "دخول", err_invalid: "خطأ في البيانات.",
+    err_network: "خطأ في الاتصال.", success_register: "تم الإرسال!",
+    success_verify: "تم التأكيد!", success_login: "تم الدخول!"
   }
 };
 
@@ -185,7 +115,6 @@ export default function AuthPage() {
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
   const [mounted, setMounted] = useState(false);
 
-  // Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -196,26 +125,10 @@ export default function AuthPage() {
 
   useEffect(() => {
     setMounted(true);
-    
-    // Tema Kontrolü
     const theme = localStorage.getItem("theme");
     if (theme === "dark" || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       setDarkMode(true);
       document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    // Dil Kontrolü
-    const savedLang = localStorage.getItem("app_lang") as "tr" | "en" | "ar";
-    if (savedLang && ["tr", "en", "ar"].includes(savedLang)) {
-        setLang(savedLang);
-    }
-
-    // Zaten giriş yapmış mı?
-    const token = localStorage.getItem("token");
-    if (token) {
-      safeRedirect("/dashboard");
     }
   }, []);
 
@@ -233,16 +146,8 @@ export default function AuthPage() {
     localStorage.setItem("app_lang", newLang);
   };
 
-  const getLangLabel = () => (lang === "tr" ? "EN" : lang === "en" ? "AR" : "TR");
-
-  // --- 1. KAYIT OL (Backend'e İstek Atar, E-Posta Gönderir) ---
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.includes('@') || password.length < 6) {
-        toast.error(t.err_invalid);
-        return;
-    }
-
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/register`, {
@@ -250,27 +155,15 @@ export default function AuthPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
-
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.detail || "Registration failed");
-      }
-
+      if (!res.ok) throw new Error("Error");
       toast.success(t.success_register);
-      setView('verify'); // Kodu girmesi için ekrana yönlendir
-    } catch (err: any) {
-      toast.error(err.message || t.err_network);
-    } finally {
-      setLoading(false);
-    }
+      setView('verify');
+    } catch { toast.error(t.err_network); }
+    finally { setLoading(false); }
   };
 
-  // --- 2. KODU DOĞRULA (Backend'de is_verified=True yapar) ---
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (verifyCode.length < 6) return;
-
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/verify`, {
@@ -278,61 +171,33 @@ export default function AuthPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code: verifyCode })
       });
-
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.detail || "Invalid code");
-      }
-
+      if (!res.ok) throw new Error("Error");
       toast.success(t.success_verify);
-      setView('login'); // Doğrulandı, artık giriş yapabilir
-      setPassword(''); 
-      setVerifyCode('');
-    } catch (err: any) {
-      toast.error(err.message || t.err_network);
-    } finally {
-      setLoading(false);
-    }
+      setView('login');
+    } catch { toast.error(t.err_network); }
+    finally { setLoading(false); }
   };
 
-  // --- 3. GİRİŞ YAP (Token Alır) ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const res = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
-
       const data = await res.json();
-      
       if (!res.ok) {
-        // "Not verified" hatası gelirse kullanıcıyı doğrulama ekranına at
-        if (data.detail === "Not verified") {
-           toast.error("Lütfen önce hesabınızı doğrulayın.");
-           setView('verify');
-           setLoading(false);
-           return;
-        }
-        throw new Error(data.detail || "Login failed");
+        if (data.detail === "Not verified") { setView('verify'); return; }
+        throw new Error("Error");
       }
-
-      // Başarılı giriş: Token ve emaili kaydet
       localStorage.setItem("token", data.token);
       localStorage.setItem("userEmail", data.email);
-      if (name) localStorage.setItem("userName", name); // Opsiyonel
-      
       toast.success(t.success_login);
       setTimeout(() => safeRedirect("/dashboard"), 1000);
-      
-    } catch (err: any) {
-      toast.error(err.message || t.err_network);
-      setLoading(false);
-    }
+    } catch { toast.error(t.err_network); }
+    finally { setLoading(false); }
   };
 
   if (!mounted) return null;
@@ -340,159 +205,66 @@ export default function AuthPage() {
   return (
     <div dir={dir} className={`min-h-screen flex items-center justify-center transition-colors duration-500 font-sans p-4 relative overflow-hidden ${darkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`}>
       <Toaster />
-      
-      {/* Arkaplan Efektleri */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-         <div className={`absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-20 animate-pulse ${darkMode ? 'bg-blue-900' : 'bg-blue-300'}`}></div>
-         <div className={`absolute top-[40%] -right-[10%] w-[50%] h-[70%] rounded-full blur-[130px] opacity-20 animate-pulse delay-1000 ${darkMode ? 'bg-purple-900' : 'bg-indigo-300'}`}></div>
-      </div>
-
-      {/* Sağ Üst Kontroller */}
       <div className={`absolute top-6 ${lang === 'ar' ? 'left-6' : 'right-6'} flex gap-3 z-50`}>
-        <button 
-          onClick={toggleLang} 
-          className="font-black text-lg hover:scale-110 transition active:scale-95 px-3 py-2" 
-          title="Change Language"
-        >
-          {getLangLabel()}
-        </button>
-        <button 
-          onClick={toggleTheme} 
-          className={`p-3 rounded-full transition-all active:scale-95 ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-lg hover:shadow-xl'}`}
-        >
-          {darkMode ? <Icons.Sun /> : <Icons.Moon />}
-        </button>
+        <button onClick={toggleLang} className="font-black text-lg px-3 py-2">{lang === "tr" ? "EN" : lang === "en" ? "AR" : "TR"}</button>
+        <button onClick={toggleTheme} className={`p-3 rounded-full ${darkMode ? 'bg-slate-800 text-yellow-400' : 'bg-white text-slate-600 shadow-lg'}`}>{darkMode ? <Icons.Sun /> : <Icons.Moon />}</button>
       </div>
-
-      <div className={`w-full max-w-md p-8 rounded-[32px] shadow-2xl border transition-all duration-300 backdrop-blur-xl ${darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-white'}`}>
-        
-        {/* Header */}
+      <div className={`w-full max-w-md p-8 rounded-[32px] shadow-2xl border backdrop-blur-xl ${darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-white'}`}>
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl text-white font-black text-2xl shadow-lg mb-6">S</div>
-          <h1 className="text-3xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-            {view === 'verify' ? t.title_verify : t.app_name}
-          </h1>
-          <p className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            {view === 'login' ? t.subtitle_login : view === 'register' ? t.subtitle_register : t.subtitle_verify}
-          </p>
+          <h1 className="text-3xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">{view === 'verify' ? t.title_verify : t.app_name}</h1>
+          <p className="text-sm font-medium opacity-70">{view === 'login' ? t.subtitle_login : view === 'register' ? t.subtitle_register : t.subtitle_verify}</p>
         </div>
-
-        {/* Form */}
         <form onSubmit={view === 'login' ? handleLogin : view === 'register' ? handleRegister : handleVerify} className="space-y-5">
-          
-          {/* İsim Alanı (Sadece Kayıt Olurken) */}
           {view === 'register' && (
             <div className="space-y-1">
               <label className="text-xs font-bold mx-1 opacity-70">{t.label_name}</label>
-              <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent ${darkMode ? 'bg-slate-950 border-slate-800 focus-within:ring-offset-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <span className="opacity-50"><Icons.User /></span>
-                <input 
-                  type="text" 
-                  required 
-                  placeholder={t.ph_name}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="bg-transparent border-none outline-none w-full text-sm font-medium placeholder:opacity-50"
-                />
+                <input type="text" placeholder={t.ph_name} value={name} onChange={(e) => setName(e.target.value)} className="bg-transparent border-none outline-none w-full text-sm font-medium" />
               </div>
             </div>
           )}
-
-          {/* Email Alanı (Kayıt ve Giriş) */}
           {(view === 'login' || view === 'register') && (
             <div className="space-y-1">
               <label className="text-xs font-bold mx-1 opacity-70">{t.label_email}</label>
-              <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent ${darkMode ? 'bg-slate-950 border-slate-800 focus-within:ring-offset-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <span className="opacity-50"><Icons.Mail /></span>
-                <input 
-                  type="email" 
-                  required 
-                  placeholder={t.ph_email}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="bg-transparent border-none outline-none w-full text-sm font-medium placeholder:opacity-50"
-                />
+                <input type="email" required placeholder={t.ph_email} value={email} onChange={(e) => setEmail(e.target.value)} className="bg-transparent border-none outline-none w-full text-sm font-medium" />
               </div>
             </div>
           )}
-
-          {/* Şifre Alanı (Kayıt ve Giriş) */}
           {(view === 'login' || view === 'register') && (
             <div className="space-y-1">
               <label className="text-xs font-bold mx-1 opacity-70">{t.label_password}</label>
-              <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent ${darkMode ? 'bg-slate-950 border-slate-800 focus-within:ring-offset-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <span className="opacity-50"><Icons.Lock /></span>
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  required 
-                  minLength={6}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-transparent border-none outline-none w-full text-sm font-medium placeholder:opacity-50"
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="opacity-50 hover:opacity-100 transition-opacity">
-                  {showPassword ? <Icons.EyeOff /> : <Icons.Eye />}
-                </button>
+                <input type={showPassword ? "text" : "password"} required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-transparent border-none outline-none w-full text-sm font-medium" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="opacity-50">{showPassword ? <Icons.EyeOff /> : <Icons.Eye />}</button>
               </div>
             </div>
           )}
-
-          {/* Doğrulama Kodu Alanı (Sadece Verify) */}
           {view === 'verify' && (
-            <div className="space-y-1 animate-in fade-in slide-in-from-bottom-2">
+            <div className="space-y-1">
               <label className="text-xs font-bold mx-1 opacity-70">{t.label_code}</label>
-              <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent ${darkMode ? 'bg-slate-950 border-slate-800 focus-within:ring-offset-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border focus-within:ring-2 focus-within:ring-blue-500 ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <span className="opacity-50"><Icons.Key /></span>
-                <input 
-                  type="text" 
-                  required 
-                  maxLength={6}
-                  placeholder={t.ph_code}
-                  value={verifyCode}
-                  onChange={(e) => setVerifyCode(e.target.value)}
-                  className="bg-transparent border-none outline-none w-full text-center tracking-[0.5em] text-lg font-bold placeholder:opacity-30 placeholder:tracking-normal"
-                />
+                <input type="text" maxLength={6} placeholder={t.ph_code} value={verifyCode} onChange={(e) => setVerifyCode(e.target.value)} className="bg-transparent border-none outline-none w-full text-center tracking-[0.5em] text-lg font-bold" />
               </div>
             </div>
           )}
-
-          {/* Aksiyon Butonu */}
-          <button 
-            type="submit" 
-            disabled={loading}
-            className={`w-full py-4 rounded-xl font-bold text-white shadow-xl shadow-blue-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2 ${loading ? 'bg-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:-translate-y-1'}`}
-          >
-            {loading ? (
-              <span className="animate-pulse">{t.processing}</span>
-            ) : (
-              <>
-                {view === 'login' ? t.btn_login : view === 'register' ? t.btn_register : t.btn_verify} 
-                <span className={lang === 'ar' ? 'rotate-180' : ''}><Icons.ArrowRight /></span>
-              </>
-            )}
+          <button type="submit" disabled={loading} className={`w-full py-4 rounded-xl font-bold text-white transition-all transform active:scale-95 flex items-center justify-center gap-2 ${loading ? 'bg-slate-600' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:-translate-y-1'}`}>
+            {loading ? <span className="animate-pulse">{t.processing}</span> : <>{view === 'login' ? t.btn_login : view === 'register' ? t.btn_register : t.btn_verify} <span><Icons.ArrowRight /></span></>}
           </button>
-
         </form>
-
-        {/* Alt Footer (Görünüm Geçişleri) */}
         {view !== 'verify' && (
           <div className="mt-8 text-center">
-            <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            <p className="text-sm opacity-70">
               {view === 'login' ? t.no_account : t.has_account}
-              <button 
-                onClick={() => {
-                  setView(view === 'login' ? 'register' : 'login');
-                  toast(view === 'login' ? "Kayıt ekranına geçildi" : "Giriş ekranına geçildi");
-                }}
-                className="mx-2 font-bold text-blue-600 hover:text-blue-500 underline decoration-2 underline-offset-4 transition-colors"
-              >
-                {view === 'login' ? t.link_register : t.link_login}
-              </button>
+              <button onClick={() => setView(view === 'login' ? 'register' : 'login')} className="mx-2 font-bold text-blue-600 underline decoration-2 underline-offset-4">{view === 'login' ? t.link_register : t.link_login}</button>
             </p>
           </div>
         )}
-
       </div>
     </div>
   );

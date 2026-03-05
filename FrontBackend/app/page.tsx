@@ -3,11 +3,12 @@
 import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
 import toast, { Toaster } from "react-hot-toast";
 
-// --- API URL (Vercel Desteği İçin Güncellendi) ---
-// process.env kontrolü eklenerek "process is not defined" hatası önlenmiştir.
-const API_URL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_API_URL)
-  ? process.env.NEXT_PUBLIC_API_URL
-  : "http://127.0.0.1:8000";
+/**
+ * --- API URL GÜNCELLEMESİ ---
+ * Vercel üzerinde projenin kendi API'sine gitmesi için sadece '/api' yeterlidir.
+ * Localhost bağımlılığı tamamen kaldırıldı.
+ */
+const API_URL = "/api";
 
 // --- MOCK / INTERNAL CONTEXT ---
 const ThemeAuthContext = createContext<any>(null);
@@ -84,6 +85,7 @@ const Chatbot = ({ lang, darkMode }: { lang: "tr" | "en" | "ar", darkMode: boole
     setIsTyping(true);
 
     try {
+      // VERCEL ÇÖZÜMÜ: Dinamik API yolu kullanıldı.
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -96,7 +98,8 @@ const Chatbot = ({ lang, darkMode }: { lang: "tr" | "en" | "ar", darkMode: boole
       if (!res.ok) throw new Error("API Error");
       const data = await res.json();
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
-    } catch {
+    } catch (err) {
+      console.error("Chat Error:", err);
       const errorMsg = {
         tr: "⚠️ Bağlantı hatası.",
         en: "⚠️ Connection error.",
@@ -117,7 +120,7 @@ const Chatbot = ({ lang, darkMode }: { lang: "tr" | "en" | "ar", darkMode: boole
         <div className={`w-80 md:w-96 h-[500px] flex flex-col rounded-2xl shadow-2xl border ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
           <div className="p-4 bg-blue-600 text-white rounded-t-2xl flex justify-between items-center">
             <span className="font-bold">Start ERA AI 🚀</span>
-            <button onClick={() => setIsOpen(false)}>✕</button>
+            <button onClick={() => setIsOpen(false)} className="hover:opacity-75">✕</button>
           </div>
           <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-4">
             {messages.length === 0 && (
@@ -125,38 +128,37 @@ const Chatbot = ({ lang, darkMode }: { lang: "tr" | "en" | "ar", darkMode: boole
             )}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`p-3 rounded-2xl text-sm ${msg.role === "user" ? "bg-blue-600 text-white" : (darkMode ? "bg-slate-700" : "bg-slate-100")}`}>
+                <div className={`p-3 rounded-2xl text-sm ${msg.role === "user" ? "bg-blue-600 text-white" : (darkMode ? "bg-slate-700 text-white" : "bg-slate-100 text-slate-900")}`}>
                   {msg.content}
                 </div>
               </div>
             ))}
-            {isTyping && <div className="text-xs animate-pulse">...</div>}
+            {isTyping && <div className="text-xs animate-pulse opacity-50 italic">Düşünüyor...</div>}
           </div>
           <div className="p-4 border-t dark:border-slate-700 flex gap-2">
             <input 
-              className={`flex-1 p-2 rounded-lg outline-none text-sm ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`}
+              className={`flex-1 p-2 rounded-lg outline-none text-sm ${darkMode ? 'bg-slate-900 text-white border-slate-700' : 'bg-slate-50 text-slate-900 border-slate-200'} border`}
               placeholder={placeholders[lang]}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
             />
-            <button onClick={handleSend} className="p-2 bg-blue-600 text-white rounded-lg">🚀</button>
+            <button onClick={handleSend} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">🚀</button>
           </div>
         </div>
       ) : (
-        <button onClick={() => setIsOpen(true)} className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition">💬</button>
+        <button onClick={() => setIsOpen(true)} className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition active:scale-95">💬</button>
       )}
     </div>
   );
 };
 
-// --- İKONLAR ---
+// --- İKONLAR VE DİĞER BİLEŞENLER AYNI KALDI ---
 const MoonIcon = () => (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>);
 const SunIcon = () => (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>);
 const CheckIcon = () => (<svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>);
 
-// --- ÇEVİRİ SÖZLÜĞÜ ---
-const TRANSLATIONS = {
+const TRANSLATIONS: any = {
   tr: {
     nav_about: "Hakkımızda", nav_features: "Özellikler", nav_pricing: "Fiyatlandırma", nav_contact: "İletişim", login: "Giriş Yap", dashboard: "Panelim", logout: "Çıkış",
     badge: "YAPAY ZEKA DESTEKLİ GİRİŞİMCİLİK",
@@ -225,7 +227,6 @@ const TRANSLATIONS = {
   }
 };
 
-// --- ANA İÇERİK ---
 function LandingPageContent() {
   const { user, darkMode, toggleTheme, logout } = useThemeAuth();
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
@@ -267,7 +268,6 @@ function LandingPageContent() {
 
   return (
     <div dir={dir} className={`min-h-screen transition-colors duration-500 ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`}>
-      
       <Toaster position="top-center" />
       <Chatbot lang={lang} darkMode={darkMode} />
 
@@ -323,10 +323,10 @@ function LandingPageContent() {
 
       {/* About Section */}
       <section id="about" className={`py-20 px-6 border-t ${darkMode ? 'bg-slate-800/30 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
-         <div className="max-w-4xl mx-auto text-center">
+          <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-black mb-6">{t.about_title}</h2>
             <p className="text-lg leading-relaxed opacity-80">{t.about_text}</p>
-         </div>
+          </div>
       </section>
 
       {/* Features Section */}
@@ -382,9 +382,9 @@ function LandingPageContent() {
         <div className="max-w-4xl mx-auto p-10 rounded-3xl border bg-white dark:bg-slate-800">
            <h2 className="text-3xl font-black mb-8 text-center">{t.contact_title}</h2>
            <form className="grid md:grid-cols-2 gap-4" onSubmit={(e) => { e.preventDefault(); showToast(lang === "tr" ? "Mesajınız alındı!" : lang === "ar" ? "تم استلام رسالتك!" : "Message received!"); }}>
-              <input placeholder={t.form_name} className="p-3 rounded-xl border bg-slate-50 dark:bg-slate-900" required />
-              <input type="email" placeholder={t.form_email} className="p-3 rounded-xl border bg-slate-50 dark:bg-slate-900" required />
-              <textarea placeholder={t.form_msg} className="p-3 rounded-xl border bg-slate-50 dark:bg-slate-900 md:col-span-2" rows={4} required />
+              <input placeholder={t.form_name} className="p-3 rounded-xl border bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700" required />
+              <input type="email" placeholder={t.form_email} className="p-3 rounded-xl border bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700" required />
+              <textarea placeholder={t.form_msg} className="p-3 rounded-xl border bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 md:col-span-2" rows={4} required />
               <button
                 type="submit"
                 className="md:col-span-2 py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition"
@@ -395,7 +395,7 @@ function LandingPageContent() {
         </div>
       </section>
 
-      <footer className="py-10 text-center border-t opacity-50">
+      <footer className="py-10 text-center border-t opacity-50 border-slate-200 dark:border-slate-800">
         <div className="mb-4 font-bold text-xl">Start ERA</div>
         <p className="text-sm">{t.footer}</p>
       </footer>

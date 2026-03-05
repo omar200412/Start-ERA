@@ -1,105 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext, useContext, useRef } from "react";
+import toast, { Toaster } from "react-hot-toast";
 
-// ==========================================
-// SMART API URL ROUTER
-// ==========================================
-const getApiUrl = () => {
-  if (typeof window === 'undefined') return "";
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return "http://127.0.0.1:8000/api"; 
-  }
-  return "/api"; 
-};
-const API_URL = getApiUrl();
-
-// ==========================================
-// YEREL TOAST SİSTEMİ
-// ==========================================
-const toastEvents = {
-  listeners: [] as ((t: any) => void)[],
-  emit(toast: any) { this.listeners.forEach(l => l(toast)); },
-  subscribe(l: (t: any) => void) { this.listeners.push(l); return () => { this.listeners = this.listeners.filter(x => x !== l); }; }
-};
-
-const toast = (msg: string, opts?: any) => toastEvents.emit({ id: Date.now(), msg, type: 'default', icon: opts?.icon });
-toast.success = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'success', icon: '✅' });
-toast.error = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'error', icon: '❌' });
-toast.loading = (msg: string) => { const id = Date.now(); toastEvents.emit({ id, msg, type: 'loading', icon: '⏳' }); return id; };
-toast.dismiss = (id: number) => toastEvents.emit({ id, type: 'dismiss' });
-
-const Toaster = () => {
-  const [toasts, setToasts] = useState<any[]>([]);
-  useEffect(() => {
-    return toastEvents.subscribe((event) => {
-      if (event.type === 'dismiss') {
-        setToasts(prev => prev.filter(t => t.id !== event.id));
-      } else {
-        setToasts(prev => [...prev, event]);
-        if (event.type !== 'loading') {
-          setTimeout(() => setToasts(prev => prev.filter(t => t.id !== event.id)), 3000);
-        }
-      }
-    });
-  }, []);
-  
-  return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none">
-      {toasts.map(t => (
-        <div key={t.id} className="pointer-events-auto flex items-center gap-3 px-6 py-3 bg-white dark:bg-slate-800 text-slate-800 dark:text-white rounded-full shadow-2xl border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-5 fade-in duration-300">
-          <span className="text-xl">{t.icon}</span>
-          <span className="text-sm font-bold">{t.msg}</span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ==========================================
-// MOCK ROUTER & LINK
-// ==========================================
-const useRouter = () => {
-  return {
-    push: (path: string) => {
-      if (typeof window !== 'undefined') {
-         const isPreview = window.location.hostname.includes('googleusercontent') || window.location.protocol === 'blob:';
-         if (isPreview) {
-             if (path === "/login") toast("Giriş yapmanız gerekiyor (Demo)", { icon: '🔒' });
-             else if (path === "/dashboard") toast("Dashboard'a yönlendiriliyor... (Demo)", { icon: '🏠' });
-         } else {
-             window.location.href = path;
-         }
-      }
-    }
-  };
-};
-
-const Link = ({ href, children, className, ...props }: any) => {
-  return (
-    <a 
-      href={href} 
-      className={className} 
-      onClick={(e) => {
-        const isPreview = typeof window !== 'undefined' && (window.location.hostname.includes('googleusercontent') || window.location.protocol === 'blob:');
-        if (isPreview) {
-            e.preventDefault();
-            if (href === "/dashboard") toast("Dashboard'a dönülüyor... (Demo)", { icon: '🏠' });
-        }
-      }}
-      {...props}
-    >
-      {children}
-    </a>
-  );
-};
+/**
+ * --- API URL GÜNCELLEMESİ ---
+ * Localhost bağımlılığı tamamen kaldırıldı. 
+ * Vercel üzerinde '/api' üzerinden doğrudan kendi backend'ine bağlanır.
+ */
+const API_URL = "/api";
 
 // --- MOCK CONTEXT ---
-import { createContext, useContext } from "react";
 const ThemeAuthContext = createContext<any>(null);
 const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [darkMode, setDarkMode] = useState(false);
-  const [user, setUser] = useState({ email: "girisimci@startera.com" });
+  const [user, setUser] = useState<any>(null);
   
   useEffect(() => {
       if (typeof window !== 'undefined') {
@@ -123,7 +38,7 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <ThemeAuthContext.Provider value={{ user, darkMode, toggleTheme }}>
-      <div className={`min-h-screen ${darkMode ? 'dark' : ''}`}>{children}</div>
+      <div className={`${darkMode ? 'dark' : ''}`}>{children}</div>
     </ThemeAuthContext.Provider>
   );
 };
@@ -138,10 +53,10 @@ const ResearchLoading = ({ status }: { status: string }) => {
         <div className="absolute inset-0 flex items-center justify-center text-4xl">🤖</div>
       </div>
       <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 animate-pulse">Start ERA AI</h3>
-      <div className="mt-4 flex flex-col items-center gap-2">
-        <span className="text-sm font-bold text-slate-600 dark:text-slate-300 animate-fade-in text-center max-w-sm">{status}</span>
-        <div className="w-48 h-1 bg-slate-200 rounded-full overflow-hidden mt-2">
-            <div className="h-full bg-blue-600 animate-progress"></div>
+      <div className="mt-4 flex flex-col items-center gap-2 text-center px-4">
+        <span className="text-sm font-bold text-slate-600 dark:text-slate-300 animate-fade-in max-w-sm">{status}</span>
+        <div className="w-48 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
+            <div className="h-full bg-blue-600 animate-pulse w-full"></div>
         </div>
       </div>
     </div>
@@ -154,7 +69,7 @@ const SunIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor
 const SparkleIcon = () => (<svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 3.214L13 21l-2.286-6.857L5 12l5.714-3.214z" /></svg>);
 
 // --- TRANSLATIONS ---
-const TRANSLATIONS = {
+const TRANSLATIONS: any = {
   tr: {
     nav_back: "Vazgeç", step_progress: "İlerleme Durumu", step: "Adım", back: "Geri", next: "Devam Et",
     start_magic: "Sihri Başlat", success_title: "İş Planın Hazır!",
@@ -184,10 +99,10 @@ const TRANSLATIONS = {
     status_gathering: "Scanning real-time data from the internet...",
     status_generating: "Compiling the report, please wait...",
     questions: [
-      { id: 1, key: "idea", title: "Startup Idea", subtitle: "Mention location & sector (e.g. Cafe in Şirinevler) for precise rent analysis.", ph: "Ex: Coffee shop in Şirinevler square..." },
-      { id: 2, key: "capital", title: "Capital", subtitle: "I will evaluate budget based on 2025-2026 economic data.", ph: "Ex: 1,500,000 TL" },
+      { id: 1, key: "idea", title: "Startup Idea", subtitle: "Mention location & sector (e.g. Cafe in Manhattan) for precise rent analysis.", ph: "Ex: Coffee shop in Manhattan square..." },
+      { id: 2, key: "capital", title: "Capital", subtitle: "I will evaluate budget based on 2025-2026 economic data.", ph: "Ex: $50,000" },
       { id: 3, key: "skills", title: "Skills", subtitle: "What are you good at?", ph: "Ex: Management, marketing..." },
-      { id: 4, key: "strategy", title: "Goals", subtitle: "Where do you see yourself in 1 year?", ph: "Ex: 500k monthly revenue..." },
+      { id: 4, key: "strategy", title: "Goals", subtitle: "Where do you see yourself in 1 year?", ph: "Ex: $500k monthly revenue..." },
       { id: 5, key: "management", title: "Management", subtitle: "Who is leading?", ph: "Ex: Me and my brother..." }
     ]
   },
@@ -218,45 +133,39 @@ function PlannerContent() {
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("");
   const [planResult, setPlanResult] = useState<{ title: string; content: string }[] | null>(null);
-  const [formData, setFormData] = useState({ idea: "", capital: "", skills: "", strategy: "", management: "", language: "tr" });
-  const router = useRouter();
+  const [formData, setFormData] = useState<any>({ idea: "", capital: "", skills: "", strategy: "", management: "", language: "tr" });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
         const savedLang = localStorage.getItem("app_lang") as "tr" | "en" | "ar";
-        if (savedLang && ["tr", "en", "ar"].includes(savedLang)) { setLang(savedLang); setFormData(prev => ({ ...prev, language: savedLang })); }
+        if (savedLang && ["tr", "en", "ar"].includes(savedLang)) { 
+          setLang(savedLang); 
+          setFormData((prev: any) => ({ ...prev, language: savedLang })); 
+        }
     }
   }, []);
 
   const toggleLang = () => {
     let newLang: "tr" | "en" | "ar" = lang === "tr" ? "en" : lang === "en" ? "ar" : "tr";
-    setLang(newLang); setFormData(prev => ({ ...prev, language: newLang })); localStorage.setItem("app_lang", newLang);
+    setLang(newLang); 
+    setFormData((prev: any) => ({ ...prev, language: newLang })); 
+    localStorage.setItem("app_lang", newLang);
   };
 
-  const getLangLabel = () => (lang === "tr" ? "EN" : lang === "en" ? "AR" : "TR");
   const t = TRANSLATIONS[lang];
   const dir = lang === "ar" ? "rtl" : "ltr";
 
-  const validateInput = (key: string, value: string) => {
-    if (!value.trim()) return t.err_empty;
-    return null;
-  };
-
   const handleNext = () => {
-    const currentKey = t.questions[step - 1].key as keyof typeof formData;
-    const err = validateInput(currentKey, formData[currentKey]);
-    if (err) { toast.error(err); return; }
-    if (step < 5) setStep(step + 1); else generateSmartPlan();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleNext();
+    const currentKey = t.questions[step - 1].key;
+    if (!formData[currentKey]?.trim()) {
+      toast.error(t.err_empty);
+      return;
     }
+    if (step < 5) setStep(step + 1); 
+    else generateSmartPlan();
   };
 
-  // --- SECURE FASTAPI BACKEND CALL ---
+  // --- API CALL: GENERATE PLAN ---
   const generateSmartPlan = async () => {
     setLoading(true);
     setLoadingStatus(t.status_gathering);
@@ -267,68 +176,53 @@ function PlannerContent() {
       const res = await fetch(`${API_URL}/generate_plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          idea: formData.idea,
-          capital: formData.capital,
-          skills: formData.skills,
-          strategy: formData.strategy,
-          management: formData.management,
-          language: formData.language
-        })
+        body: JSON.stringify(formData)
       });
 
-      if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+      if (!res.ok) throw new Error("API Error");
       const data = await res.json();
 
       let finalPlan = [];
       try {
-        // Just in case you update your backend index.py to return JSON arrays
         finalPlan = JSON.parse(data.plan);
       } catch {
-        // Standard handling for current index.py plain text response
-        finalPlan = [
-          { title: lang === 'tr' ? 'StartEra İş Planı' : lang === 'en' ? 'StartEra Business Plan' : 'خطة عمل StartEra', content: data.plan }
-        ];
+        finalPlan = [{ title: "İş Planı", content: data.plan }];
       }
 
       setPlanResult(finalPlan);
 
-      // Veriyi Dashboard için Kaydet
+      // Save to LocalStorage for Dashboard
       if (typeof window !== 'undefined') {
           const newProject = {
               id: Date.now(),
-              title: formData.idea.length > 30 ? formData.idea.substring(0, 30) + "..." : formData.idea,
-              status: lang === 'en' ? 'Completed' : lang === 'ar' ? 'مكتمل' : 'Tamamlandı',
-              date: lang === 'en' ? 'Just now' : lang === 'ar' ? 'الآن' : 'Az önce',
-              color: 'text-green-500',
-              planContent: finalPlan 
+              title: formData.idea.substring(0, 30) + (formData.idea.length > 30 ? "..." : ""),
+              status: lang === 'tr' ? 'Tamamlandı' : 'Completed',
+              date: new Date().toLocaleDateString(),
+              planData: finalPlan 
           };
-          const existingProjects = JSON.parse(localStorage.getItem("user_projects") || "[]");
-          localStorage.setItem("user_projects", JSON.stringify([newProject, ...existingProjects]));
+          const existing = JSON.parse(localStorage.getItem("user_projects") || "[]");
+          localStorage.setItem("user_projects", JSON.stringify([newProject, ...existing]));
       }
 
       toast.success(t.toast_success);
-
     } catch (error) {
       console.error(error);
-      toast.error(lang === 'tr' ? "Plan oluşturulamadı, lütfen daha sonra tekrar deneyin." : "Could not generate plan, please try again.");
+      toast.error("Hata oluştu.");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- SECURE FASTAPI PDF GENERATION ---
+  // --- API CALL: DOWNLOAD PDF ---
   const downloadPDF = async () => {
     if (!planResult) return;
     const tid = toast.loading(t.toast_pdf_preparing);
     
     try {
-        const textContent = planResult.map(p => `${p.title}\n\n${p.content}\n\n`).join('-------------------\n\n');
-        
         const res = await fetch(`${API_URL}/create_pdf`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: textContent })
+            body: JSON.stringify({ plan_data: planResult }) // backend 'plan_data' bekliyor
         });
 
         if (!res.ok) throw new Error("PDF API Error");
@@ -337,7 +231,7 @@ function PlannerContent() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a"); 
         a.href = url; 
-        a.download = `StartERA_Plan_${Date.now()}.pdf`; 
+        a.download = `StartERA_Plan.pdf`; 
         document.body.appendChild(a); 
         a.click(); 
         a.remove();
@@ -346,85 +240,83 @@ function PlannerContent() {
         toast.success(t.toast_pdf_success);
     } catch (err) {
         toast.dismiss(tid);
-        toast.error(lang === 'tr' ? "PDF oluşturulamadı." : "Failed to generate PDF.");
+        toast.error("PDF hatası.");
     }
   };
 
-  if (!user) return <div className="flex h-screen items-center justify-center text-slate-500">Lütfen giriş yapın.</div>;
+  if (!user) return <div className="flex h-screen items-center justify-center opacity-50 font-bold">Lütfen giriş yapın...</div>;
 
   return (
-    <div dir={dir} className={`min-h-screen transition-all duration-700 relative overflow-hidden font-sans ${darkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`}>
+    <div dir={dir} className={`min-h-screen transition-all duration-700 relative overflow-hidden ${darkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`}>
+      <Toaster position="top-center" />
+      
+      {/* Background Orbs */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-         <div className={`absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-20 animate-pulse ${darkMode ? 'bg-blue-900' : 'bg-blue-300'}`}></div>
-         <div className={`absolute top-[40%] -right-[10%] w-[50%] h-[70%] rounded-full blur-[130px] opacity-20 animate-pulse delay-1000 ${darkMode ? 'bg-purple-900' : 'bg-indigo-300'}`}></div>
+          <div className={`absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-20 ${darkMode ? 'bg-blue-900' : 'bg-blue-300'}`}></div>
+          <div className={`absolute top-[40%] -right-[10%] w-[50%] h-[70%] rounded-full blur-[130px] opacity-20 ${darkMode ? 'bg-purple-900' : 'bg-indigo-300'}`}></div>
       </div>
       
-      <Toaster />
-      
-      <nav className={`px-8 py-5 flex justify-between items-center backdrop-blur-lg sticky top-0 z-40 border-b transition-colors ${darkMode ? "bg-slate-900/60 border-slate-800" : "bg-white/60 border-slate-200"}`}>
+      {/* Navbar */}
+      <nav className={`px-8 py-5 flex justify-between items-center backdrop-blur-lg sticky top-0 z-40 border-b ${darkMode ? "bg-slate-900/60 border-slate-800" : "bg-white/60 border-slate-200"}`}>
         <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">S</div>
             <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Start ERA</span>
         </div>
         <div className="flex items-center gap-4">
-             <div className="hidden md:block text-sm font-medium opacity-70 mr-2">{user.email}</div>
-             <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95" title="Change Language">{getLangLabel()}</button>
-             <button onClick={toggleTheme} className={`p-2.5 rounded-xl transition-all active:scale-95 ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm hover:shadow-md border border-slate-100'}`}>{darkMode ? <SunIcon /> : <MoonIcon />}</button>
-             <Link href="/dashboard" className={`px-5 py-2.5 rounded-xl font-bold text-sm border transition-all hover:shadow-lg no-underline active:scale-95 flex items-center ${darkMode ? "border-slate-700 hover:bg-slate-800 text-slate-200" : "border-slate-200 hover:bg-white text-slate-900 bg-white/50"}`}>{t.nav_back}</Link>
+            <button onClick={toggleLang} className="font-black text-lg px-2">{lang === "tr" ? "EN" : lang === "en" ? "AR" : "TR"}</button>
+            <button onClick={toggleTheme} className={`p-2.5 rounded-xl border ${darkMode ? 'bg-slate-800 border-slate-700 text-yellow-400' : 'bg-white border-slate-200 text-slate-600'}`}>{darkMode ? <SunIcon /> : <MoonIcon />}</button>
+            <a href="/dashboard" className={`px-5 py-2.5 rounded-xl font-bold text-sm border no-underline transition-all ${darkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-200 text-slate-900 bg-white hover:bg-slate-50"}`}>{t.nav_back}</a>
         </div>
       </nav>
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-5xl mx-auto min-h-[calc(100vh-80px)]">
         {planResult ? (
-            <div className={`relative w-full p-[1px] rounded-[32px] bg-gradient-to-br from-blue-500/30 via-purple-500/30 to-pink-500/30 shadow-2xl animate-in fade-in zoom-in-95 duration-700`}>
-                <div className={`w-full p-8 md:p-12 rounded-[31px] backdrop-blur-2xl ${darkMode ? "bg-slate-900/90" : "bg-white/90"}`}>
-                    <div className="text-center mb-10">
-                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 text-white text-4xl mb-6 shadow-lg shadow-green-500/30 animate-bounce">🎉</div>
-                        <h2 className={`text-4xl md:text-5xl font-black mb-4 tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>{t.success_title}</h2>
-                        <p className={`text-lg font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{t.success_desc}</p>
-                    </div>
-                    
-                    <div className="grid gap-6 w-full mb-10">
-                       {planResult.map((section, idx) => (
-                          <div key={idx} className={`p-6 rounded-2xl border shadow-sm transition-all hover:shadow-md animate-in slide-in-from-bottom-4 fade-in duration-500 delay-${idx * 100} ${darkMode ? "bg-slate-800/50 border-slate-700" : "bg-white/60 border-slate-100"}`}>
-                             <h3 className="text-xl font-bold mb-3 text-blue-600 dark:text-blue-400 border-b border-dashed border-slate-300 dark:border-slate-700 pb-2">{section.title}</h3>
-                             <p className={`leading-relaxed text-lg whitespace-pre-wrap ${darkMode ? "text-slate-300" : "text-slate-700"}`}>{section.content}</p>
-                          </div>
-                       ))}
-                    </div>
+            <div className={`w-full p-8 md:p-12 rounded-[32px] shadow-2xl backdrop-blur-2xl border ${darkMode ? "bg-slate-900/90 border-slate-800" : "bg-white/90 border-white"}`}>
+                <div className="text-center mb-10">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 text-white text-4xl mb-6 shadow-lg shadow-green-500/30">🎉</div>
+                    <h2 className="text-4xl font-black mb-4 tracking-tight">{t.success_title}</h2>
+                    <p className="text-lg opacity-80">{t.success_desc}</p>
+                </div>
+                
+                <div className="grid gap-6 w-full mb-10">
+                   {planResult.map((section, idx) => (
+                      <div key={idx} className={`p-6 rounded-2xl border shadow-sm ${darkMode ? "bg-slate-800/50 border-slate-700" : "bg-white/60 border-slate-100"}`}>
+                         <h3 className="text-xl font-bold mb-3 text-blue-600 dark:text-blue-400 border-b border-dashed border-slate-300 dark:border-slate-700 pb-2">{section.title}</h3>
+                         <p className="leading-relaxed text-lg whitespace-pre-wrap opacity-90">{section.content}</p>
+                      </div>
+                   ))}
+                </div>
 
-                    <div className="flex flex-col sm:flex-row gap-5 justify-center items-center">
-                        <button onClick={downloadPDF} className="group relative px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-xl hover:shadow-blue-500/30 transition-all transform hover:-translate-y-1 w-full sm:w-auto overflow-hidden">
-                            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
-                            <span className="flex items-center justify-center gap-2 relative z-10"><svg className="w-5 h-5 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>{t.download_pdf}</span>
-                        </button>
-                        <button onClick={() => { setPlanResult(null); setStep(1); setFormData({...formData, idea: ""}); }} className={`px-8 py-4 rounded-xl font-bold border transition-all w-full sm:w-auto hover:scale-105 active:scale-95 ${darkMode ? "border-slate-700 hover:bg-slate-800 text-slate-300" : "border-slate-200 hover:bg-slate-50 text-slate-700"}`}>{t.new_plan}</button>
-                    </div>
+                <div className="flex flex-col sm:flex-row gap-5 justify-center items-center">
+                    <button onClick={downloadPDF} className="px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-xl transition-all w-full sm:w-auto flex items-center justify-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth={2}/></svg>{t.download_pdf}
+                    </button>
+                    <button onClick={() => { setPlanResult(null); setStep(1); setFormData({...formData, idea: ""}); }} className={`px-8 py-4 rounded-xl font-bold border transition-all w-full sm:w-auto ${darkMode ? "border-slate-700 hover:bg-slate-800" : "border-slate-200 hover:bg-slate-50"}`}>{t.new_plan}</button>
                 </div>
             </div>
         ) : (
-            <div className={`relative w-full max-w-3xl transition-all duration-500`}>
+            <div className="relative w-full max-w-3xl">
                 {loading && <ResearchLoading status={loadingStatus} />}
                 
                 <div className="flex justify-between mb-3 px-2">
-                   <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t.step_progress}</span>
-                   <span className={`text-xs font-bold ${darkMode ? 'text-slate-400' : 'text-slate-700'}`}>{t.step} {step} / 5</span>
+                    <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t.step_progress}</span>
+                    <span className="text-xs font-bold opacity-70">{t.step} {step} / 5</span>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-2 mb-10 dark:bg-slate-800 overflow-hidden"><div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(59,130,246,0.6)]" style={{ width: `${(step / 5) * 100}%` }}></div></div>
-                <div className={`relative p-8 md:p-12 rounded-[32px] shadow-2xl backdrop-blur-xl border transition-all duration-500 ${darkMode ? "bg-slate-900/80 border-slate-800 shadow-black/50" : "bg-white/80 border-white/60 shadow-blue-900/5"}`}>
-                    <div className="mb-8 animate-in slide-in-from-bottom-2 fade-in duration-500" key={step}>
-                        <h2 className={`text-3xl md:text-5xl font-black mb-4 tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>{t.questions[step - 1].title}</h2>
-                        <p className={`text-lg md:text-xl font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>{t.questions[step - 1].subtitle}</p>
+                <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 mb-10 overflow-hidden">
+                    <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 h-full transition-all duration-700" style={{ width: `${(step / 5) * 100}%` }}></div>
+                </div>
+
+                <div className={`p-8 md:p-12 rounded-[32px] shadow-2xl backdrop-blur-xl border ${darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-white/60"}`}>
+                    <div className="mb-8" key={step}>
+                        <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">{t.questions[step - 1].title}</h2>
+                        <p className="text-lg opacity-80">{t.questions[step - 1].subtitle}</p>
                     </div>
-                    <div className="relative group">
-                        <div className={`absolute -inset-0.5 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500 bg-gradient-to-r from-blue-600 to-purple-600`}></div>
-                        <textarea rows={6} className={`relative w-full p-6 rounded-2xl border-none outline-none text-xl resize-none shadow-inner transition-all ${darkMode ? "bg-slate-950 text-white placeholder:text-slate-500 focus:bg-slate-900" : "bg-slate-100 text-slate-900 placeholder:text-slate-600 focus:bg-white"}`} placeholder={t.questions[step - 1].ph} value={formData[t.questions[step - 1].key as keyof typeof formData]} onChange={(e) => setFormData({...formData, [t.questions[step - 1].key]: e.target.value})} onKeyDown={handleKeyDown} autoFocus />
-                    </div>
+                    <textarea rows={6} className={`w-full p-6 rounded-2xl border-none outline-none text-xl resize-none transition-all ${darkMode ? "bg-slate-950 text-white focus:bg-slate-900" : "bg-slate-100 text-slate-900 focus:bg-white"}`} placeholder={t.questions[step - 1].ph} value={formData[t.questions[step - 1].key]} onChange={(e) => setFormData({...formData, [t.questions[step - 1].key]: e.target.value})} autoFocus />
+                    
                     <div className="flex justify-between items-center mt-12">
-                        {step > 1 ? <button onClick={() => setStep(step - 1)} className={`px-6 py-3 font-bold rounded-xl transition-colors ${darkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-700 hover:text-black hover:bg-slate-200'}`}>{lang === "ar" ? "→" : "←"} {t.back}</button> : <div></div>}
-                        <button onClick={handleNext} disabled={loading} className={`group relative px-10 py-4 rounded-xl font-bold text-white shadow-xl transition-all transform hover:-translate-y-1 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden ${loading ? 'bg-slate-600' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'}`}>
-                            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
-                            <span className="flex items-center gap-2 relative z-10">{step === 5 ? <><SparkleIcon />{t.start_magic}</> : <>{t.next} <span className={`group-hover:translate-x-1 transition-transform inline-block ${lang === "ar" ? "rotate-180" : ""}`}>→</span></>}</span>
+                        {step > 1 ? <button onClick={() => setStep(step - 1)} className="px-6 py-3 font-bold opacity-60 hover:opacity-100 transition-opacity">← {t.back}</button> : <div />}
+                        <button onClick={handleNext} disabled={loading} className="px-10 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-xl transition-all flex items-center gap-2">
+                            {step === 5 ? <><SparkleIcon />{t.start_magic}</> : <>{t.next} →</>}
                         </button>
                     </div>
                 </div>
