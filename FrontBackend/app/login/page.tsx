@@ -1,6 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
+
+// ==========================================
+// SMART API URL ROUTER
+// ==========================================
+const getApiUrl = () => {
+  if (typeof window === 'undefined') return "";
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return "http://127.0.0.1:8000/api"; 
+  }
+  return "/api"; 
+};
+const API_URL = getApiUrl();
 
 // ==========================================
 // YEREL TOAST SİSTEMİ (Bildirimler İçin)
@@ -11,9 +23,9 @@ const toastEvents = {
   subscribe(l: (t: any) => void) { this.listeners.push(l); return () => { this.listeners = this.listeners.filter(x => x !== l); }; }
 };
 
-const toast = (msg: string, type: 'default' | 'success' | 'error' = 'default') => toastEvents.emit({ id: Date.now(), msg, type, icon: type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️' });
-toast.success = (msg: string) => toast(msg, 'success');
-toast.error = (msg: string) => toast(msg, 'error');
+const toast = (msg: string, opts?: any) => toastEvents.emit({ id: Date.now(), msg, type: 'default', icon: opts?.icon || 'ℹ️' });
+toast.success = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'success', icon: '✅' });
+toast.error = (msg: string) => toastEvents.emit({ id: Date.now(), msg, type: 'error', icon: '❌' });
 
 const Toaster = () => {
   const [toasts, setToasts] = useState<any[]>([]);
@@ -37,6 +49,24 @@ const Toaster = () => {
 };
 
 // ==========================================
+// MOCK ROUTER & LINK
+// ==========================================
+const safeRedirect = (path: string) => {
+  if (typeof window !== 'undefined') {
+      const isPreview = window.location.hostname.includes('googleusercontent') || 
+                        window.location.hostname.includes('scf') || 
+                        window.location.protocol === 'blob:';
+      
+      if (isPreview) {
+          console.log(`[Preview] Navigating to: ${path}`);
+          toast(`Yönlendiriliyor: ${path} (Demo)`);
+      } else {
+          window.location.href = path;
+      }
+  }
+};
+
+// ==========================================
 // ÇEVİRİLER (TR / EN / AR)
 // ==========================================
 const TRANSLATIONS = {
@@ -44,82 +74,88 @@ const TRANSLATIONS = {
     app_name: "Start ERA",
     title_login: "Giriş Yap",
     title_register: "Kayıt Ol",
+    title_verify: "Kodu Doğrula",
     subtitle_login: "Girişimcilik yolculuğuna devam et.",
     subtitle_register: "Yeni bir başlangıç yap.",
+    subtitle_verify: "E-postanıza gönderilen 6 haneli kodu girin.",
     label_name: "Ad Soyad",
     label_email: "E-Posta Adresi",
     label_password: "Şifre",
-    ph_name: "Örn: Ahmet Yılmaz",
+    label_code: "Doğrulama Kodu",
+    ph_name: "Örn: Ömer Kaya",
     ph_email: "ornek@sirket.com",
+    ph_code: "123456",
     btn_login: "Giriş Yap",
     btn_register: "Hesap Oluştur",
+    btn_verify: "Kodu Onayla",
     processing: "İşleniyor...",
     no_account: "Henüz hesabın yok mu?",
     has_account: "Zaten hesabın var mı?",
     link_register: "Kayıt Ol",
     link_login: "Giriş Yap",
     err_invalid: "Geçersiz email veya şifre (min 6 karakter).",
-    err_exists: "Bu e-posta adresi zaten kayıtlı.",
-    err_login_fail: "Hatalı e-posta veya şifre.",
-    success_register: "Hesap başarıyla oluşturuldu!",
+    err_network: "Sunucuya bağlanılamadı.",
+    success_register: "Kod gönderildi! Lütfen e-postanızı kontrol edin.",
+    success_verify: "Hesap başarıyla doğrulandı! Giriş yapabilirsiniz.",
     success_login: "Giriş başarılı! Yönlendiriliyorsunuz...",
-    toast_switched_login: "Giriş ekranına geçildi",
-    toast_switched_register: "Kayıt ekranına geçildi",
-    redirecting: "Yönlendiriliyor..."
   },
   en: {
     app_name: "Start ERA",
     title_login: "Sign In",
     title_register: "Sign Up",
+    title_verify: "Verify Code",
     subtitle_login: "Continue your entrepreneurial journey.",
     subtitle_register: "Make a fresh start.",
+    subtitle_verify: "Enter the 6-digit code sent to your email.",
     label_name: "Full Name",
     label_email: "Email Address",
     label_password: "Password",
-    ph_name: "Ex: John Doe",
+    label_code: "Verification Code",
+    ph_name: "Ex: Omar Kaya",
     ph_email: "example@company.com",
+    ph_code: "123456",
     btn_login: "Sign In",
     btn_register: "Create Account",
+    btn_verify: "Verify Code",
     processing: "Processing...",
     no_account: "Don't have an account?",
     has_account: "Already have an account?",
     link_register: "Sign Up",
     link_login: "Sign In",
     err_invalid: "Invalid email or password (min 6 chars).",
-    err_exists: "This email is already registered.",
-    err_login_fail: "Incorrect email or password.",
-    success_register: "Account created successfully!",
+    err_network: "Could not connect to server.",
+    success_register: "Code sent! Please check your email.",
+    success_verify: "Account verified successfully! You can now log in.",
     success_login: "Login successful! Redirecting...",
-    toast_switched_login: "Switched to Login",
-    toast_switched_register: "Switched to Register",
-    redirecting: "Redirecting..."
   },
   ar: {
-    app_name: "بداية العصر", // Start ERA
+    app_name: "بداية العصر", 
     title_login: "تسجيل الدخول",
     title_register: "تسجيل جديد",
+    title_verify: "تأكيد الرمز",
     subtitle_login: "أكمل رحلتك في ريادة الأعمال.",
     subtitle_register: "ابدأ بداية جديدة.",
+    subtitle_verify: "أدخل الرمز المكون من 6 أرقام المرسل إلى بريدك الإلكتروني.",
     label_name: "الاسم الكامل",
     label_email: "البريد الإلكتروني",
     label_password: "كلمة المرور",
-    ph_name: "مثال: أحمد علي",
+    label_code: "رمز التحقق",
+    ph_name: "مثال: عمر كايا",
     ph_email: "example@company.com",
+    ph_code: "123456",
     btn_login: "تسجيل دخول",
     btn_register: "إنشاء حساب",
+    btn_verify: "تأكيد الرمز",
     processing: "جاري المعالجة...",
     no_account: "ليس لديك حساب؟",
     has_account: "لديك حساب بالفعل؟",
     link_register: "سجل الآن",
     link_login: "دخول",
     err_invalid: "البريد الإلكتروني أو كلمة المرور غير صحيحة (6 أحرف كحد أدنى).",
-    err_exists: "هذا البريد الإلكتروني مسجل بالفعل.",
-    err_login_fail: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
-    success_register: "تم إنشاء الحساب بنجاح!",
+    err_network: "تعذر الاتصال بالخادم.",
+    success_register: "تم إرسال الرمز! يرجى التحقق من بريدك الإلكتروني.",
+    success_verify: "تم التحقق من الحساب بنجاح! يمكنك الآن تسجيل الدخول.",
     success_login: "تم الدخول بنجاح! جاري التوجيه...",
-    toast_switched_login: "الانتقال إلى تسجيل الدخول",
-    toast_switched_register: "الانتقال إلى التسجيل",
-    redirecting: "جاري التوجيه..."
   }
 };
 
@@ -130,10 +166,10 @@ const Icons = {
   Mail: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
   Lock: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>,
   User: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
+  Key: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>,
   Eye: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>,
   EyeOff: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>,
   ArrowRight: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>,
-  ArrowLeft: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>,
   Sun: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
   Moon: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>,
 };
@@ -142,7 +178,7 @@ const Icons = {
 // AUTH SAYFASI
 // ==========================================
 export default function AuthPage() {
-  const [view, setView] = useState<'login' | 'register'>('login');
+  const [view, setView] = useState<'login' | 'register' | 'verify'>('login');
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -153,26 +189,10 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [verifyCode, setVerifyCode] = useState('');
 
-  // Çeviri ve Yön
   const t = TRANSLATIONS[lang];
   const dir = lang === "ar" ? "rtl" : "ltr";
-
-  // Önizleme Ortamı Kontrolü
-  const safeRedirect = (path: string) => {
-    if (typeof window !== 'undefined') {
-        const isPreview = window.location.hostname.includes('googleusercontent') || 
-                          window.location.hostname.includes('scf') || 
-                          window.location.protocol === 'blob:';
-        
-        if (isPreview) {
-            console.log(`[Preview] Redirecting to: ${path}`);
-            toast(`${t.redirecting} (Demo)`);
-        } else {
-            window.location.href = path;
-        }
-    }
-  };
 
   useEffect(() => {
     setMounted(true);
@@ -193,8 +213,8 @@ export default function AuthPage() {
     }
 
     // Zaten giriş yapmış mı?
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-    if (isLoggedIn === "true") {
+    const token = localStorage.getItem("token");
+    if (token) {
       safeRedirect("/dashboard");
     }
   }, []);
@@ -215,60 +235,103 @@ export default function AuthPage() {
 
   const getLangLabel = () => (lang === "tr" ? "EN" : lang === "en" ? "AR" : "TR");
 
-  // --- KAYIT OL ---
+  // --- 1. KAYIT OL (Backend'e İstek Atar, E-Posta Gönderir) ---
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    await new Promise(r => setTimeout(r, 1000));
-
     if (!email.includes('@') || password.length < 6) {
         toast.error(t.err_invalid);
-        setLoading(false);
         return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users_db") || "[]");
-    const userExists = users.find((u: any) => u.email === email);
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
 
-    if (userExists) {
-        toast.error(t.err_exists);
-        setLoading(false);
-        return;
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.detail || "Registration failed");
+      }
+
+      toast.success(t.success_register);
+      setView('verify'); // Kodu girmesi için ekrana yönlendir
+    } catch (err: any) {
+      toast.error(err.message || t.err_network);
+    } finally {
+      setLoading(false);
     }
-
-    const newUser = { name, email, password };
-    users.push(newUser);
-    localStorage.setItem("users_db", JSON.stringify(users));
-
-    toast.success(t.success_register);
-    
-    setView('login');
-    setPassword('');
-    setLoading(false);
   };
 
-  // --- GİRİŞ YAP ---
+  // --- 2. KODU DOĞRULA (Backend'de is_verified=True yapar) ---
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (verifyCode.length < 6) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: verifyCode })
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.detail || "Invalid code");
+      }
+
+      toast.success(t.success_verify);
+      setView('login'); // Doğrulandı, artık giriş yapabilir
+      setPassword(''); 
+      setVerifyCode('');
+    } catch (err: any) {
+      toast.error(err.message || t.err_network);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- 3. GİRİŞ YAP (Token Alır) ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    await new Promise(r => setTimeout(r, 1000));
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
 
-    const users = JSON.parse(localStorage.getItem("users_db") || "[]");
-    const user = users.find((u: any) => u.email === email && u.password === password);
-    const isDemoUser = email === "demo@startera.com" && password === "123456";
+      const data = await res.json();
+      
+      if (!res.ok) {
+        // "Not verified" hatası gelirse kullanıcıyı doğrulama ekranına at
+        if (data.detail === "Not verified") {
+           toast.error("Lütfen önce hesabınızı doğrulayın.");
+           setView('verify');
+           setLoading(false);
+           return;
+        }
+        throw new Error(data.detail || "Login failed");
+      }
 
-    if (user || isDemoUser) {
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userEmail", email);
-        if (user && user.name) localStorage.setItem("userName", user.name);
-        
-        toast.success(t.success_login);
-        setTimeout(() => safeRedirect("/dashboard"), 1000);
-    } else {
-        toast.error(t.err_login_fail);
-        setLoading(false);
+      // Başarılı giriş: Token ve emaili kaydet
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userEmail", data.email);
+      if (name) localStorage.setItem("userName", name); // Opsiyonel
+      
+      toast.success(t.success_login);
+      setTimeout(() => safeRedirect("/dashboard"), 1000);
+      
+    } catch (err: any) {
+      toast.error(err.message || t.err_network);
+      setLoading(false);
     }
   };
 
@@ -307,15 +370,15 @@ export default function AuthPage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl text-white font-black text-2xl shadow-lg mb-6">S</div>
           <h1 className="text-3xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-            {t.app_name}
+            {view === 'verify' ? t.title_verify : t.app_name}
           </h1>
           <p className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            {view === 'login' ? t.subtitle_login : t.subtitle_register}
+            {view === 'login' ? t.subtitle_login : view === 'register' ? t.subtitle_register : t.subtitle_verify}
           </p>
         </div>
 
         {/* Form */}
-        <form onSubmit={view === 'login' ? handleLogin : handleRegister} className="space-y-5">
+        <form onSubmit={view === 'login' ? handleLogin : view === 'register' ? handleRegister : handleVerify} className="space-y-5">
           
           {/* İsim Alanı (Sadece Kayıt Olurken) */}
           {view === 'register' && (
@@ -335,41 +398,64 @@ export default function AuthPage() {
             </div>
           )}
 
-          {/* Email Alanı */}
-          <div className="space-y-1">
-            <label className="text-xs font-bold mx-1 opacity-70">{t.label_email}</label>
-            <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent ${darkMode ? 'bg-slate-950 border-slate-800 focus-within:ring-offset-slate-900' : 'bg-slate-50 border-slate-200'}`}>
-              <span className="opacity-50"><Icons.Mail /></span>
-              <input 
-                type="email" 
-                required 
-                placeholder={t.ph_email}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-transparent border-none outline-none w-full text-sm font-medium placeholder:opacity-50"
-              />
+          {/* Email Alanı (Kayıt ve Giriş) */}
+          {(view === 'login' || view === 'register') && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold mx-1 opacity-70">{t.label_email}</label>
+              <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent ${darkMode ? 'bg-slate-950 border-slate-800 focus-within:ring-offset-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+                <span className="opacity-50"><Icons.Mail /></span>
+                <input 
+                  type="email" 
+                  required 
+                  placeholder={t.ph_email}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-transparent border-none outline-none w-full text-sm font-medium placeholder:opacity-50"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Şifre Alanı */}
-          <div className="space-y-1">
-            <label className="text-xs font-bold mx-1 opacity-70">{t.label_password}</label>
-            <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent ${darkMode ? 'bg-slate-950 border-slate-800 focus-within:ring-offset-slate-900' : 'bg-slate-50 border-slate-200'}`}>
-              <span className="opacity-50"><Icons.Lock /></span>
-              <input 
-                type={showPassword ? "text" : "password"} 
-                required 
-                minLength={6}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-transparent border-none outline-none w-full text-sm font-medium placeholder:opacity-50"
-              />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="opacity-50 hover:opacity-100 transition-opacity">
-                {showPassword ? <Icons.EyeOff /> : <Icons.Eye />}
-              </button>
+          {/* Şifre Alanı (Kayıt ve Giriş) */}
+          {(view === 'login' || view === 'register') && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold mx-1 opacity-70">{t.label_password}</label>
+              <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent ${darkMode ? 'bg-slate-950 border-slate-800 focus-within:ring-offset-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+                <span className="opacity-50"><Icons.Lock /></span>
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  required 
+                  minLength={6}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-transparent border-none outline-none w-full text-sm font-medium placeholder:opacity-50"
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="opacity-50 hover:opacity-100 transition-opacity">
+                  {showPassword ? <Icons.EyeOff /> : <Icons.Eye />}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Doğrulama Kodu Alanı (Sadece Verify) */}
+          {view === 'verify' && (
+            <div className="space-y-1 animate-in fade-in slide-in-from-bottom-2">
+              <label className="text-xs font-bold mx-1 opacity-70">{t.label_code}</label>
+              <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent ${darkMode ? 'bg-slate-950 border-slate-800 focus-within:ring-offset-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+                <span className="opacity-50"><Icons.Key /></span>
+                <input 
+                  type="text" 
+                  required 
+                  maxLength={6}
+                  placeholder={t.ph_code}
+                  value={verifyCode}
+                  onChange={(e) => setVerifyCode(e.target.value)}
+                  className="bg-transparent border-none outline-none w-full text-center tracking-[0.5em] text-lg font-bold placeholder:opacity-30 placeholder:tracking-normal"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Aksiyon Butonu */}
           <button 
@@ -381,7 +467,7 @@ export default function AuthPage() {
               <span className="animate-pulse">{t.processing}</span>
             ) : (
               <>
-                {view === 'login' ? t.btn_login : t.btn_register} 
+                {view === 'login' ? t.btn_login : view === 'register' ? t.btn_register : t.btn_verify} 
                 <span className={lang === 'ar' ? 'rotate-180' : ''}><Icons.ArrowRight /></span>
               </>
             )}
@@ -389,21 +475,23 @@ export default function AuthPage() {
 
         </form>
 
-        {/* Alt Footer (Geçiş) */}
-        <div className="mt-8 text-center">
-          <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            {view === 'login' ? t.no_account : t.has_account}
-            <button 
-              onClick={() => {
-                setView(view === 'login' ? 'register' : 'login');
-                toast(view === 'login' ? t.toast_switched_register : t.toast_switched_login);
-              }}
-              className="mx-2 font-bold text-blue-600 hover:text-blue-500 underline decoration-2 underline-offset-4 transition-colors"
-            >
-              {view === 'login' ? t.link_register : t.link_login}
-            </button>
-          </p>
-        </div>
+        {/* Alt Footer (Görünüm Geçişleri) */}
+        {view !== 'verify' && (
+          <div className="mt-8 text-center">
+            <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              {view === 'login' ? t.no_account : t.has_account}
+              <button 
+                onClick={() => {
+                  setView(view === 'login' ? 'register' : 'login');
+                  toast(view === 'login' ? "Kayıt ekranına geçildi" : "Giriş ekranına geçildi");
+                }}
+                className="mx-2 font-bold text-blue-600 hover:text-blue-500 underline decoration-2 underline-offset-4 transition-colors"
+              >
+                {view === 'login' ? t.link_register : t.link_login}
+              </button>
+            </p>
+          </div>
+        )}
 
       </div>
     </div>

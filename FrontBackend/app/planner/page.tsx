@@ -1,6 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useRef, createContext, useContext } from "react";
+import React, { useState, useEffect } from "react";
+
+// ==========================================
+// SMART API URL ROUTER
+// ==========================================
+const getApiUrl = () => {
+  if (typeof window === 'undefined') return "";
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return "http://127.0.0.1:8000/api"; 
+  }
+  return "/api"; 
+};
+const API_URL = getApiUrl();
 
 // ==========================================
 // YEREL TOAST SİSTEMİ
@@ -83,6 +95,7 @@ const Link = ({ href, children, className, ...props }: any) => {
 };
 
 // --- MOCK CONTEXT ---
+import { createContext, useContext } from "react";
 const ThemeAuthContext = createContext<any>(null);
 const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [darkMode, setDarkMode] = useState(false);
@@ -116,122 +129,7 @@ const ThemeAuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 const useThemeAuth = () => useContext(ThemeAuthContext);
 
-// --- CHATBOT BİLEŞENİ (GERÇEK YAPAY ZEKA) ---
-const Chatbot = ({ lang, darkMode, contextData }: { lang: string, darkMode: boolean, contextData: any }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages]);
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-    const userMsg = { role: "user", content: input };
-    setMessages((prev) => [...prev, userMsg]);
-    const currentInput = input;
-    setInput("");
-    setIsTyping(true);
-
-    try {
-      const apiKey = ""; // Sistem tarafından sağlanacak
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-      let promptLang = "Türkçe";
-      if (lang === "en") promptLang = "İngilizce";
-      if (lang === "ar") promptLang = "Arapça";
-
-      const systemInstruction = `Sen uzman bir iş geliştirme danışmanısın. Cevaplarını kesinlikle ${promptLang} dilinde ver. Kullanıcının iş fikri: "${contextData.idea}". Sermayesi: "${contextData.capital}". Hedefi: "${contextData.strategy}". Sorulara kısa, net ve gerçekçi tavsiyelerle yanıt ver.`;
-
-      const formattedMessages = messages.map(m => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }]
-      }));
-      formattedMessages.push({ role: "user", parts: [{ text: currentInput }] });
-
-      const payload = {
-        systemInstruction: { parts: [{ text: systemInstruction }] },
-        contents: formattedMessages,
-        tools: [{ google_search: {} }] // Gerçek veriler için Google Search
-      };
-
-      // Exponential Backoff
-      const fetchWithBackoff = async (retries = 5, delay = 1000) => {
-        for (let i = 0; i < retries; i++) {
-          try {
-            const res = await fetch(url, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            });
-            if (!res.ok) throw new Error("API Hatası");
-            return await res.json();
-          } catch (error) {
-            if (i === retries - 1) throw error;
-            await new Promise(r => setTimeout(r, delay));
-            delay *= 2;
-          }
-        }
-      };
-
-      const result = await fetchWithBackoff();
-      const reply = result.candidates?.[0]?.content?.parts?.[0]?.text || "Üzgünüm, şu an cevap veremiyorum.";
-      
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-    } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Bağlantı hatası oluştu, lütfen daha sonra tekrar deneyin." }]);
-    } finally {
-      setIsTyping(false);
-    }
-  };
-
-  return (
-    <div className="fixed bottom-6 right-6 z-[60]">
-      {isOpen ? (
-        <div className={`w-80 md:w-96 h-[500px] flex flex-col rounded-2xl shadow-2xl border transition-colors ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
-          <div className="p-4 bg-blue-600 text-white rounded-t-2xl flex justify-between items-center">
-            <span className="font-bold">Start ERA AI 🚀</span>
-            <button onClick={() => setIsOpen(false)}>✕</button>
-          </div>
-          <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-4">
-            {messages.length === 0 && <p className="text-center text-sm opacity-50 mt-10">İş fikrinizle ilgili aklınıza takılanları sorun! Gerçek zamanlı piyasa analizi yapabilirim.</p>}
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`p-3 rounded-2xl text-sm max-w-[80%] whitespace-pre-wrap ${msg.role === "user" ? "bg-blue-600 text-white" : (darkMode ? "bg-slate-700" : "bg-slate-100")}`}>{msg.content}</div>
-              </div>
-            ))}
-            {isTyping && <div className="text-xs animate-pulse opacity-50">Araştırıyor...</div>}
-          </div>
-          <div className="p-4 border-t dark:border-slate-700 flex gap-2">
-            <input className={`flex-1 p-2 rounded-lg outline-none text-sm border ${darkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`} placeholder="Bir soru sor..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} />
-            <button onClick={handleSend} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">🚀</button>
-          </div>
-        </div>
-      ) : (
-        <button onClick={() => setIsOpen(true)} className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition animate-bounce-slow">💬</button>
-      )}
-    </div>
-  );
-};
-
 // --- YARDIMCI BİLEŞENLER ---
-const TypewriterEffect = ({ text, speed = 5 }: { text: string, speed?: number }) => {
-  const [displayedText, setDisplayedText] = useState("");
-  useEffect(() => {
-    let i = 0;
-    setDisplayedText(""); 
-    const timer = setInterval(() => {
-      if (i < text.length) { setDisplayedText((prev) => prev + text.charAt(i)); i++; } 
-      else clearInterval(timer);
-    }, speed);
-    return () => clearInterval(timer);
-  }, [text, speed]);
-  return <div className="whitespace-pre-wrap leading-relaxed">{displayedText}</div>;
-};
-
 const ResearchLoading = ({ status }: { status: string }) => {
   return (
     <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl rounded-3xl transition-all duration-500">
@@ -317,13 +215,10 @@ function PlannerContent() {
   const { user, darkMode, toggleTheme } = useThemeAuth();
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
   const [step, setStep] = useState(1);
-  
-  // YENİ STATE YAPILARI
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("");
   const [planResult, setPlanResult] = useState<{ title: string; content: string }[] | null>(null);
   const [formData, setFormData] = useState({ idea: "", capital: "", skills: "", strategy: "", management: "", language: "tr" });
-  
   const router = useRouter();
 
   useEffect(() => {
@@ -361,97 +256,42 @@ function PlannerContent() {
     }
   };
 
-  // --- GERÇEK YAPAY ZEKA API ÇAĞRISI (GEMINI) ---
+  // --- SECURE FASTAPI BACKEND CALL ---
   const generateSmartPlan = async () => {
     setLoading(true);
     setLoadingStatus(t.status_gathering);
     
     try {
-      const apiKey = ""; // Sistem çalışma anında ekleyecek
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-      let promptLang = "Türkçe";
-      if (lang === "en") promptLang = "İngilizce";
-      if (lang === "ar") promptLang = "Arapça";
-
-      const promptText = `Sen uzman bir iş geliştirme danışmanı ve finansal analistsin. Görevin, kullanıcının verdiği bilgilere dayanarak Google Arama üzerinden GERÇEK ve GÜNCEL (2025/2026) verileri toplayıp detaylı bir iş planı oluşturmak.
-
-      Kullanıcı Bilgileri:
-      - Fikir ve Konum: ${formData.idea}
-      - Sermaye: ${formData.capital}
-      - Yetenekler: ${formData.skills}
-      - Hedef/Strateji: ${formData.strategy}
-      - Yönetim Ekibi: ${formData.management}
-
-      İstenen Format:
-      Yanıtını JSON formatında, aşağıdaki 4 bölümden oluşan bir dizi (ARRAY) olarak ver. SADECE JSON ÇIKTISI ÜRET, BAŞKA METİN EKLEME. Dil kesinlikle ${promptLang} olmalıdır.
-
-      İstenen JSON Yapısı:
-      [
-        {
-          "title": "1. YÖNETİCİ ÖZETİ (EXECUTIVE SUMMARY)",
-          "content": "Girişimin amacı, konumu, hedef kitlesi ve ekibin güçlü yönlerinin gerçekçi bir özeti."
-        },
-        {
-          "title": "2. İŞ MODELİ VE STRATEJİ",
-          "content": "Pazar analizi. Özellikle belirtilen konumdaki GÜNCEL KİRA FİYATLARI (Google'dan araştır), rekabet durumu ve müşteri çekme stratejisi."
-        },
-        {
-          "title": "3. FİNANSAL PLAN VE YATIRIM",
-          "content": "Sermayenin(${formData.capital}) nasıl dağıtılacağı. GÜNCEL ASGARİ ÜCRET VE PERSONEL MAAŞLARINI (Google'dan araştır) dikkate alarak aylık gider tahmini ve başabaş noktası (breakeven) süresi."
-        },
-        {
-          "title": "4. HEDEF VE VİZYON",
-          "content": "Belirtilen hedefe (${formData.strategy}) ulaşmak için atılması gereken somut adımlar ve risk yönetimi."
-        }
-      ]`;
-
-      const payload = {
-        contents: [{ parts: [{ text: promptText }] }],
-        tools: [{ google_search: {} }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "ARRAY",
-            items: {
-              type: "OBJECT",
-              properties: {
-                title: { type: "STRING" },
-                content: { type: "STRING" }
-              },
-              required: ["title", "content"]
-            }
-          }
-        }
-      };
-
-      // Exponential Backoff ile API İsteği
-      const fetchWithBackoff = async (retries = 5, delay = 1000) => {
-        for (let i = 0; i < retries; i++) {
-          try {
-            const res = await fetch(url, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            });
-            if (!res.ok) throw new Error(`HTTP Hata: ${res.status}`);
-            return await res.json();
-          } catch (error) {
-            if (i === retries - 1) throw error;
-            await new Promise(r => setTimeout(r, delay));
-            delay *= 2;
-          }
-        }
-      };
-
       setLoadingStatus(t.status_generating);
-      const result = await fetchWithBackoff();
+      
+      const res = await fetch(`${API_URL}/generate_plan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idea: formData.idea,
+          capital: formData.capital,
+          skills: formData.skills,
+          strategy: formData.strategy,
+          management: formData.management,
+          language: formData.language
+        })
+      });
 
-      const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!jsonText) throw new Error("Yapay zeka boş yanıt döndürdü.");
+      if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+      const data = await res.json();
 
-      const generatedPlan = JSON.parse(jsonText);
-      setPlanResult(generatedPlan);
+      let finalPlan = [];
+      try {
+        // Just in case you update your backend index.py to return JSON arrays
+        finalPlan = JSON.parse(data.plan);
+      } catch {
+        // Standard handling for current index.py plain text response
+        finalPlan = [
+          { title: lang === 'tr' ? 'StartEra İş Planı' : lang === 'en' ? 'StartEra Business Plan' : 'خطة عمل StartEra', content: data.plan }
+        ];
+      }
+
+      setPlanResult(finalPlan);
 
       // Veriyi Dashboard için Kaydet
       if (typeof window !== 'undefined') {
@@ -461,7 +301,7 @@ function PlannerContent() {
               status: lang === 'en' ? 'Completed' : lang === 'ar' ? 'مكتمل' : 'Tamamlandı',
               date: lang === 'en' ? 'Just now' : lang === 'ar' ? 'الآن' : 'Az önce',
               color: 'text-green-500',
-              planContent: generatedPlan // Dashboard'da okunabilmesi için
+              planContent: finalPlan 
           };
           const existingProjects = JSON.parse(localStorage.getItem("user_projects") || "[]");
           localStorage.setItem("user_projects", JSON.stringify([newProject, ...existingProjects]));
@@ -477,23 +317,37 @@ function PlannerContent() {
     }
   };
 
+  // --- SECURE FASTAPI PDF GENERATION ---
   const downloadPDF = async () => {
     if (!planResult) return;
     const tid = toast.loading(t.toast_pdf_preparing);
     
-    setTimeout(() => {
-        toast.dismiss(tid);
+    try {
         const textContent = planResult.map(p => `${p.title}\n\n${p.content}\n\n`).join('-------------------\n\n');
-        const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+        
+        const res = await fetch(`${API_URL}/create_pdf`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: textContent })
+        });
+
+        if (!res.ok) throw new Error("PDF API Error");
+
+        const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a"); 
         a.href = url; 
-        a.download = `StartERA_Plan_${Date.now()}.txt`; 
+        a.download = `StartERA_Plan_${Date.now()}.pdf`; 
         document.body.appendChild(a); 
         a.click(); 
         a.remove();
+        
+        toast.dismiss(tid);
         toast.success(t.toast_pdf_success);
-    }, 1500);
+    } catch (err) {
+        toast.dismiss(tid);
+        toast.error(lang === 'tr' ? "PDF oluşturulamadı." : "Failed to generate PDF.");
+    }
   };
 
   if (!user) return <div className="flex h-screen items-center justify-center text-slate-500">Lütfen giriş yapın.</div>;
@@ -506,7 +360,6 @@ function PlannerContent() {
       </div>
       
       <Toaster />
-      <Chatbot lang={lang} darkMode={darkMode} contextData={formData} />
       
       <nav className={`px-8 py-5 flex justify-between items-center backdrop-blur-lg sticky top-0 z-40 border-b transition-colors ${darkMode ? "bg-slate-900/60 border-slate-800" : "bg-white/60 border-slate-200"}`}>
         <div className="flex items-center gap-3">

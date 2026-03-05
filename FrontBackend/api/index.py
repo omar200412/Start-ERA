@@ -223,7 +223,31 @@ def login(user: UserAuth):
         return {"token": f"user-{clean_email}", "email": clean_email}
     finally: conn.close()
 
-# --- PLAN & PDF ---
+
+# -------------------- AI & CHAT ROTALARI --------------------
+
+@app.post("/api/chat")
+def chat(req: ChatRequest):
+    if not model: raise HTTPException(503, "API Key Missing")
+    
+    # THE GUARDRAIL: Strict rules to prevent the chatbot from generating full plans.
+    guardrail = """
+    Sen StartEra için yardımcı bir asistansın.
+    KULLANICI NE İSTERSE İSTESİN KESİN KURAL: Asla tam, detaylı, uzun bir iş planı, finansal tablo veya pazar analizi raporu YAZMAYACAKSIN.
+    Eğer kullanıcı senden bir iş planı yazmanı, finansal hesaplama yapmanı veya detaylı pazar araştırması yapmanı isterse, ona nazikçe şunu söylemelisin: 
+    "Ben sadece kısa sorularınızı yanıtlayabilirim. Kapsamlı ve profesyonel bir iş planı oluşturmak için lütfen panonuzdaki StartEra İş Planlayıcı'yı (Planner) kullanın."
+    Cevapların kısa, dostane ve hedefe yönelik olmalıdır.
+    """
+    
+    frontend_context = req.system_prompt if req.system_prompt else ""
+    
+    final_prompt = f"{guardrail}\n\n[Frontend Context & Language]: {frontend_context}\n\nKullanıcının Mesajı: {req.message}"
+    
+    try:
+        response = model.generate_content(final_prompt).text
+        return JSONResponse(content={"reply": response})
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 @app.post("/api/generate_plan")
 def generate_plan(req: BusinessPlanRequest):
@@ -235,29 +259,60 @@ def generate_plan(req: BusinessPlanRequest):
     GİRİŞİM: {req.idea}
     SERMAYE: {req.capital}
     YETENEKLER: {req.skills}
+    HEDEF/STRATEJİ: {req.strategy}
+    YÖNETİM: {req.management}
     
-    Lütfen profesyonel bir iş planı yaz. Bölümler:
-    1. YÖNETİCİ ÖZETİ
-    2. İŞ MODELİ
-    3. PAZAR ANALİZİ
-    4. FİNANSAL PLAN
+    Görev: Yukarıdaki verilere dayanarak profesyonel bir iş planı hazırla.
+    Yanıtını KESİNLİKLE geçerli bir JSON formatında (ARRAY of OBJECTS) döndür. Başka hiçbir açıklama metni ekleme.
     
-    Sadece düz metin kullan, markdown kullanma.
+    Format Şablonu:
+    [
+      {{
+        "title": "1. YÖNETİCİ ÖZETİ",
+        "content": "Girişimin amacı, vizyonu ve hedefleri."
+      }},
+      {{
+        "title": "2. İŞ MODELİ VE PAZAR ANALİZİ",
+        "content": "Nasıl para kazanılacak, hedef kitle kim ve rekabet durumu nedir."
+      }},
+      {{
+        "title": "3. FİNANSAL PLAN VE YATIRIM",
+        "content": "Belirtilen sermayenin nasıl kullanılacağı ve başabaş noktası tahmini."
+      }},
+      {{
+        "title": "4. OPERASYON VE YÖNETİM",
+        "content": "Ekibin yapısı ve günlük operasyon planı."
+      }}
+    ]
     """
     try:
         # Metin üret
-        text = model.generate_content(prompt).text.replace("*", "").replace("#", "")
-        # JSON döndür (PDF DEĞİL!)
+        text = model.generate_content(prompt).text
+        
+        # Markdown kod bloklarını (```json ... ```) temizle ki frontend sorunsuz parse etsin
+        text = text.replace("```json", "").replace("```", "").strip()
+        
+        # JSON döndür
         return JSONResponse(content={"plan": text})
     except Exception as e:
         raise HTTPException(500, str(e))
+
+
+# -------------------- PDF OLUŞTURMA --------------------
 
 @app.post("/api/create_pdf")
 def create_pdf(req: PDFRequest):
     pdf_file = "/tmp/StartERA_Plan.pdf" if platform.system() != "Windows" else "Plan.pdf"
     try:
         doc = SimpleDocTemplate(pdf_file, pagesize=A4)
-        doc.build([Paragraph(req.text, getSampleStyleSheet()['Normal'])])
+        
+        # Encode string to handle special characters appropriately for ReportLab
+        text_content = req.text.replace("\n", "<br/>") 
+        
+        style = getSampleStyleSheet()['Normal']
+        style.fontName = "Helvetica" # Switch to a safer font or add a custom TTF for Turkish/Arabic chars if needed later
+        
+        doc.build([Paragraph(text_content, style)])
         return FileResponse(pdf_file, media_type="application/pdf")
     except:
         raise HTTPException(500, "PDF Error")
