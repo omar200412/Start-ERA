@@ -180,6 +180,7 @@ function DashboardContent() {
   const { darkMode, toggleTheme } = useTheme();
   const [userEmail, setUserEmail] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
+  // VARSAYILAN DİL KESİNLİKLE TÜRKÇE
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
 
@@ -199,7 +200,7 @@ function DashboardContent() {
     const saved = localStorage.getItem("user_projects");
     if (saved) setProjects(JSON.parse(saved));
 
-    // 3. Dil
+    // 3. Dil Kontrolü (Eğer daha önce test için EN/AR yapıldıysa onu hatırlar)
     const savedLang = localStorage.getItem("app_lang") as any;
     if (savedLang && ["tr", "en", "ar"].includes(savedLang)) {
         setLang(savedLang);
@@ -228,7 +229,7 @@ function DashboardContent() {
     <div dir={dir} className={`min-h-screen transition-colors duration-500 font-sans ${darkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}`}>
       <Toaster />
       
-      {/* VERCEL UYUMLU CHATBOT */}
+      {/* VERCEL UYUMLU CHATBOT BURADA */}
       <Chatbot />
 
       {/* PLAN DETAY MODALI */}
