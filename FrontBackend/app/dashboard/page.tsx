@@ -3,7 +3,18 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 
 // ==========================================
-// YEREL TOAST SİSTEMİ (Bildirimler İçin)
+// API & ROUTER GÜNCELLEMESİ
+// ==========================================
+const API_URL = "/api"; 
+
+const safeRedirect = (path: string) => {
+  if (typeof window !== 'undefined') {
+      window.location.href = path;
+  }
+};
+
+// ==========================================
+// YEREL TOAST SİSTEMİ
 // ==========================================
 const toastEvents = {
   listeners: [] as ((t: any) => void)[],
@@ -33,47 +44,6 @@ const Toaster = () => {
         </div>
       ))}
     </div>
-  );
-};
-
-// ==========================================
-// MOCK ROUTER & LINK
-// ==========================================
-const safeRedirect = (path: string) => {
-  if (typeof window !== 'undefined') {
-      const isPreview = window.location.hostname.includes('googleusercontent') || 
-                        window.location.hostname.includes('scf') || 
-                        window.location.protocol === 'blob:';
-      
-      if (isPreview) {
-          console.log(`[Preview] Navigating to: ${path}`);
-          if (path === "/login") toast("Çıkış yapıldı (Demo)", { icon: '🔒' });
-          else if (path.startsWith("/planner")) toast("Planner sayfasına gidiliyor... (Demo)", { icon: '🚀' });
-          else if (path === "/") toast("Ana sayfaya dönülüyor... (Demo)", { icon: '🏠' });
-      } else {
-          window.location.href = path;
-      }
-  }
-};
-
-const Link = ({ href, children, className, ...props }: any) => {
-  return (
-    <a 
-      href={href} 
-      className={className} 
-      onClick={(e) => {
-        const isPreview = typeof window !== 'undefined' && (window.location.hostname.includes('googleusercontent') || window.location.protocol === 'blob:');
-        if (isPreview) {
-            e.preventDefault();
-            if (href.startsWith("/planner")) toast("Planner açılıyor...", { icon: '🚀' });
-            if (href === "/login") toast("Çıkış yapılıyor...", { icon: '🔒' });
-            if (href === "/") toast("Ana sayfaya dönülüyor... (Demo)", { icon: '🏠' });
-        }
-      }}
-      {...props}
-    >
-      {children}
-    </a>
   );
 };
 
@@ -113,104 +83,56 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 const useTheme = () => useContext(ThemeContext);
 
 // ==========================================
-// TİP TANIMLARI & VERİ YAPISI
+// TİP TANIMLARI
 // ==========================================
 interface Project {
   id: number;
   title: string;
-  status: 'Tamamlandı' | 'Taslak' | 'İncelendi' | 'Completed' | 'Draft' | 'Reviewed' | 'مكتمل' | 'مسودة' | 'تمت المراجعة';
+  status: string;
   date: string;
   color: string;
-  planContent?: { title: string; content: string }[];
+  planData?: { title: string; content: string }[]; // Planner'dan 'planData' olarak geliyor
 }
 
 // ==========================================
 // ÇEVİRİLER
 // ==========================================
-const TRANSLATIONS = {
+const TRANSLATIONS: any = {
   tr: {
-    welcome: "Hoş Geldin",
-    subtitle: "Girişimcilik yolculuğunda bugün nereye odaklanıyoruz?",
-    total_plans: "Toplam Proje",
-    completed: "Tamamlanan",
-    active_projects: "Aktif Süreç",
-    quick_start: "Hızlı Başlangıç",
-    ai_badge: "Yapay Zeka Destekli",
+    welcome: "Hoş Geldin", subtitle: "Bugün nereye odaklanıyoruz?",
+    total_plans: "Toplam Proje", completed: "Tamamlanan", active_projects: "Aktif Süreç",
+    quick_start: "Hızlı Başlangıç", ai_badge: "Yapay Zeka Destekli",
     create_new_plan: "Yeni İş Planı Oluştur",
-    create_plan_desc: "Fikrini anlat, yapay zeka pazar analizinden finansal projeksiyona kadar her şeyi hazırlasın.",
-    start_now: "Hemen Başla",
-    recent_activity: "Son Aktiviteler",
-    view_all: "Tümünü Gör",
-    guest: "Girişimci",
-    pro_member: "Pro Üyelik",
-    logout_tooltip: "Çıkış Yap",
-    theme_tooltip: "Temayı Değiştir",
-    home_tooltip: "Ana Sayfaya Dön",
-    increase_prefix: "↑ %",
-    increase_suffix: " artış (bu ay)",
-    goal_percent_prefix: "Hedefin %",
-    goal_percent_suffix: "",
-    action_needed: "İlgi gerekiyor",
-    no_activity: "Henüz bir aktivite yok.",
-    opening_plan: "İş planı açılıyor...",
-    close: "Kapat",
-    missing_content: "Bu planın içerik detayları bulunamadı. Lütfen 'Yeni İş Planı Oluştur' seçeneği ile yeni bir plan oluşturun.",
+    create_plan_desc: "Fikrini anlat, yapay zeka her şeyi hazırlasın.",
+    start_now: "Hemen Başla", recent_activity: "Son Aktiviteler",
+    guest: "Girişimci", pro_member: "Pro Üyelik", logout_tooltip: "Çıkış Yap",
+    home_tooltip: "Ana Sayfa", no_activity: "Henüz bir aktivite yok.",
+    opening_plan: "İş planı açılıyor...", close: "Kapat",
+    missing_content: "Bu planın detayları bulunamadı."
   },
   en: {
-    welcome: "Welcome",
-    subtitle: "Where are we focusing today on your entrepreneurial journey?",
-    total_plans: "Total Projects",
-    completed: "Completed",
-    active_projects: "Active Process",
-    quick_start: "Quick Start",
-    ai_badge: "AI Powered",
-    create_new_plan: "Create New Business Plan",
-    create_plan_desc: "Tell your idea, let AI prepare everything from market analysis to financial projections.",
-    start_now: "Start Now",
-    recent_activity: "Recent Activity",
-    view_all: "View All",
-    guest: "Entrepreneur",
-    pro_member: "Pro Member",
-    logout_tooltip: "Logout",
-    theme_tooltip: "Change Theme",
-    home_tooltip: "Go to Home",
-    increase_prefix: "↑ ",
-    increase_suffix: "% increase",
-    goal_percent_prefix: "",
-    goal_percent_suffix: "% of Goal",
-    action_needed: "Needs attention",
-    no_activity: "No activity yet.",
-    opening_plan: "Opening business plan...",
-    close: "Close",
-    missing_content: "Content details for this plan could not be found. Please generate a new one.",
+    welcome: "Welcome", subtitle: "Where are we focusing today?",
+    total_plans: "Total Projects", completed: "Completed", active_projects: "Active Process",
+    quick_start: "Quick Start", ai_badge: "AI Powered",
+    create_new_plan: "Create New Plan",
+    create_plan_desc: "Tell your idea, let AI prepare everything.",
+    start_now: "Start Now", recent_activity: "Recent Activity",
+    guest: "Entrepreneur", pro_member: "Pro Member", logout_tooltip: "Logout",
+    home_tooltip: "Home", no_activity: "No activity yet.",
+    opening_plan: "Opening plan...", close: "Close",
+    missing_content: "Details not found."
   },
   ar: {
-    welcome: "أهلاً بك",
-    subtitle: "أين سنركز اليوم في رحلتك الريادية؟",
-    total_plans: "إجمالي المشاريع",
-    completed: "مكتمل",
-    active_projects: "عملية نشطة",
-    quick_start: "بداية سريعة",
-    ai_badge: "مدعوم بالذكاء الاصطناعي",
-    create_new_plan: "إنشاء خطة عمل جديدة",
-    create_plan_desc: "أخبرنا بفكرتك، ودع الذكاء الاصطناعي يجهز لك كل شيء من تحليل السوق إلى التوقعات المالية.",
-    start_now: "ابدأ الآن",
-    recent_activity: "النشاط الأخير",
-    view_all: "عرض الكل",
-    guest: "رائد أعمال",
-    pro_member: "عضو محترف",
-    logout_tooltip: "تسجيل الخروج",
-    theme_tooltip: "تغيير المظهر",
-    home_tooltip: "العودة للرئيسية",
-    increase_prefix: "↑ زيادة بنسبة ",
-    increase_suffix: "٪",
-    goal_percent_prefix: "٪ من الهدف ",
-    goal_percent_suffix: "",
-    action_needed: "يتطلب اهتماماً",
-    no_activity: "لا يوجد نشاط حتى الآن.",
-    opening_plan: "جاري فتح خطة العمل...",
-    close: "إغلاق",
-    missing_content: "لم يتم العثور على تفاصيل المحتوى لهذه الخطة. يرجى إنشاء واحدة جديدة.",
+    welcome: "أهلاً بك", subtitle: "أين سنركز اليوم؟",
+    total_plans: "إجمالي المشاريع", completed: "مكتمل", active_projects: "عملية نشطة",
+    quick_start: "بداية سريعة", ai_badge: "مدعوم بالذكاء الاصطناعي",
+    create_new_plan: "إنشاء خطة جديدة",
+    create_plan_desc: "أخبرنا بفكرتك، ودع الذكاء الاصطناعي يجهز لك كل شيء.",
+    start_now: "ابدأ الآن", recent_activity: "النشاط الأخير",
+    guest: "رائد أعمال", pro_member: "عضو محترف", logout_tooltip: "خروج",
+    home_tooltip: "الرئيسية", no_activity: "لا يوجد نشاط.",
+    opening_plan: "جاري الفتح...", close: "إغلاق",
+    missing_content: "لم يتم العثور على التفاصيل."
   }
 };
 
@@ -230,309 +152,160 @@ const Icons = {
 };
 
 // ==========================================
-// DASHBOARD İÇERİĞİ
+// MAIN COMPONENT
 // ==========================================
 function DashboardContent() {
   const { darkMode, toggleTheme } = useTheme();
   const [user, setUser] = useState({ name: "", email: "" });
   const [projects, setProjects] = useState<Project[]>([]);
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
-  
-  // AÇILIR PENCERE (MODAL) İÇİN STATE
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
 
-  // Çeviri Nesnesi
   const t = TRANSLATIONS[lang];
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   useEffect(() => {
-    // 1. KULLANICI BİLGİSİ
-    const storedEmail = typeof window !== 'undefined' ? localStorage.getItem("userEmail") : null;
-    const storedName = storedEmail ? storedEmail.split('@')[0] : "";
-    const displayEmail = storedEmail || "girisimci@startera.com";
-    const displayName = storedName || "Girişimci";
-    setUser({ name: displayName, email: displayEmail });
-
-    // 2. GERÇEK PROJE VERİLERİNİ ÇEK (LocalStorage)
-    loadProjects();
-
-    // 3. DİL AYARI
-    const savedLang = typeof window !== 'undefined' ? localStorage.getItem("app_lang") : null;
-    if (savedLang && ["tr", "en", "ar"].includes(savedLang)) {
-        setLang(savedLang as "tr" | "en" | "ar");
+    // 1. Auth & Projeleri Yükle
+    const email = localStorage.getItem("userEmail");
+    if (!email && typeof window !== 'undefined') {
+       window.location.href = "/login";
+       return;
     }
+    setUser({ name: email?.split('@')[0] || "Girişimci", email: email || "" });
+
+    const storedProjects = localStorage.getItem("user_projects");
+    if (storedProjects) setProjects(JSON.parse(storedProjects));
+
+    // 2. Dil
+    const savedLang = localStorage.getItem("app_lang") as any;
+    if (savedLang) setLang(savedLang);
   }, []);
 
-  const loadProjects = () => {
-    if (typeof window === 'undefined') return;
-    const storedProjects = localStorage.getItem("user_projects");
-    if (storedProjects) {
-      try {
-        setProjects(JSON.parse(storedProjects));
-      } catch (e) {
-        console.error("Projeler yüklenemedi", e);
-        setProjects([]);
-      }
-    } else {
-      setProjects([]);
-    }
-  };
-
-  const toggleLang = () => {
-    let newLang: "tr" | "en" | "ar" = lang === "tr" ? "en" : lang === "en" ? "ar" : "tr";
-    setLang(newLang);
-    localStorage.setItem("app_lang", newLang);
-  };
-
-  const getLangLabel = () => (lang === "tr" ? "EN" : lang === "en" ? "AR" : "TR");
-
   const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
     safeRedirect("/login");
   };
 
-  // LİSTEDEN BİR PLANA TIKLANINCA ÇALIŞACAK FONKSİYON
   const handleActivityClick = (project: Project) => {
     toast(t.opening_plan, { icon: '📂' });
-    setViewingProject(project); // Planı Açılır Pencerede Göster
+    setViewingProject(project);
   };
 
-  const capitalize = (s: string) => s && s[0].toUpperCase() + s.slice(1);
-
-  // İstatistikleri Anlık Hesapla
   const totalPlans = projects.length;
-  const completedPlans = projects.filter(p => 
-    p.status === 'Tamamlandı' || p.status === 'Completed' || p.status === 'مكتمل'
-  ).length;
-  const activePlans = totalPlans - completedPlans;
-  const goalPercent = totalPlans > 0 ? Math.round((completedPlans / totalPlans) * 100) : 0;
-
-  // Son Aktiviteler (Tersten Sırala)
-  const recentActivities = [...projects].reverse().slice(0, 5);
+  const completedCount = projects.filter(p => p.status.includes("Tamam") || p.status.includes("Comp") || p.status.includes("مكتمل")).length;
 
   return (
     <div dir={dir} className={`min-h-screen transition-colors duration-500 font-sans ${darkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}`}>
       <Toaster />
 
-      {/* PROJE DETAY AÇILIR PENCERESİ (MODAL) */}
+      {/* MODAL */}
       {viewingProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className={`relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-[32px] shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
-            
-            {/* Pencere Başlığı */}
             <div className="flex justify-between items-center p-6 border-b dark:border-slate-800">
                 <div>
-                  <h2 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">{viewingProject.title}</h2>
+                  <h2 className="text-2xl font-black text-blue-600">{viewingProject.title}</h2>
                   <p className="text-sm opacity-50">{viewingProject.date} - {viewingProject.status}</p>
                 </div>
-                <button onClick={() => setViewingProject(null)} className="p-3 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 transition-colors">
+                <button onClick={() => setViewingProject(null)} className="p-3 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                     <Icons.Close />
                 </button>
             </div>
-
-            {/* Pencere İçeriği (Plan Detayları) */}
-            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
-                {viewingProject.planContent && viewingProject.planContent.length > 0 ? (
-                    viewingProject.planContent.map((section, idx) => (
-                        <div key={idx} className={`p-6 rounded-2xl border shadow-sm ${darkMode ? "bg-slate-800/50 border-slate-700" : "bg-slate-50 border-slate-100"}`}>
-                            <h3 className="text-xl font-bold mb-4 text-blue-600 dark:text-blue-400 border-b border-slate-200 dark:border-slate-700 pb-2">{section.title}</h3>
-                            <p className={`leading-relaxed text-lg whitespace-pre-wrap ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{section.content}</p>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {viewingProject.planData ? (
+                    viewingProject.planData.map((section: any, idx: number) => (
+                        <div key={idx} className={`p-6 rounded-2xl border ${darkMode ? "bg-slate-800/50 border-slate-700" : "bg-slate-50 border-slate-100"}`}>
+                            <h3 className="text-xl font-bold mb-4 text-blue-600">{section.title}</h3>
+                            <p className="leading-relaxed whitespace-pre-wrap opacity-90">{section.content}</p>
                         </div>
                     ))
                 ) : (
-                    <div className="text-center py-16 px-4">
-                        <div className="text-6xl mb-4">📄</div>
-                        <h3 className="text-xl font-bold mb-2 text-slate-400">{t.missing_content}</h3>
-                    </div>
+                    <div className="text-center py-20 opacity-50">{t.missing_content}</div>
                 )}
             </div>
-
-            {/* Pencere Alt Kısmı */}
-            <div className="p-6 border-t dark:border-slate-800 flex justify-end gap-4">
-                <button onClick={() => setViewingProject(null)} className={`px-6 py-3 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 ${darkMode ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'}`}>
-                    {t.close}
-                </button>
+            <div className="p-6 border-t dark:border-slate-800 flex justify-end">
+                <button onClick={() => setViewingProject(null)} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold">{t.close}</button>
             </div>
-
           </div>
         </div>
       )}
       
-      {/* ÜST BAR (NAVBAR) */}
-      <nav className={`px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-xl border-b transition-colors ${darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-slate-200"}`}>
+      {/* NAVBAR */}
+      <nav className={`px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-xl border-b ${darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-slate-200"}`}>
         <div className="flex items-center gap-3">
-            <Link href="/" className="group cursor-pointer">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">S</div>
-            </Link>
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">S</div>
             <span className="font-bold text-xl tracking-tight hidden sm:block">Start ERA</span>
         </div>
-        
-        <div className="flex items-center gap-2 sm:gap-4">
-            <div className="hidden md:flex flex-col items-end mr-2">
-                <span className="text-sm font-bold">{user.email || t.guest}</span>
-                <span className="text-xs opacity-60">{t.pro_member}</span>
-            </div>
-            
-            <button onClick={toggleLang} className="font-black text-lg hover:scale-110 transition active:scale-95 px-2" title="Change Language">{getLangLabel()}</button>
-
-            {/* ANA SAYFAYA DÖN BUTONU */}
-            <Link 
-                href="/" 
-                className={`p-2.5 rounded-xl transition-all active:scale-95 flex items-center justify-center ${darkMode ? 'bg-slate-800 text-blue-400 hover:bg-slate-700' : 'bg-white text-blue-600 shadow-sm hover:shadow-md border border-slate-100'}`}
-                title={t.home_tooltip}
-            >
-                <Icons.Home />
-            </Link>
-
-            <button 
-                onClick={toggleTheme} 
-                className={`p-2.5 rounded-xl transition-all active:scale-95 flex items-center justify-center ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm hover:shadow-md border border-slate-100'}`}
-                title={t.theme_tooltip}
-            >
-                {darkMode ? <Icons.Sun /> : <Icons.Moon />}
-            </button>
-            
-            <button 
-                onClick={handleLogout} 
-                className="p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 transition-all active:scale-95 flex items-center justify-center"
-                title={t.logout_tooltip}
-            >
-                <Icons.Logout />
-            </button>
+        <div className="flex items-center gap-4">
+            <button onClick={() => {
+              const newLang = lang === "tr" ? "en" : lang === "en" ? "ar" : "tr";
+              setLang(newLang); localStorage.setItem("app_lang", newLang);
+            }} className="font-bold">{lang === "tr" ? "EN" : lang === "en" ? "AR" : "TR"}</button>
+            <button onClick={toggleTheme} className="p-2.5 rounded-xl border dark:border-slate-700">{darkMode ? <Icons.Sun /> : <Icons.Moon />}</button>
+            <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-500/10 text-red-500"><Icons.Logout /></button>
         </div>
       </nav>
 
-      {/* ANA İÇERİK */}
+      {/* CONTENT */}
       <main className="max-w-7xl mx-auto p-6 md:p-8">
-        
-        {/* HOŞGELDİNİZ HEADER */}
-        <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-              {t.welcome}, {capitalize(user.name)}
-            </h1>
-            <p className={`text-lg ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              {t.subtitle}
-            </p>
-          </div>
+        <header className="mb-10">
+            <h1 className="text-3xl md:text-4xl font-black text-blue-600">{t.welcome}, {user.name}</h1>
+            <p className="opacity-60">{t.subtitle}</p>
         </header>
 
-        {/* İSTATİSTİKLER GRID (GERÇEK VERİLER) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-           {/* Kart 1: Toplam Plan */}
-           <div className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden group ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <div className={`absolute top-0 ${lang === 'ar' ? 'left-0' : 'right-0'} p-4 opacity-5 group-hover:scale-110 transition-transform duration-500`}>
-                 <div className="w-24 h-24 bg-blue-500 rounded-full blur-2xl"></div>
-              </div>
-              <div className="flex items-center gap-4 mb-4">
-                 <div className="p-3 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"><Icons.Document /></div>
-                 <span className="font-bold opacity-60">{t.total_plans}</span>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-center">
+           <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className="opacity-50 text-sm mb-2">{t.total_plans}</div>
               <div className="text-4xl font-black">{totalPlans}</div>
-              <div className="text-sm mt-2 text-green-500 font-medium">
-                {lang === 'en' 
-                  ? `${t.increase_prefix}${totalPlans * 10}${t.increase_suffix}`
-                  : `${t.increase_prefix}%${totalPlans * 10}${t.increase_suffix}`}
-              </div>
            </div>
-
-           {/* Kart 2: Tamamlanan */}
-           <div className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden group ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <div className={`absolute top-0 ${lang === 'ar' ? 'left-0' : 'right-0'} p-4 opacity-5 group-hover:scale-110 transition-transform duration-500`}>
-                 <div className="w-24 h-24 bg-purple-500 rounded-full blur-2xl"></div>
-              </div>
-              <div className="flex items-center gap-4 mb-4">
-                 <div className="p-3 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"><Icons.Chart /></div>
-                 <span className="font-bold opacity-60">{t.completed}</span>
-              </div>
-              <div className="text-4xl font-black">{completedPlans}</div>
-              <div className="text-sm mt-2 text-purple-500 font-medium">
-                 {lang === 'en' 
-                   ? `${goalPercent}${t.goal_percent_suffix}`
-                   : `${t.goal_percent_prefix}${goalPercent}`}
-              </div>
+           <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className="opacity-50 text-sm mb-2">{t.completed}</div>
+              <div className="text-4xl font-black text-green-500">{completedCount}</div>
            </div>
-
-           {/* Kart 3: Aktif Proje */}
-           <div className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden group ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-               <div className={`absolute top-0 ${lang === 'ar' ? 'left-0' : 'right-0'} p-4 opacity-5 group-hover:scale-110 transition-transform duration-500`}>
-                 <div className="w-24 h-24 bg-orange-500 rounded-full blur-2xl"></div>
-              </div>
-              <div className="flex items-center gap-4 mb-4">
-                 <div className="p-3 rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"><Icons.Rocket /></div>
-                 <span className="font-bold opacity-60">{t.active_projects}</span>
-              </div>
-              <div className="text-4xl font-black">{activePlans}</div>
-              <div className="text-sm mt-2 text-orange-500 font-medium">{t.action_needed}</div>
+           <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className="opacity-50 text-sm mb-2">{t.active_projects}</div>
+              <div className="text-4xl font-black text-orange-500">{totalPlans - completedCount}</div>
            </div>
         </div>
 
-        {/* HIZLI AKSİYONLAR & SON AKTİVİTELER */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            {/* SOL KOLON: PLANNER'A GİT (BÜYÜK KART) */}
             <div className="lg:col-span-2">
-                <h3 className="text-xl font-bold mb-5 flex items-center gap-2">{t.quick_start}</h3>
-                <Link href="/planner" className="block group">
-                    <div className={`relative p-8 rounded-[32px] overflow-hidden border transition-all duration-300 hover:shadow-2xl ${darkMode ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700 hover:border-blue-500/50' : 'bg-gradient-to-br from-white to-blue-50 border-slate-200 hover:border-blue-300'}`}>
-                        <div className={`absolute top-0 ${lang === 'ar' ? 'left-0' : 'right-0'} w-64 h-64 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full blur-[80px] opacity-20 group-hover:opacity-30 transition-opacity`}></div>
-                        
-                        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <a href="/planner" className="block group no-underline text-inherit">
+                    <div className={`p-8 rounded-[32px] border transition-all hover:shadow-2xl ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+                        <div className="flex justify-between items-start">
                             <div>
-                                <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 text-xs font-bold uppercase tracking-wider mb-3">{t.ai_badge}</div>
+                                <div className="text-xs font-bold text-blue-600 uppercase mb-2">{t.ai_badge}</div>
                                 <h2 className="text-3xl font-black mb-2">{t.create_new_plan}</h2>
-                                <p className={`max-w-md ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                                    {t.create_plan_desc}
-                                </p>
+                                <p className="opacity-60 max-w-md">{t.create_plan_desc}</p>
                             </div>
-                            <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                                <Icons.Rocket />
-                            </div>
+                            <div className="p-4 bg-blue-600 text-white rounded-2xl"><Icons.Rocket /></div>
                         </div>
-                        
-                        <div className="mt-8 flex items-center gap-2 font-bold text-blue-600 dark:text-blue-400 group-hover:gap-4 transition-all">
-                            {t.start_now} <span className={lang === 'ar' ? 'rotate-180' : ''}><Icons.ArrowRight /></span>
-                        </div>
+                        <div className="mt-8 font-bold text-blue-600 flex items-center gap-2 group-hover:gap-4 transition-all">{t.start_now} →</div>
                     </div>
-                </Link>
+                </a>
             </div>
 
-            {/* SAĞ KOLON: SON AKTİVİTELER (DİNAMİK) */}
             <div>
                 <h3 className="text-xl font-bold mb-5">{t.recent_activity}</h3>
-                <div className={`p-6 rounded-3xl border min-h-[300px] flex flex-col ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
-                    <div className="space-y-4 flex-1">
-                        {recentActivities.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center h-48 opacity-50">
-                             <Icons.Document />
-                             <p className="text-sm mt-2 font-medium">{t.no_activity}</p>
-                          </div>
-                        ) : (
-                          recentActivities.map((item, i) => (
-                              <div 
-                                key={i} 
-                                onClick={() => handleActivityClick(item)}
-                                className={`flex items-center gap-4 group cursor-pointer p-3 -mx-3 rounded-2xl transition-all ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
-                              >
-                                  <div className={`w-2 h-2 rounded-full mt-1 ${item.color === 'text-green-500' ? 'bg-green-500' : item.color === 'text-orange-500' ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
-                                  <div className="flex-1">
-                                      <h4 className="font-bold text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.title}</h4>
-                                      <p className="text-xs opacity-50">{item.date}</p>
-                                  </div>
-                                  <span className={`text-xs font-bold px-2 py-1 rounded-md bg-opacity-10 
-                                    ${item.color === 'text-green-500' ? 'bg-green-500 text-green-500' : 
-                                      item.color === 'text-orange-500' ? 'bg-orange-500 text-orange-500' : 'bg-blue-500 text-blue-500'}`}>
-                                      {item.status}
-                                  </span>
-                              </div>
-                          ))
-                        )}
-                    </div>
+                <div className={`p-6 rounded-3xl border min-h-[300px] ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                    {projects.length === 0 ? (
+                        <div className="opacity-30 text-center py-20">{t.no_activity}</div>
+                    ) : (
+                        [...projects].reverse().slice(0, 5).map((project, i) => (
+                            <div key={i} onClick={() => handleActivityClick(project)} className="flex items-center gap-4 cursor-pointer py-3 border-b last:border-0 dark:border-slate-800 hover:text-blue-600 transition-colors">
+                                <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-sm truncate">{project.title}</h4>
+                                    <p className="text-xs opacity-50">{project.date}</p>
+                                </div>
+                                <span className="text-[10px] font-black uppercase opacity-60">{project.status}</span>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
-
         </div>
-
       </main>
     </div>
   );
