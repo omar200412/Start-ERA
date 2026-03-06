@@ -1,14 +1,27 @@
 'use client';
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
+import Chatbot from '../Chatbot'; // Chatbot bileşeni
 
 // ==========================================
-// SMART API URL ROUTER
+// VERCEL UYUMLU ROUTER
 // ==========================================
-const API_URL = "/api"; 
+const safeRedirect = (path: string) => {
+  if (typeof window !== 'undefined') {
+      window.location.href = path;
+  }
+};
+
+const Link = ({ href, children, className, title }: any) => {
+  return (
+    <a href={href} className={className} title={title}>
+      {children}
+    </a>
+  );
+};
 
 // ==========================================
-// YEREL TOAST SİSTEMİ (Bildirimler İçin)
+// YEREL TOAST SİSTEMİ
 // ==========================================
 const toastEvents = {
   listeners: [] as ((t: any) => void)[],
@@ -52,8 +65,6 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
           if (theme === "dark" || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             setDarkMode(true);
             document.documentElement.classList.add('dark');
-          } else {
-            document.documentElement.classList.remove('dark');
           }
       }
   }, []);
@@ -83,45 +94,70 @@ interface Project {
   status: string;
   date: string;
   color?: string;
-  planData?: { title: string; content: string }[];
+  planData?: any[]; 
+  planContent?: any[]; 
 }
 
 // ==========================================
-// ÇEVİRİLER
+// MULTI-LANGUAGE SÖZLÜK
 // ==========================================
-const TRANSLATIONS = {
+const TRANSLATIONS: any = {
   tr: {
-    welcome: "Hoş Geldin", subtitle: "Girişimcilik yolculuğunda bugün nereye odaklanıyoruz?",
-    total_plans: "Toplam Proje", completed: "Tamamlanan", active_projects: "Aktif Süreç",
-    quick_start: "Hızlı Başlangıç", ai_badge: "Yapay Zeka Destekli",
+    welcome: "Hoş geldin",
+    subtitle: "Girişimcilik yolculuğunda bugün nereye odaklanıyoruz?",
+    total_plans: "Toplam Proje",
+    completed: "Tamamlanan",
+    active_projects: "Aktif Süreç",
+    ai_badge: "Yapay Zeka Destekli",
     create_new_plan: "Yeni İş Planı Oluştur",
     create_plan_desc: "Fikrini anlat, yapay zeka pazar analizinden finansal projeksiyona kadar her şeyi hazırlasın.",
-    start_now: "Hemen Başla", recent_activity: "Son Aktiviteler",
-    guest: "Girişimci", pro_member: "Pro Üyelik", logout_tooltip: "Çıkış Yap",
-    home_tooltip: "Ana Sayfa", no_activity: "Henüz bir aktivite yok.",
-    opening_plan: "İş planı açılıyor...", close: "Kapat", missing_content: "Detay bulunamadı."
+    start_now: "Hemen Başla",
+    recent_activity: "Son Aktiviteler",
+    no_activity: "Henüz bir aktivite yok.",
+    pro_member: "Pro Üye",
+    home_tooltip: "Ana Sayfaya Dön",
+    opening_plan: "Açılıyor...",
+    close: "Kapat",
+    missing_content: "Detay bulunamadı.",
+    guest: "Girişimci"
   },
   en: {
-    welcome: "Welcome", subtitle: "Where are we focusing today?",
-    total_plans: "Total Projects", completed: "Completed", active_projects: "Active Process",
-    quick_start: "Quick Start", ai_badge: "AI Powered",
-    create_new_plan: "Create New Plan",
-    create_plan_desc: "Tell your idea, let AI prepare everything from market analysis to finance.",
-    start_now: "Start Now", recent_activity: "Recent Activity",
-    guest: "Entrepreneur", pro_member: "Pro Member", logout_tooltip: "Logout",
-    home_tooltip: "Home", no_activity: "No activity yet.",
-    opening_plan: "Opening plan...", close: "Close", missing_content: "Details not found."
+    welcome: "Welcome",
+    subtitle: "Where are we focusing today on your entrepreneurial journey?",
+    total_plans: "Total Projects",
+    completed: "Completed",
+    active_projects: "Active Process",
+    ai_badge: "AI Powered",
+    create_new_plan: "Create New Business Plan",
+    create_plan_desc: "Tell your idea, let AI prepare everything from market analysis to financial projections.",
+    start_now: "Start Now",
+    recent_activity: "Recent Activity",
+    no_activity: "No activity yet.",
+    pro_member: "Pro Member",
+    home_tooltip: "Go to Home",
+    opening_plan: "Opening...",
+    close: "Close",
+    missing_content: "Details not found.",
+    guest: "Entrepreneur"
   },
   ar: {
-    welcome: "أهلاً بك", subtitle: "أين سنركز اليوم في رحلتك الريادية؟",
-    total_plans: "إجمالي المشاريع", completed: "مكتمل", active_projects: "عملية نشطة",
-    quick_start: "بداية سريعة", ai_badge: "مدعوم بالذكاء الاصطناعي",
+    welcome: "أهلاً بك",
+    subtitle: "أين سنركز اليوم في رحلتك الريادية؟",
+    total_plans: "إجمالي المشاريع",
+    completed: "مكتمل",
+    active_projects: "عملية نشطة",
+    ai_badge: "مدعوم بالذكاء الاصطناعي",
     create_new_plan: "إنشاء خطة عمل جديدة",
-    create_plan_desc: "أخبرنا بفكرتك، ودع الذكاء الاصطناعي يجهز لك كل شيء.",
-    start_now: "ابدأ الآن", recent_activity: "النشاط الأخير",
-    guest: "رائد أعمال", pro_member: "عضو محترف", logout_tooltip: "تسجيل الخروج",
-    home_tooltip: "الرئيسية", no_activity: "لا يوجد نشاط.",
-    opening_plan: "جاري فتح الخطة...", close: "إغلاق", missing_content: "لم يتم العثور على التفاصيل."
+    create_plan_desc: "أخبرنا بفكرتك، ودع الذكاء الاصطناعي يجهز لك كل شيء من تحليل السوق إلى التوقعات المالية.",
+    start_now: "ابدأ الآن",
+    recent_activity: "النشاط الأخير",
+    no_activity: "لا يوجد نشاط حتى الآن.",
+    pro_member: "عضو محترف",
+    home_tooltip: "العودة للرئيسية",
+    opening_plan: "جاري الفتح...",
+    close: "إغلاق",
+    missing_content: "التفاصيل غير موجودة.",
+    guest: "رائد أعمال"
   }
 };
 
@@ -134,18 +170,15 @@ const Icons = {
   Moon: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>,
   Logout: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>,
   Rocket: () => <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
-  Chart: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
-  Document: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
-  ArrowRight: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>,
   Close: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
 };
 
 // ==========================================
-// DASHBOARD CONTENT
+// DASHBOARD İÇERİĞİ
 // ==========================================
 function DashboardContent() {
   const { darkMode, toggleTheme } = useTheme();
-  const [user, setUser] = useState({ name: "", email: "" });
+  const [userEmail, setUserEmail] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [lang, setLang] = useState<"tr" | "en" | "ar">("tr");
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
@@ -154,179 +187,190 @@ function DashboardContent() {
   const dir = lang === "ar" ? "rtl" : "ltr";
 
   useEffect(() => {
-    // 1. Kullanıcı Verisi
+    // 1. Auth Kontrolü
     const email = localStorage.getItem("userEmail");
     if (!email && typeof window !== 'undefined') {
        window.location.href = "/login";
        return;
     }
-    setUser({ name: email?.split('@')[0] || "Girişimci", email: email || "" });
+    setUserEmail(email || "");
 
-    // 2. Proje Verisi (Planner'dan gelen)
-    const storedProjects = localStorage.getItem("user_projects");
-    if (storedProjects) setProjects(JSON.parse(storedProjects));
+    // 2. Projeler
+    const saved = localStorage.getItem("user_projects");
+    if (saved) setProjects(JSON.parse(saved));
 
-    // 3. Dil Ayarı
+    // 3. Dil
     const savedLang = localStorage.getItem("app_lang") as any;
-    if (savedLang) setLang(savedLang);
+    if (savedLang && ["tr", "en", "ar"].includes(savedLang)) {
+        setLang(savedLang);
+    }
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userEmail");
-    window.location.href = "/login";
+    safeRedirect("/login");
   };
 
-  const handleActivityClick = (project: Project) => {
-    toast(t.opening_plan, { icon: '📂' });
-    setViewingProject(project);
+  const toggleLang = () => {
+    const newLang = lang === "tr" ? "en" : lang === "en" ? "ar" : "tr";
+    setLang(newLang);
+    localStorage.setItem("app_lang", newLang);
   };
 
+  // İstatistikler
   const totalPlans = projects.length;
-  const completedPlans = projects.filter(p => p.status.includes("Tamam") || p.status.includes("Comp") || p.status.includes("مكتمل")).length;
-  const goalPercent = totalPlans > 0 ? Math.round((completedPlans / totalPlans) * 100) : 0;
+  const completedPlans = projects.filter(p => 
+    p.status.includes("Tamam") || p.status.includes("Comp") || p.status.includes("مكتمل") || p.status === 'TAMAMLANDI'
+  ).length;
 
   return (
     <div dir={dir} className={`min-h-screen transition-colors duration-500 font-sans ${darkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}`}>
       <Toaster />
+      
+      {/* VERCEL UYUMLU CHATBOT */}
+      <Chatbot />
 
-      {/* MODAL (DETAY GÖRÜNÜMÜ) */}
+      {/* PLAN DETAY MODALI */}
       {viewingProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className={`relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-[32px] shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
-            <div className="flex justify-between items-center p-6 border-b dark:border-slate-800">
-                <div>
-                  <h2 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">{viewingProject.title}</h2>
-                  <p className="text-sm opacity-50">{viewingProject.date} - {viewingProject.status}</p>
-                </div>
-                <button onClick={() => setViewingProject(null)} className="p-3 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 transition-colors">
-                    <Icons.Close />
-                </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className={`relative w-full max-w-4xl max-h-[85vh] flex flex-col rounded-[32px] shadow-2xl border ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <div className="p-6 border-b dark:border-slate-800 flex justify-between items-center">
+              <div>
+                 <h2 className="text-2xl font-black text-blue-600">{viewingProject.title}</h2>
+                 <p className="text-sm opacity-50">{viewingProject.date}</p>
+              </div>
+              <button onClick={() => setViewingProject(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+                  <Icons.Close />
+              </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
-                {viewingProject.planData ? (
-                    viewingProject.planData.map((section: any, idx: number) => (
-                        <div key={idx} className={`p-6 rounded-2xl border shadow-sm ${darkMode ? "bg-slate-800/50 border-slate-700" : "bg-slate-50 border-slate-100"}`}>
-                            <h3 className="text-xl font-bold mb-4 text-blue-600 dark:text-blue-400 border-b border-slate-200 dark:border-slate-700 pb-2">{section.title}</h3>
-                            <p className={`leading-relaxed text-lg whitespace-pre-wrap ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{section.content}</p>
-                        </div>
-                    ))
-                ) : (
-                    <div className="text-center py-20 opacity-50">{t.missing_content}</div>
-                )}
-            </div>
-            <div className="p-6 border-t dark:border-slate-800 flex justify-end gap-4">
-                <button onClick={() => setViewingProject(null)} className={`px-6 py-3 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 ${darkMode ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'}`}>
-                    {t.close}
-                </button>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {(viewingProject.planData || viewingProject.planContent) ? (
+                (viewingProject.planData || viewingProject.planContent)!.map((section: any, idx: number) => (
+                  <div key={idx} className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                    <h3 className="text-xl font-bold mb-3 text-blue-600 border-b border-blue-500/20 pb-2">{section.title}</h3>
+                    <p className="leading-relaxed whitespace-pre-wrap opacity-80">{section.content}</p>
+                  </div>
+                ))
+              ) : (
+                 <div className="text-center py-20 opacity-50">{t.missing_content}</div>
+              )}
             </div>
           </div>
         </div>
       )}
-      
+
       {/* NAVBAR */}
-      <nav className={`px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-xl border-b transition-colors ${darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-slate-200"}`}>
+      <nav className={`px-8 py-6 flex justify-between items-center sticky top-0 z-40 backdrop-blur-xl border-b ${darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-slate-200"}`}>
         <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">S</div>
-            <span className="font-bold text-xl tracking-tight hidden sm:block">Start ERA</span>
+          <Link href="/" className="group">
+             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">S</div>
+          </Link>
+          <span className="text-2xl font-black tracking-tight hidden sm:block">Start <span className="text-blue-600">ERA</span></span>
         </div>
+
         <div className="flex items-center gap-2 sm:gap-4">
-            <button onClick={() => {
-              const newLang = lang === "tr" ? "en" : lang === "en" ? "ar" : "tr";
-              setLang(newLang); localStorage.setItem("app_lang", newLang);
-            }} className="font-black text-lg hover:scale-110 transition active:scale-95 px-2">{lang === "tr" ? "EN" : lang === "en" ? "AR" : "TR"}</button>
-            <button onClick={toggleTheme} className={`p-2.5 rounded-xl transition-all active:scale-95 ${darkMode ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-white text-slate-600 shadow-sm border border-slate-100'}`}><Icons.Sun /></button>
-            <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 transition-all active:scale-95"><Icons.Logout /></button>
+          <div className={`hidden md:block ${lang === 'ar' ? 'ml-4 text-left' : 'mr-4 text-right'}`}>
+            <p className="text-sm font-black">{userEmail ? userEmail.split('@')[0] : t.guest}</p>
+            <p className="text-xs opacity-50 font-bold uppercase tracking-widest">{t.pro_member}</p>
+          </div>
+          
+          <button onClick={toggleLang} className="font-black text-lg px-2 hover:scale-110 transition">
+             {lang === "tr" ? "EN" : lang === "en" ? "AR" : "TR"}
+          </button>
+
+          {/* ANA SAYFA BUTONU */}
+          <button 
+             onClick={() => safeRedirect("/")} 
+             title={t.home_tooltip}
+             className={`p-2.5 rounded-xl border transition-all hover:bg-blue-600 hover:text-white ${darkMode ? 'bg-slate-800 border-slate-700 text-blue-400' : 'bg-white border-slate-200 text-blue-600'}`}
+          >
+            <Icons.Home />
+          </button>
+
+          <button onClick={toggleTheme} className={`p-2.5 rounded-xl border ${darkMode ? 'bg-slate-800 border-slate-700 text-yellow-400' : 'bg-white border-slate-200 text-slate-600'}`}>
+             {darkMode ? <Icons.Sun /> : <Icons.Moon />}
+          </button>
+          
+          <button onClick={handleLogout} className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all">
+             <Icons.Logout />
+          </button>
         </div>
       </nav>
 
-      {/* MAIN */}
-      <main className="max-w-7xl mx-auto p-6 md:p-8">
-        <header className="mb-10">
-            <h1 className="text-3xl md:text-4xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-              {t.welcome}, {user.name}
-            </h1>
-            <p className={`text-lg opacity-60`}>{t.subtitle}</p>
+      {/* MAIN CONTENT */}
+      <main className="max-w-7xl mx-auto p-8">
+        <header className="mb-12">
+          <h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tight">
+            {t.welcome}, <span className="text-blue-600">{userEmail ? userEmail.split('@')[0] : t.guest}</span>! 🚀
+          </h1>
+          <p className="text-lg opacity-60 font-medium">{t.subtitle}</p>
         </header>
 
-        {/* STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-center">
-           <div className={`p-6 rounded-2xl border shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <div className="flex items-center justify-center gap-4 mb-2">
-                 <div className="p-2 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"><Icons.Document /></div>
-                 <span className="font-bold opacity-60">{t.total_plans}</span>
-              </div>
-              <div className="text-4xl font-black">{totalPlans}</div>
+        {/* İSTATİSTİKLER */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 text-center">
+           <div className={`p-8 rounded-[32px] border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+              <p className="text-sm font-bold opacity-40 uppercase tracking-widest mb-2">{t.total_plans}</p>
+              <div className="text-5xl font-black">{totalPlans}</div>
            </div>
-           <div className={`p-6 rounded-2xl border shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <div className="flex items-center justify-center gap-4 mb-2">
-                 <div className="p-2 rounded-lg bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"><Icons.Chart /></div>
-                 <span className="font-bold opacity-60">{t.completed}</span>
-              </div>
-              <div className="text-4xl font-black">{completedPlans}</div>
+           <div className={`p-8 rounded-[32px] border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+              <p className="text-sm font-bold opacity-40 uppercase tracking-widest mb-2">{t.completed}</p>
+              <div className="text-5xl font-black text-green-500">{completedPlans}</div>
            </div>
-           <div className={`p-6 rounded-2xl border shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <div className="flex items-center justify-center gap-4 mb-2">
-                 <div className="p-2 rounded-lg bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"><Icons.Rocket /></div>
-                 <span className="font-bold opacity-60">{t.active_projects}</span>
-              </div>
-              <div className="text-4xl font-black">{totalPlans - completedPlans}</div>
+           <div className={`p-8 rounded-[32px] border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+              <p className="text-sm font-bold opacity-40 uppercase tracking-widest mb-2">{t.active_projects}</p>
+              <div className="text-5xl font-black text-orange-500">{totalPlans - completedPlans}</div>
            </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* CTA */}
-            <div className="lg:col-span-2">
-                <a href="/planner" className="block group no-underline text-inherit">
-                    <div className={`relative p-8 rounded-[32px] overflow-hidden border transition-all duration-300 hover:shadow-2xl ${darkMode ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700 hover:border-blue-500/50' : 'bg-gradient-to-br from-white to-blue-50 border-slate-200 hover:border-blue-300'}`}>
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
-                            <div>
-                                <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 text-xs font-bold uppercase mb-3">{t.ai_badge}</div>
-                                <h2 className="text-3xl font-black mb-2">{t.create_new_plan}</h2>
-                                <p className={`max-w-md opacity-60`}>{t.create_plan_desc}</p>
-                            </div>
-                            <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform"><Icons.Rocket /></div>
-                        </div>
-                        <div className="mt-8 flex items-center gap-2 font-bold text-blue-600 dark:text-blue-400 group-hover:gap-4 transition-all">
-                            {t.start_now} <span>→</span>
-                        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          
+          {/* HIZLI BAŞLANGIÇ KARTI */}
+          <div className="lg:col-span-2">
+            <Link href="/planner" className="block group no-underline text-inherit">
+              <div className={`p-10 rounded-[40px] border transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 ${darkMode ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700' : 'bg-gradient-to-br from-white to-blue-50 border-slate-200'}`}>
+                 <div className="flex justify-between items-start mb-8">
+                    <div>
+                       <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-widest mb-4">{t.ai_badge}</div>
+                       <h2 className="text-4xl font-black mb-4">{t.create_new_plan}</h2>
+                       <p className="opacity-60 max-w-lg text-lg leading-relaxed">{t.create_plan_desc}</p>
                     </div>
-                </a>
-            </div>
+                    <div className="p-6 bg-blue-600 text-white rounded-3xl shadow-xl group-hover:scale-110 transition-transform">
+                       <Icons.Rocket />
+                    </div>
+                 </div>
+                 <div className="mt-4 font-black text-blue-600 text-xl flex items-center gap-2 group-hover:gap-4 transition-all">
+                    {t.start_now} <span className={lang === 'ar' ? 'rotate-180' : ''}>→</span>
+                 </div>
+              </div>
+            </Link>
+          </div>
 
-            {/* RECENT ACTIVITY */}
-            <div>
-                <h3 className="text-xl font-bold mb-5">{t.recent_activity}</h3>
-                <div className={`p-6 rounded-3xl border min-h-[300px] ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
-                    {projects.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-48 opacity-30">
-                            <Icons.Document />
-                            <p className="text-sm mt-2 font-medium">{t.no_activity}</p>
-                        </div>
-                    ) : (
-                        [...projects].reverse().slice(0, 5).map((project, i) => (
-                            <div key={i} onClick={() => handleActivityClick(project)} className={`flex items-center gap-4 cursor-pointer p-3 -mx-3 rounded-2xl transition-all ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}>
-                                <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-sm truncate">{project.title}</h4>
-                                    <p className="text-xs opacity-50">{project.date}</p>
-                                </div>
-                                <span className="text-[10px] font-black uppercase px-2 py-1 rounded bg-blue-500/10 text-blue-500">{project.status}</span>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </div>
+          {/* SON AKTİVİTELER */}
+          <div>
+             <h3 className="text-2xl font-black mb-6">{t.recent_activity}</h3>
+             <div className={`p-8 rounded-[40px] border min-h-[350px] ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                {projects.length === 0 ? (
+                   <div className="opacity-30 text-center py-24 font-bold text-lg">{t.no_activity}</div>
+                ) : (
+                   [...projects].reverse().slice(0, 5).map((project, i) => (
+                      <div key={i} onClick={() => {toast(t.opening_plan); setViewingProject(project);}} className="flex items-center gap-5 cursor-pointer py-4 border-b last:border-0 dark:border-slate-800 hover:text-blue-600 transition-all group">
+                         <div className="w-3 h-3 rounded-full bg-blue-600 group-hover:scale-125 transition-transform"></div>
+                         <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-base truncate">{project.title}</h4>
+                            <p className="text-xs opacity-40 font-bold uppercase tracking-tighter">{project.date}</p>
+                         </div>
+                      </div>
+                   ))
+                )}
+             </div>
+          </div>
         </div>
       </main>
     </div>
   );
 }
 
-export default function App() {
-  return (
-    <ThemeProvider>
-      <DashboardContent />
-    </ThemeProvider>
-  );
+export default function Dashboard() {
+  return <ThemeProvider><DashboardContent /></ThemeProvider>;
 }
