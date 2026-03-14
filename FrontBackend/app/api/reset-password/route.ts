@@ -18,8 +18,8 @@ export async function POST(request: Request) {
     const cleanEmail = email.trim().toLowerCase();
 
     const userResult = await sql`
-      SELECT reset_code, reset_code_expires 
-      FROM users 
+      SELECT reset_code, reset_code_expires
+      FROM users
       WHERE email = ${cleanEmail}
     `;
 
@@ -29,22 +29,24 @@ export async function POST(request: Request) {
 
     const user = userResult.rows[0];
 
-    // Check code matches
     if (!user.reset_code || user.reset_code !== code.trim()) {
       return NextResponse.json({ detail: "Invalid code" }, { status: 400 });
     }
 
-    // Check code has not expired
     if (!user.reset_code_expires || new Date() > new Date(user.reset_code_expires)) {
       return NextResponse.json({ detail: "Code expired" }, { status: 400 });
     }
 
-    // Hash new password and clear reset code
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
+    // Also set is_verified = TRUE — they proved email ownership by receiving the reset code
     await sql`
-      UPDATE users 
-      SET password = ${hashedPassword}, reset_code = NULL, reset_code_expires = NULL
+      UPDATE users
+      SET
+        password = ${hashedPassword},
+        reset_code = NULL,
+        reset_code_expires = NULL,
+        is_verified = TRUE
       WHERE email = ${cleanEmail}
     `;
 
