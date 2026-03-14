@@ -9,8 +9,17 @@ export async function GET() {
         email VARCHAR(255) UNIQUE NOT NULL,
         password TEXT NOT NULL,
         verification_code VARCHAR(10),
-        is_verified BOOLEAN DEFAULT FALSE
+        is_verified BOOLEAN DEFAULT FALSE,
+        reset_code VARCHAR(10),
+        reset_code_expires TIMESTAMPTZ
       );
+    `;
+
+    // Add reset columns to existing users table if they don't exist yet
+    await sql`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS reset_code VARCHAR(10),
+      ADD COLUMN IF NOT EXISTS reset_code_expires TIMESTAMPTZ;
     `;
 
     await sql`
