@@ -1,11 +1,14 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import type { Lang } from "../lib/translations";
 
 interface ThemeAuthContextType {
   user: string | null;
   darkMode: boolean;
+  lang: Lang;
   toggleTheme: () => void;
+  setLang: (lang: Lang) => void;
   login: (token: string, email: string) => void;
   logout: () => void;
 }
@@ -15,12 +18,12 @@ const ThemeAuthContext = createContext<ThemeAuthContextType | undefined>(undefin
 export function ThemeAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
-  const [mounted, setMounted] = useState(false); // 👈 KRİTİK: Hydration hatasını önler
+  const [lang, setLangState] = useState<Lang>("tr");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Tarayıcı tamamen yüklendiğinde çalışır
     setMounted(true);
-    
+
     const token = localStorage.getItem("token");
     const savedUser = localStorage.getItem("userEmail");
     if (token && savedUser) setUser(savedUser);
@@ -30,16 +33,26 @@ export function ThemeAuthProvider({ children }: { children: React.ReactNode }) {
       setDarkMode(true);
       document.documentElement.classList.add("dark");
     }
+
+    const savedLang = localStorage.getItem("app_lang") as Lang;
+    if (savedLang && ["tr", "en", "ar"].includes(savedLang)) {
+      setLangState(savedLang);
+    }
   }, []);
 
   const toggleTheme = () => {
     setDarkMode((prev) => {
-      const newMode = !prev;
-      localStorage.setItem("theme", newMode ? "dark" : "light");
-      if (newMode) document.documentElement.classList.add("dark");
+      const next = !prev;
+      localStorage.setItem("theme", next ? "dark" : "light");
+      if (next) document.documentElement.classList.add("dark");
       else document.documentElement.classList.remove("dark");
-      return newMode;
+      return next;
     });
+  };
+
+  const setLang = (newLang: Lang) => {
+    setLangState(newLang);
+    localStorage.setItem("app_lang", newLang);
   };
 
   const login = (token: string, email: string) => {
@@ -48,39 +61,36 @@ export function ThemeAuthProvider({ children }: { children: React.ReactNode }) {
     setUser(email);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await fetch("/api/logout", { method: "POST" }).catch(() => {});
     localStorage.removeItem("token");
     localStorage.removeItem("userEmail");
     setUser(null);
     window.location.href = "/";
   };
 
-  // ⚠️ SUNUCU HATASINI ENGELLEMEK İÇİN: 
-  // Sayfa tarayıcıda tamamen yüklenene kadar (mounted) veriye erişimi beklet
   if (!mounted) {
     return <div style={{ visibility: "hidden" }}>{children}</div>;
   }
 
   return (
-    <ThemeAuthContext.Provider value={{ user, darkMode, toggleTheme, login, logout }}>
+    <ThemeAuthContext.Provider value={{ user, darkMode, lang, toggleTheme, setLang, login, logout }}>
       {children}
     </ThemeAuthContext.Provider>
   );
 }
 
-// Güvenli kanca
-// ... (üst kısımlar aynı)
-
-export const useThemeAuth = () => {
+export const useThemeAuth = (): ThemeAuthContextType => {
   const context = useContext(ThemeAuthContext);
-  // Eğer LandingPage bir Provider bulamazsa bu hatayı verir
   if (!context) {
     return {
       user: null,
       darkMode: false,
+      lang: "tr",
       toggleTheme: () => {},
+      setLang: () => {},
       login: () => {},
-      logout: () => {}
+      logout: async () => {},
     };
   }
   return context;

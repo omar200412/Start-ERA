@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const result = await sql`
+    await sql`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -12,8 +12,25 @@ export async function GET() {
         is_verified BOOLEAN DEFAULT FALSE
       );
     `;
-    return NextResponse.json({ message: "Database initialized successfully!", result }, { status: 200 });
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS projects (
+        id SERIAL PRIMARY KEY,
+        user_email VARCHAR(255) NOT NULL,
+        title TEXT NOT NULL,
+        status VARCHAR(50) DEFAULT 'Completed',
+        plan_data JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_projects_user_email ON projects(user_email);
+    `;
+
+    return NextResponse.json({ message: "Database initialized successfully!" }, { status: 200 });
   } catch (error: any) {
+    console.error("DB init error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
