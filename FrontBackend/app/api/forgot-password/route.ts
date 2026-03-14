@@ -1,6 +1,8 @@
 import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
   try {
@@ -13,10 +15,9 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Check user exists — but always return success to prevent email enumeration
+    // Always return success to prevent email enumeration attacks
     const userResult = await sql`SELECT id FROM users WHERE email = ${cleanEmail}`;
     if (userResult.rowCount === 0) {
-      // Return success anyway so attackers can't enumerate emails
       return NextResponse.json({ message: "If this email exists, a code was sent." }, { status: 200 });
     }
 
@@ -25,27 +26,16 @@ export async function POST(request: Request) {
     const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
     await sql`
-      UPDATE users 
+      UPDATE users
       SET reset_code = ${code}, reset_code_expires = ${expires}
       WHERE email = ${cleanEmail}
     `;
 
-    // Send email
-    const transporter = nodemailer.createTransport({
-      host: process.env.MAIL_SERVER || "mail.plan-iq.net",
-      port: Number(process.env.MAIL_PORT) || 587,
-      secure: false,
-      auth: {
-        user: process.env.MAIL_USERNAME,
-        pass: process.env.MAIL_PASSWORD,
-      },
-    });
-
-    await transporter.sendMail({
-      from: `"Start ERA" <${process.env.MAIL_USERNAME}>`,
+    // Send reset email via Resend
+    await resend.emails.send({
+      from: 'Start ERA <onboarding@resend.dev>',
       to: cleanEmail,
-      subject: "Start ERA — Password Reset Code",
-      text: `Your password reset code is: ${code}\n\nThis code expires in 15 minutes.\n\nIf you did not request this, ignore this email.`,
+      subject: 'Start ERA — Password Reset Code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f8fafc; border-radius: 16px;">
           <div style="text-align: center; margin-bottom: 32px;">

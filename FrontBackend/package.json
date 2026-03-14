@@ -18,7 +18,8 @@
     "pdfkit": "^0.17.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-hot-toast": "^2.6.0"
+    "react-hot-toast": "^2.6.0",
+    "resend": "^6.9.3"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
