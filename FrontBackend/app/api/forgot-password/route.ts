@@ -15,46 +15,75 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Always return success to prevent email enumeration attacks
+    // Check if user exists
     const userResult = await sql`SELECT id FROM users WHERE email = ${cleanEmail}`;
     if (userResult.rowCount === 0) {
-      return NextResponse.json({ message: "If this email exists, a code was sent." }, { status: 200 });
+      // Don't reveal whether email exists for security
+      return NextResponse.json({ message: "If this email exists, a code has been sent." }, { status: 200 });
     }
 
-    // Generate 6-digit code, expires in 15 minutes
+    // Generate reset code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-    await sql`
-      UPDATE users
-      SET reset_code = ${code}, reset_code_expires = ${expires}
-      WHERE email = ${cleanEmail}
-    `;
+    // Save code to DB (reuse verification_code column)
+    await sql`UPDATE users SET verification_code = ${code} WHERE email = ${cleanEmail}`;
 
-    // Send reset email via Resend
+    // Send email
     await resend.emails.send({
-      from: 'Start ERA <onboarding@resend.dev>',
+      from: 'Start ERA <noreply@plan-iq.net>',
       to: cleanEmail,
-      subject: 'Start ERA — Password Reset Code',
+      subject: 'Start ERA — Şifre Sıfırlama / Password Reset',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f8fafc; border-radius: 16px;">
-          <div style="text-align: center; margin-bottom: 32px;">
-            <div style="display: inline-block; width: 56px; height: 56px; background: linear-gradient(135deg, #2563eb, #4f46e5); border-radius: 16px; line-height: 56px; color: white; font-size: 24px; font-weight: 900;">S</div>
-            <h1 style="color: #1e293b; margin-top: 16px; font-size: 24px;">Password Reset</h1>
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:40px 32px;background:#0f172a;border-radius:20px;">
+
+          <div style="text-align:center;margin-bottom:36px;">
+            <div style="display:inline-block;background:linear-gradient(135deg,#2563eb,#4f46e5);color:white;font-size:26px;font-weight:900;padding:14px 28px;border-radius:14px;">
+              Start ERA
+            </div>
           </div>
-          <p style="color: #475569; font-size: 16px; line-height: 1.6;">Use the code below to reset your Start ERA password. This code expires in <strong>15 minutes</strong>.</p>
-          <div style="background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
-            <span style="font-size: 40px; font-weight: 900; letter-spacing: 12px; color: #2563eb;">${code}</span>
+
+          <h2 style="color:#f1f5f9;font-size:22px;text-align:center;margin-bottom:10px;font-weight:800;">
+            Şifre Sıfırlama
+          </h2>
+
+          <p style="color:#94a3b8;font-size:15px;text-align:center;margin-bottom:36px;line-height:1.6;">
+            Şifreni sıfırlamak için aşağıdaki kodu kullan.<br/>
+            <span style="font-size:13px;">Use the code below to reset your password.</span>
+          </p>
+
+          <div style="background:#1e293b;border:2px solid #7c3aed;border-radius:16px;padding:32px;text-align:center;margin-bottom:36px;">
+            <div style="font-size:56px;font-weight:900;letter-spacing:16px;color:#8b5cf6;font-variant-numeric:tabular-nums;">
+              ${code}
+            </div>
           </div>
-          <p style="color: #94a3b8; font-size: 14px; text-align: center;">If you didn't request this, you can safely ignore this email.</p>
+
+          <div style="background:#1e293b;border-radius:12px;padding:16px;margin-bottom:28px;">
+            <p style="color:#64748b;font-size:13px;text-align:center;margin:0;line-height:1.6;">
+              ⏱ Bu kod <strong style="color:#94a3b8;">15 dakika</strong> içinde geçerlidir.<br/>
+              This code is valid for <strong style="color:#94a3b8;">15 minutes</strong>.
+            </p>
+          </div>
+
+          <p style="color:#475569;font-size:12px;text-align:center;line-height:1.6;">
+            Eğer şifre sıfırlama talebinde bulunmadıysan, bu emaili görmezden gelebilirsin.<br/>
+            If you did not request a password reset, you can safely ignore this email.
+          </p>
+
+          <hr style="border:none;border-top:1px solid #1e293b;margin:28px 0;" />
+
+          <p style="color:#334155;font-size:11px;text-align:center;margin:0;">
+            © 2026 Start ERA · plan-iq.net
+          </p>
+
         </div>
       `,
     });
 
-    return NextResponse.json({ message: "If this email exists, a code was sent." }, { status: 200 });
+    console.log(`Password reset email sent to ${cleanEmail}`);
+    return NextResponse.json({ message: "If this email exists, a code has been sent." }, { status: 200 });
 
   } catch (error: any) {
-    console.error("Forgot password error:", error);
+    console.error("Forgot password error:", error.message);
     return NextResponse.json({ detail: "Server Error" }, { status: 500 });
   }
 }
