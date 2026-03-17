@@ -49,6 +49,9 @@ async function sendVerificationEmail(toEmail: string, code: string) {
       from: 'Start ERA <noreply@startera.io>',
       to: toEmail,
       subject: 'Start ERA — Doğrulama Kodunuz / Verification Code',
+      headers: {
+    'X-Entity-Ref-ID': `verify-${toEmail}-${Date.now()}`,
+  },
       html: `
         <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:40px 32px;background:#0f172a;border-radius:20px;">
 
