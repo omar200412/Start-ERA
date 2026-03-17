@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
     // Send email
     await resend.emails.send({
-      from: 'Start ERA <noreply@plan-iq.net>',
+      from: 'Start ERA <noreply@startera.io>',
       to: cleanEmail,
       subject: 'Start ERA — Şifre Sıfırlama / Password Reset',
       html: `

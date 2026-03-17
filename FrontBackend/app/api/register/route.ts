@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 async function sendVerificationEmail(toEmail: string, code: string) {
   try {
     await resend.emails.send({
-      from: 'Start ERA <noreply@plan-iq.net>',
+      from: 'Start ERA <noreply@startera.io>',
       to: toEmail,
       subject: 'Start ERA — Doğrulama Kodunuz / Verification Code',
       html: `
