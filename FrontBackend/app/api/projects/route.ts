@@ -10,7 +10,6 @@ async function getEmailFromRequest(request: Request): Promise<string | null> {
   return payload?.sub ?? null;
 }
 
-// GET /api/projects — load all projects for the authenticated user
 export async function GET(request: Request) {
   try {
     const email = await getEmailFromRequest(request);
@@ -19,7 +18,7 @@ export async function GET(request: Request) {
     }
 
     const result = await sql`
-      SELECT id, title, status, plan_data, created_at
+      SELECT id, title, status, plan_data, scores, created_at
       FROM projects
       WHERE user_email = ${email}
       ORDER BY created_at DESC
@@ -32,6 +31,7 @@ export async function GET(request: Request) {
       status: row.status,
       date: new Date(row.created_at).toLocaleDateString(),
       planData: row.plan_data,
+      scores: row.scores || null,
     }));
 
     return NextResponse.json({ projects }, { status: 200 });
@@ -42,7 +42,6 @@ export async function GET(request: Request) {
   }
 }
 
-// POST /api/projects — save a new project
 export async function POST(request: Request) {
   try {
     const email = await getEmailFromRequest(request);
@@ -51,15 +50,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, status, planData } = body;
+    const { title, status, planData, scores } = body;
 
     if (!title || !planData) {
       return NextResponse.json({ detail: "title and planData are required" }, { status: 400 });
     }
 
     const result = await sql`
-      INSERT INTO projects (user_email, title, status, plan_data)
-      VALUES (${email}, ${title}, ${status || 'Completed'}, ${JSON.stringify(planData)})
+      INSERT INTO projects (user_email, title, status, plan_data, scores)
+      VALUES (${email}, ${title}, ${status || 'Completed'}, ${JSON.stringify(planData)}, ${scores ? JSON.stringify(scores) : null})
       RETURNING id, created_at
     `;
 

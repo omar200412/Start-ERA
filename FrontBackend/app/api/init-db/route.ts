@@ -10,6 +10,7 @@ export async function GET() {
         password TEXT NOT NULL,
         verification_code VARCHAR(10),
         reset_code VARCHAR(10),
+        reset_code_expires_at TIMESTAMPTZ,
         is_verified BOOLEAN DEFAULT FALSE
       );
     `;
@@ -21,18 +22,17 @@ export async function GET() {
         title TEXT NOT NULL,
         status VARCHAR(50) DEFAULT 'Completed',
         plan_data JSONB,
+        scores JSONB,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
     `;
 
-    await sql`
-      CREATE INDEX IF NOT EXISTS idx_projects_user_email ON projects(user_email);
-    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_projects_user_email ON projects(user_email);`;
 
-    // Add reset_code column if it doesn't exist yet
-    await sql`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_code VARCHAR(10);
-    `;
+    // Add missing columns to existing tables
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_code VARCHAR(10);`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_code_expires_at TIMESTAMPTZ;`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS scores JSONB;`;
 
     return NextResponse.json({ message: "Database initialized successfully!" }, { status: 200 });
   } catch (error: any) {

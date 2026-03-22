@@ -253,7 +253,7 @@ export default function LandingPage() {
       {/* ── DARK SECTION: Community ── */}
       <section className="bg-gray-950 py-24 px-6">
         <div className="max-w-6xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500 mb-16">[01] {builtOnLabel}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500 mb-16"> {builtOnLabel}</p>
           <div className="grid md:grid-cols-2 gap-16 items-start mb-16">
             <div>
               <h2 className="text-4xl md:text-5xl font-black text-white mb-4 leading-tight" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
@@ -286,7 +286,7 @@ export default function LandingPage() {
       {/* ── HOW IT WORKS ── */}
       <section className="py-24 px-6 bg-white">
         <div className="max-w-6xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-16">[02] {howLabel}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-16"> {howLabel}</p>
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="space-y-0">
               {steps.map((s, i) => (
@@ -333,7 +333,7 @@ export default function LandingPage() {
       {/* ── TRENDING IDEAS FEED ── */}
       <section id="trending" className="py-24 px-6 bg-gray-50">
         <div className="max-w-6xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-8">[03] {trendingLabel}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-8"> {trendingLabel}</p>
           <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-16 max-w-3xl leading-tight" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
             {trendingTitle}
           </h2>
@@ -366,7 +366,7 @@ export default function LandingPage() {
       {/* ── PRICING ── */}
       <section id="pricing" className="py-24 px-6 bg-white">
         <div className="max-w-6xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-8">[04] {lang === "tr" ? "FİYATLANDIRMA" : lang === "ar" ? "الأسعار" : "PRICING"}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-8"> {lang === "tr" ? "FİYATLANDIRMA" : lang === "ar" ? "الأسعار" : "PRICING"}</p>
           <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-16" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
             {t.price_title}
           </h2>
@@ -410,7 +410,7 @@ export default function LandingPage() {
       {/* ── ABOUT ── */}
       <section id="about" className="py-24 px-6 bg-gray-950">
         <div className="max-w-6xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500 mb-8">[05] {lang === "tr" ? "HAKKIMIZDA" : lang === "ar" ? "من نحن" : "ABOUT"}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500 mb-8"> {lang === "tr" ? "HAKKIMIZDA" : lang === "ar" ? "من نحن" : "ABOUT"}</p>
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div>
               <h2 className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
@@ -438,7 +438,7 @@ export default function LandingPage() {
       {/* ── CONTACT ── */}
       <section id="contact" className="py-24 px-6 bg-white">
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-6">[06] {lang === "tr" ? "İLETİŞİM" : lang === "ar" ? "التواصل" : "CONTACT"}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-6"> {lang === "tr" ? "İLETİŞİM" : lang === "ar" ? "التواصل" : "CONTACT"}</p>
           <h2 className="text-4xl font-black text-gray-900 mb-3" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.contact_title}</h2>
           <p className="text-gray-500 mb-10">{lang === "tr" ? "Sorularınız için bize yazın." : lang === "ar" ? "اكتب لنا لأي أسئلة." : "Write to us for any questions."}</p>
           <form onSubmit={e => { e.preventDefault(); }} className="space-y-4">
