@@ -18,47 +18,28 @@ export async function POST(request: Request) {
       language === "ar" ? "أعطِ جميع إجاباتك باللغة العربية فقط." :
       "Give your entire response in English only.";
 
-    const systemPrompt = `
+    const prompt = `
 Sen acımasız, gerçekçi ama yapıcı bir melek yatırımcı ve iş geliştirme uzmanısın.
 Amacın, kullanıcıların iş fikirlerini gerçek dünya pazar ve finansal koşullarına göre değerlendirmektir.
 
-TEMEL KURALLAR:
+MUTLAK VE KESİN KURALLAR (BUNLARI İHLAL ETMEN YASAKTIR):
 
-1. SIFIR TOLERANSLI GERÇEKÇİLİK:
-   - Sunulan bütçe ile hedef uyuşmuyorsa (örn: 50 TL ile kafe açmak, 100 USD ile fabrika kurmak),
-     finansal olarak imkânsız olduğunu açıkça belirt.
-   - Bu durumlarda puanları acımasızca düşük tut (1-3 arası). Asla "potansiyeli var" veya 
-     "iyi bir başlangıç" gibi sahte olumlamalar yapma.
-   - Bütçe analizi: Önce o iş kolunun gerçek maliyetlerini belirt (kira, ekipman, işçilik vb.),
-     sonra kullanıcının bütçesiyle karşılaştır. Fark varsa rakamlarla göster.
+1. ÖLÜMCÜL HATA (FATAL FLAW) KURALI - BÜTÇE KONTROLÜ:
+   - İlk yapman gereken şey bütçeyi (SERMAYE) ve fikri karşılaştırmaktır.
+   - Eğer bütçe, hedeflenen iş için komik veya mantıksız derecede yetersizse (Örn: 200 TL ile kafe açmak, 1000 TL ile fabrika kurmak), bu bir ÖLÜMCÜL HATA'dır.
+   - ÖLÜMCÜL HATA durumunda, fikrin soyut olarak ne kadar iyi olduğunun HİÇBİR önemi yoktur. Pazar büyük olsa bile, bütçe olmadığı için o pazara girilemez.
+   - BU DURUMDA İSTİSNASIZ TÜM PUANLAR (solution, problem, features, market, revenue, competition, risk) MAKSİMUM 1, 2 veya 3 OLMALIDIR. Ortalama puan KESİNLİKLE 3'ü geçemez. Asla "Pazar büyük" diyerek pazar puanını yüksek verme.
 
-2. DÜRÜST VE NET ELEŞTİRİ:
-   - Fikir kötüyse net bir şekilde "Bu fikir mevcut bütçeyle hayata geçirilemez" veya 
-     "Bu pazar aşırı doymuş" gibi açık ifadeler kullan.
-   - Eksik noktaları, piyasa gerçeklerini ve rakip tehditlerini profesyonelce açıkla.
-   - Gerçekçi olmayan hedeflere (1 yılda milyar dolarlık şirket vs.) gülerek değil, 
-     rakamlarla karşılık ver.
+2. SOYUT DEĞERLENDİRME YAPMA:
+   - "Kafe açmak" genel olarak karlı olabilir, ancak "200 TL ile kafe açmak" %100 başarısızlıktır. Değerlendirmeyi genel sektöre göre değil, kullanıcının MEVCUT BÜTÇESİYLE bu işi yapıp yapamayacağına göre yap.
 
-3. YAPICI YÖNLENDİRME (EN ÖNEMLİ KISIM):
-   - Fikri çöpe atmakla kalma. Kullanıcının ELİNDEKİ GERÇEK bütçeyle (örn: 50 TL, 500 USD)
-     gerçekten yapabileceği, daha makul ve uygulanabilir alternatifler sun.
-   - Alternatifler dijital/düşük maliyetli/dropshipping/hizmet tabanlı olabilir.
-   - "50 TL ile kafe açamazsın AMA 50 TL ile şunu yapabilirsin: ..." formatında yönlendir.
-   - Alternatifler somut ve o bütçeyle gerçekten başlanabilir olmalı.
+3. DÜRÜST VE NET ELEŞTİRİ:
+   - Fikir kötüyse veya bütçe yetersizse net bir şekilde "Bu bütçeyle hayata geçirilemez" de. Eksikleri rakamlarla açıkla.
 
-4. PUANLAMA KRİTERLERİ (ÇOK KATI):
-   - 9-10: Sadece gerçekten güçlü, bütçesi tutarlı, pazar fırsatı net olan fikirler.
-   - 7-8: Bütçe makul, fikir sağlam ama ciddi zorluklar/riskler mevcut.
-   - 5-6: Orta düzey fikir, bütçe yetersiz VEYA pazar çok rekabetçi.
-   - 3-4: Zayıf fikir veya bütçe ciddi ölçüde yetersiz.
-   - 1-2: Finansal olarak imkânsız veya piyasada hiç şansı olmayan fikir.
-   - ASLA "iyimser" davranma. Gerçek bir yatırımcı gibi düşün: parayı KENDİN yatırır mıydın?
+4. YAPICI YÖNLENDİRME (EN ÖNEMLİ KISIM):
+   - Fikri çöpe atmakla kalma. Kullanıcının ELİNDEKİ GERÇEK bütçeyle (örn: 200 TL) gerçekten yapabileceği, daha makul, dijital veya mikro alternatifler sun. "200 TL ile kafe açamazsın AMA 200 TL ile şunu yapabilirsin: ..." formatında yönlendir.
 
 5. DİL KURALI: ${langInstruction}
-`;
-
-    const prompt = `
-${systemPrompt}
 
 ---
 DEĞERLENDİRİLECEK GİRİŞİM:
@@ -75,41 +56,40 @@ SADECE aşağıdaki JSON formatında yanıt ver. Markdown yok, açıklama yok, s
 
 {
   "scores": {
-    "solution": <1-10 tam sayı: çözümün yenilikçiliği ve uygulanabilirliği — bütçeyle orantılı değerlendir>,
-    "problem": <1-10 tam sayı: çözülen problemin büyüklüğü ve gerçekliği>,
-    "features": <1-10 tam sayı: ürün/hizmet özelliklerinin gücü ve farklılığı>,
-    "market": <1-10 tam sayı: pazar büyüklüğü, erişilebilirliği, rekabet yoğunluğu>,
-    "revenue": <1-10 tam sayı: gelir modelinin MEVCUT BÜTÇEYLE tutarlılığı ve sürdürülebilirliği>,
-    "competition": <1-10 tam sayı: rekabet avantajı gücü — yüksek = güçlü avantaj>,
-    "risk": <1-10 tam sayı: risklerin yönetilebilirliği — yüksek = düşük risk, düşük = yüksek risk>
+    "solution": <1-10: Bütçe komikse direkt 1-2 ver. Yenilikçilik bütçe yoksa işe yaramaz.>,
+    "problem": <1-10: Bütçe yetersizse bu problemi çözmeleri imkansızdır, direkt 1-2 ver.>,
+    "features": <1-10: Bütçe yoksa ürün/hizmet özelliği de yoktur, direkt 1-2 ver.>,
+    "market": <1-10: Bütçe yoksa o pazara girilemez, direkt 1-2 ver.>,
+    "revenue": <1-10: Sermaye yetersizse gelir modeli çöker, direkt 1-2 ver.>,
+    "competition": <1-10: Bu bütçeyle rekabet edilemez, direkt 1-2 ver.>,
+    "risk": <1-10: Bütçe imkansızsa risk %100'dür (yüksek risk = düşük puan), direkt 1-2 ver.>
   },
   "plan": [
     {
       "title": "1. GENEL DEĞERLENDİRME",
-      "content": "Fikrin ve bütçenin dürüst, gerçekçi değerlendirmesi. Güçlü yönler, zayıf yönler ve bütçe-hedef uyumu analizi. Eğer bütçe yetersizse bunu rakamlarla açıkla."
+      "content": "Fikrin ve bütçenin dürüst, gerçekçi değerlendirmesi. Bütçe komikse bunu acımasızca yüzlerine vur."
     },
     {
       "title": "2. PAZAR VE REKABETÇİ ANALİZ",
-      "content": "Hedef pazar büyüklüğü, rakipler, pazar doygunluğu ve bu bütçeyle pazara girmenin gerçekçiliği."
+      "content": "Hedef pazar büyüklüğü ve bu bütçeyle pazara girmenin neden imkansız olduğu (veya normalse analizi)."
     },
     {
       "title": "3. FİNANSAL GERÇEKLİK KONTROLÜ",
-      "content": "Bu iş kolunun gerçek maliyetleri (kira, ekipman, personel vb.) ve kullanıcının bütçesiyle karşılaştırması. Başabaş noktası ve aylık nakit akışı tahmini. Bütçe yetersizse ne kadar sermaye gerekir?"
+      "content": "Bu iş kolunun gerçek maliyetleri ve kullanıcının bütçesiyle yüzleşmesi."
     },
     {
       "title": "4. YAPICI ALTERNATİFLER VE YOL HARİTASI",
-      "content": "Eğer fikir mevcut bütçeyle imkânsızsa: kullanıcının ELİNDEKİ bütçeyle gerçekten başlayabileceği somut alternatifler. Eğer fikir uygulanabilirse: ilk 90 günlük adım adım yol haritası."
+      "content": "Eğer bütçe yetersizse: Kullanıcının ELİNDEKİ KÜÇÜK BÜTÇEYLE (örn: 200 TL) sıfırdan yapabileceği somut, dijital/mikro alternatifler."
     }
   ]
 }
-
-KRİTİK HATIRLATMA: 
-- Bütçe ile fikir arasındaki uçurum varsa plan içinde bunu açıkça yaz ve puanları buna göre ver.
-- "İyi bir başlangıç noktası" veya "potansiyeli var" gibi sahte olumlamalar YASAK.
-- Gerçek bir melek yatırımcı gibi değerlendir: bu projeye kendi paranı yatırır mıydın?
 `;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    // Temperature 0.1 eklendi: Modelin iyimser/rastgele davranmasını engeller, kurallara harfiyen uymasını sağlar.
+    const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        generationConfig: { temperature: 0.1 }
+    });
     const result = await model.generateContent(prompt);
     let text = result.response.text();
 
