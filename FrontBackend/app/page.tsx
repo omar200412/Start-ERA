@@ -21,9 +21,9 @@ function MoonIcon() {
   );
 }
 
-function CheckIcon() {
+function CheckIcon({ color }: { color?: string }) {
   return (
-    <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className={"w-5 h-5 flex-shrink-0 " + (color || "text-blue-600")} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
     </svg>
   );
@@ -36,57 +36,6 @@ function ChevronDown() {
     </svg>
   );
 }
-
-const STATS = [
-  { number: "10K+", label: "Business Plans Created" },
-  { number: "98%", label: "User Satisfaction" },
-  { number: "3", label: "Languages Supported" },
-  { number: "60s", label: "Average Plan Generation" },
-];
-
-const TESTIMONIALS = [
-  {
-    quote: "Start ERA turned my idea into a full investor-ready business plan in under a minute. I was amazed by the depth of the market analysis.",
-    name: "Ahmet Yılmaz",
-    title: "Founder, TechStart Istanbul",
-    initial: "A",
-  },
-  {
-    quote: "The AI understood exactly what I needed. The financial projections were spot on and saved me weeks of research.",
-    name: "Sara Al-Rashid",
-    title: "CEO, GreenGrow Arabia",
-    initial: "S",
-  },
-  {
-    quote: "Multi-language support is a game changer. I got my entire business plan in Arabic and shared it with investors the same day.",
-    name: "Omar Mansour",
-    title: "Co-founder, NileVentures",
-    initial: "O",
-  },
-];
-
-const FAQS = [
-  {
-    q: "What is Start ERA?",
-    a: "Start ERA is an AI-powered entrepreneurship platform. It prepares professional business plans, financial analysis, and market research for your startup in seconds — in Turkish, English, and Arabic.",
-  },
-  {
-    q: "How long does it take to generate a business plan?",
-    a: "Most business plans are generated in under 60 seconds. Our AI processes your idea, capital, skills, goals, and management structure to produce a comprehensive, investor-ready document.",
-  },
-  {
-    q: "Is Start ERA free to use?",
-    a: "Yes. Our Starter plan is completely free and includes unlimited business plans, PDF downloads, basic market analysis, and 24/7 AI assistant support. A Professional plan with advanced features is coming soon.",
-  },
-  {
-    q: "What languages are supported?",
-    a: "Start ERA fully supports Turkish, English, and Arabic — including the business plan content, the interface, and the PDF export.",
-  },
-  {
-    q: "Can I download my business plan as a PDF?",
-    a: "Absolutely. Every plan you generate can be exported as a professional PDF, formatted for investor presentations and pitch meetings.",
-  },
-];
 
 export default function LandingPage() {
   const { user, darkMode, toggleTheme, logout, lang, setLang } = useThemeAuth();
@@ -128,10 +77,111 @@ export default function LandingPage() {
   const sectionBg = isDark ? "bg-gray-900" : "bg-gray-50";
   const inputBg = isDark ? "bg-gray-900 border-gray-700 text-gray-100 placeholder-gray-500 focus:border-blue-500" : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-600";
   const faqBg = isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200";
-  const statBg = isDark ? "bg-gray-900" : "bg-blue-700";
 
   const freeItems = [t.li_1, t.li_2, t.li_3, t.li_4];
   const proItems = [t.pro_li1, t.pro_li2, t.pro_li3, t.pro_li4];
+
+  const STATS = [
+    { number: "10K+", label: lang === "tr" ? "Oluşturulan İş Planı" : lang === "ar" ? "خطة عمل مُنشأة" : "Business Plans Created" },
+    { number: "98%", label: lang === "tr" ? "Kullanıcı Memnuniyeti" : lang === "ar" ? "رضا المستخدمين" : "User Satisfaction" },
+    { number: "3", label: lang === "tr" ? "Desteklenen Dil" : lang === "ar" ? "لغات مدعومة" : "Languages Supported" },
+    { number: "60s", label: lang === "tr" ? "Ortalama Oluşturma Süresi" : lang === "ar" ? "متوسط وقت الإنشاء" : "Avg Generation Time" },
+  ];
+
+  const TESTIMONIALS = [
+    {
+      quote: lang === "tr" ? "Start ERA fikrimi dakika içinde yatırımcıya hazır bir iş planına dönüştürdü. Pazar analizinin derinliği beni çok şaşırttı." : lang === "ar" ? "حوّلت Start ERA فكرتي إلى خطة عمل جاهزة للمستثمرين في دقيقة. أدهشني عمق تحليل السوق." : "Start ERA turned my idea into an investor-ready business plan in under a minute. I was amazed by the depth of the market analysis.",
+      name: "Ahmet Yılmaz",
+      title: lang === "tr" ? "Kurucu, TechStart İstanbul" : lang === "ar" ? "مؤسس، TechStart إسطنبول" : "Founder, TechStart Istanbul",
+      initial: "A",
+    },
+    {
+      quote: lang === "tr" ? "Yapay zeka tam olarak ne istediğimi anladı. Finansal projeksiyonlar çok tutarlıydı ve bana haftalarca araştırma süresinden tasarruf ettirdi." : lang === "ar" ? "فهم الذكاء الاصطناعي بالضبط ما أحتاجه. كانت التوقعات المالية دقيقة جداً ووفّرت عليّ أسابيع من البحث." : "The AI understood exactly what I needed. The financial projections were spot on and saved me weeks of research.",
+      name: "Sara Al-Rashid",
+      title: lang === "tr" ? "CEO, GreenGrow Arabia" : lang === "ar" ? "الرئيس التنفيذي، GreenGrow Arabia" : "CEO, GreenGrow Arabia",
+      initial: "S",
+    },
+    {
+      quote: lang === "tr" ? "Çok dilli destek oyunun kurallarını değiştiriyor. İş planımın tamamını Arapça aldım ve aynı gün yatırımcılarla paylaştım." : lang === "ar" ? "دعم اللغات المتعددة يغيّر قواعد اللعبة. حصلت على خطة عملي كاملةً بالعربية وشاركتها مع المستثمرين في نفس اليوم." : "Multi-language support is a game changer. I got my entire business plan in Arabic and shared it with investors the same day.",
+      name: "Omar Mansour",
+      title: lang === "tr" ? "Kurucu Ortak, NileVentures" : lang === "ar" ? "شريك مؤسس، NileVentures" : "Co-founder, NileVentures",
+      initial: "O",
+    },
+  ];
+
+  const FAQS = [
+    {
+      q: lang === "tr" ? "Start ERA nedir?" : lang === "ar" ? "ما هي Start ERA؟" : "What is Start ERA?",
+      a: lang === "tr" ? "Start ERA, yapay zeka destekli bir girişimcilik platformudur. Girişiminiz için saniyeler içinde Türkçe, İngilizce ve Arapça olarak profesyonel iş planı, finansal analiz ve pazar araştırması hazırlar." : lang === "ar" ? "Start ERA منصة ريادة أعمال مدعومة بالذكاء الاصطناعي. تُعدّ خطط أعمال احترافية وتحليلاً مالياً وبحثاً للسوق لشركتك الناشئة في ثوانٍ، باللغة التركية والإنجليزية والعربية." : "Start ERA is an AI-powered entrepreneurship platform. It prepares professional business plans, financial analysis, and market research for your startup in seconds — in Turkish, English, and Arabic.",
+    },
+    {
+      q: lang === "tr" ? "İş planı oluşturmak ne kadar sürer?" : lang === "ar" ? "كم يستغرق إنشاء خطة عمل؟" : "How long does it take to generate a business plan?",
+      a: lang === "tr" ? "Çoğu iş planı 60 saniyenin altında oluşturulur. Yapay zekamız fikrinizi, sermayenizi, becerilerinizi, hedeflerinizi ve yönetim yapınızı işleyerek kapsamlı, yatırımcıya hazır bir belge üretir." : lang === "ar" ? "تُنشأ معظم خطط الأعمال في أقل من 60 ثانية. يعالج ذكاؤنا الاصطناعي فكرتك ورأس مالك ومهاراتك وأهدافك وهيكل إدارتك لإنتاج وثيقة شاملة جاهزة للمستثمرين." : "Most business plans are generated in under 60 seconds. Our AI processes your idea, capital, skills, goals, and management structure to produce a comprehensive, investor-ready document.",
+    },
+    {
+      q: lang === "tr" ? "Start ERA ücretsiz mi?" : lang === "ar" ? "هل Start ERA مجانية؟" : "Is Start ERA free to use?",
+      a: lang === "tr" ? "Evet. Başlangıç planımız tamamen ücretsizdir ve sınırsız iş planı, PDF indirme, temel pazar analizi ve 7/24 AI asistan desteği içerir. Gelişmiş özellikler içeren Profesyonel plan yakında geliyor." : lang === "ar" ? "نعم. خطتنا المجانية مجانية تماماً وتشمل خطط عمل غير محدودة وتنزيل PDF وتحليل السوق الأساسي ودعم مساعد الذكاء الاصطناعي على مدار الساعة. الخطة الاحترافية بميزات متقدمة قادمة قريباً." : "Yes. Our Starter plan is completely free and includes unlimited business plans, PDF downloads, basic market analysis, and 24/7 AI assistant support. A Professional plan with advanced features is coming soon.",
+    },
+    {
+      q: lang === "tr" ? "Hangi diller destekleniyor?" : lang === "ar" ? "ما اللغات المدعومة؟" : "What languages are supported?",
+      a: lang === "tr" ? "Start ERA Türkçe, İngilizce ve Arapça dillerini tam olarak destekler — iş planı içeriği, arayüz ve PDF dışa aktarma dahil." : lang === "ar" ? "تدعم Start ERA اللغات التركية والإنجليزية والعربية بالكامل — بما في ذلك محتوى خطة العمل والواجهة وتصدير PDF." : "Start ERA fully supports Turkish, English, and Arabic — including the business plan content, the interface, and the PDF export.",
+    },
+    {
+      q: lang === "tr" ? "İş planımı PDF olarak indirebilir miyim?" : lang === "ar" ? "هل يمكنني تنزيل خطة عملي بصيغة PDF؟" : "Can I download my business plan as a PDF?",
+      a: lang === "tr" ? "Kesinlikle. Oluşturduğunuz her plan, yatırımcı sunumları ve satış toplantıları için biçimlendirilmiş profesyonel bir PDF olarak dışa aktarılabilir." : lang === "ar" ? "بالتأكيد. يمكن تصدير كل خطة تُنشئها كملف PDF احترافي مُنسَّق لعروض المستثمرين واجتماعات العروض التقديمية." : "Absolutely. Every plan you generate can be exported as a professional PDF, formatted for investor presentations and pitch meetings.",
+    },
+  ];
+
+  const HOW_STEPS = [
+    {
+      step: "01",
+      title: lang === "tr" ? "Kayıt Ol" : lang === "ar" ? "سجّل" : "Sign Up",
+      desc: lang === "tr" ? "Ücretsiz hesap oluştur, e-posta ile doğrula." : lang === "ar" ? "أنشئ حساباً مجانياً وتحقق منه عبر البريد الإلكتروني." : "Create a free account and verify with email.",
+    },
+    {
+      step: "02",
+      title: lang === "tr" ? "Fikrini Anlat" : lang === "ar" ? "أخبرنا بفكرتك" : "Describe Your Idea",
+      desc: lang === "tr" ? "5 kısa soruyu yanıtla: fikrin, sermaye, beceriler, hedefler, yönetim." : lang === "ar" ? "أجب على 5 أسئلة قصيرة: الفكرة، رأس المال، المهارات، الأهداف، الإدارة." : "Answer 5 short questions: idea, capital, skills, goals, management.",
+    },
+    {
+      step: "03",
+      title: lang === "tr" ? "Planını Al" : lang === "ar" ? "احصل على خطتك" : "Get Your Plan",
+      desc: lang === "tr" ? "Yapay zeka kapsamlı planı hazırlar. PDF olarak indir." : lang === "ar" ? "يقوم الذكاء الاصطناعي بإعداد الخطة الشاملة. نزّلها بصيغة PDF." : "AI prepares your comprehensive plan. Download as PDF.",
+    },
+  ];
+
+  const ABOUT_STATS = [
+    { num: "10K+", label: lang === "tr" ? "Aktif Kullanıcı" : lang === "ar" ? "مستخدم نشط" : "Active Users" },
+    { num: "60s", label: lang === "tr" ? "Ortalama Süre" : lang === "ar" ? "متوسط الوقت" : "Avg Generation" },
+    { num: "3", label: lang === "tr" ? "Dil Desteği" : lang === "ar" ? "لغات مدعومة" : "Languages" },
+    { num: "100%", label: lang === "tr" ? "Ücretsiz Başlangıç" : lang === "ar" ? "بداية مجانية" : "Free to Start" },
+  ];
+
+  const lightModeLabel = lang === "tr" ? "Aydınlık" : lang === "ar" ? "فاتح" : "Light";
+  const darkModeLabel = lang === "tr" ? "Karanlık" : lang === "ar" ? "داكن" : "Dark";
+  const noCardLabel = lang === "tr" ? "Kredi kartı gerekmez. Ücretsiz başla." : lang === "ar" ? "لا حاجة لبطاقة ائتمان. ابدأ مجاناً." : "No credit card required. Start for free.";
+  const ctaSubLabel = lang === "tr" ? "Kredi kartı gerekmez. 30 saniyede hesap aç." : lang === "ar" ? "لا حاجة لبطاقة ائتمان. افتح حساباً في 30 ثانية." : "No credit card required. Open an account in 30 seconds.";
+  const howTitle = lang === "tr" ? "3 Adımda İş Planı" : lang === "ar" ? "خطة عمل في 3 خطوات" : "Business Plan in 3 Steps";
+  const howSubtitle = lang === "tr" ? "Kayıt ol, fikrini anlat, planını indir." : lang === "ar" ? "سجّل، أخبرنا بفكرتك، نزّل خطتك." : "Sign up, describe your idea, download your plan.";
+  const faqTitle = lang === "tr" ? "Sık Sorulan Sorular" : lang === "ar" ? "الأسئلة الشائعة" : "Frequently Asked Questions";
+  const testimonialLabel = lang === "tr" ? "Girişimciler Ne Diyor?" : lang === "ar" ? "ماذا يقول رواد الأعمال؟" : "What Entrepreneurs Are Saying";
+  const ctaTitle = lang === "tr" ? "Bugün başla. Ücretsiz." : lang === "ar" ? "ابدأ اليوم. مجاناً." : "Get started today. For free.";
+  const pricingSubtitle = lang === "tr" ? "Büyüyen her girişim için esnek planlar." : lang === "ar" ? "خطط مرنة لكل شركة ناشئة في نمو." : "Flexible plans for every growing startup.";
+  const contactSubtitle = lang === "tr" ? "Sorularınız için bize yazın." : lang === "ar" ? "اكتب لنا لأي أسئلة." : "Write to us for any questions.";
+  const productLabel = lang === "tr" ? "Ürün" : lang === "ar" ? "المنتج" : "Product";
+  const companyLabel = lang === "tr" ? "Şirket" : lang === "ar" ? "الشركة" : "Company";
+  const langLabel = lang === "tr" ? "Dil" : lang === "ar" ? "اللغة" : "Language";
+  const featureDetail1 = lang === "tr" ? "Gemini 2.5 Flash ile desteklenen analizimiz fikrinizi saniyeler içinde işler." : lang === "ar" ? "تحليلنا المدعوم بـ Gemini 2.5 Flash يعالج فكرتك في ثوانٍ." : "Our analysis powered by Gemini 2.5 Flash processes your idea in seconds.";
+  const featureDetail2 = lang === "tr" ? "Türkçe, İngilizce ve Arapça tam destek ile küresel piyasalara ulaş." : lang === "ar" ? "تواصل مع الأسواق العالمية بدعم كامل للعربية والإنجليزية والتركية." : "Reach global markets with full support for Arabic, English, and Turkish.";
+  const featureDetail3 = lang === "tr" ? "Yatırımcı sunumları için hazır, profesyonel formatlı PDF raporları." : lang === "ar" ? "تقارير PDF احترافية جاهزة لعروض المستثمرين." : "Professional formatted PDF reports ready for investor presentations.";
+  const aboutDetail = lang === "tr" ? "Yapay zeka, veri analizi ve kullanıcı odaklı tasarımı bir araya getirerek girişimcilerin hayallerini gerçeğe dönüştürmelerine yardımcı oluyoruz." : lang === "ar" ? "نجمع بين الذكاء الاصطناعي وتحليل البيانات والتصميم المتمحور حول المستخدم لمساعدة رواد الأعمال على تحويل أحلامهم إلى واقع." : "We combine AI, data analysis, and user-centered design to help entrepreneurs turn their dreams into reality.";
+  const changeLangLabel = lang === "tr" ? "Dil Değiştir" : lang === "ar" ? "تغيير اللغة" : "Change Language";
+
+  const FEATURES = [
+    { icon: "🧠", title: t.feat1_t, desc: t.feat1_d, detail: featureDetail1 },
+    { icon: "🌍", title: t.feat2_t, desc: t.feat2_d, detail: featureDetail2 },
+    { icon: "📄", title: t.feat3_t, desc: t.feat3_d, detail: featureDetail3 },
+  ];
 
   return (
     <div dir={isRTL ? "rtl" : "ltr"} className={"min-h-screen font-sans transition-colors duration-300 " + bg + " " + text}>
@@ -140,10 +190,10 @@ export default function LandingPage() {
       {/* TOP BAR */}
       <div className={"hidden md:flex items-center justify-end px-8 py-1.5 text-xs font-medium border-b " + (isDark ? "bg-gray-900 border-gray-800 text-gray-400" : "bg-gray-50 border-gray-200 text-gray-500")}>
         <div className="flex items-center gap-6 max-w-7xl w-full justify-end mx-auto">
-          <button onClick={toggleLang} className="hover:text-blue-600 transition">{getLangLabel()} — Change Language</button>
+          <button onClick={toggleLang} className="hover:text-blue-600 transition">{getLangLabel()} — {changeLangLabel}</button>
           <button onClick={toggleTheme} className="hover:text-blue-600 transition flex items-center gap-1">
             {isDark ? <SunIcon /> : <MoonIcon />}
-            {isDark ? "Light Mode" : "Dark Mode"}
+            {isDark ? lightModeLabel : darkModeLabel}
           </button>
         </div>
       </div>
@@ -152,81 +202,50 @@ export default function LandingPage() {
       <nav className={"sticky top-0 z-50 border-b backdrop-blur-md " + navBg}>
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
-
-            {/* Logo */}
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            >
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">S</div>
-              <span className="text-xl font-black tracking-tight">
-                Start <span className="text-blue-600">ERA</span>
-              </span>
+              <span className={"text-xl font-black tracking-tight " + text}>Start <span className="text-blue-600">ERA</span></span>
             </div>
 
-            {/* Desktop nav */}
             <div className="hidden md:flex items-center gap-1">
-              <button onClick={() => scrollTo("features")} className={"px-4 py-2 rounded-lg text-sm font-medium transition hover:bg-gray-100 " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-100")}>
+              <button onClick={() => scrollTo("features")} className={"px-4 py-2 rounded-lg text-sm font-medium transition " + (isDark ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-700")}>
                 {t.nav_features} <ChevronDown />
               </button>
-              <button onClick={() => scrollTo("pricing")} className={"px-4 py-2 rounded-lg text-sm font-medium transition " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-100")}>
-                {t.nav_pricing}
-              </button>
-              <button onClick={() => scrollTo("about")} className={"px-4 py-2 rounded-lg text-sm font-medium transition " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-100")}>
-                {t.nav_about}
-              </button>
-              <button onClick={() => scrollTo("contact")} className={"px-4 py-2 rounded-lg text-sm font-medium transition " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-100")}>
-                {t.nav_contact}
-              </button>
+              <button onClick={() => scrollTo("pricing")} className={"px-4 py-2 rounded-lg text-sm font-medium transition " + (isDark ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-700")}>{t.nav_pricing}</button>
+              <button onClick={() => scrollTo("about")} className={"px-4 py-2 rounded-lg text-sm font-medium transition " + (isDark ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-700")}>{t.nav_about}</button>
+              <button onClick={() => scrollTo("contact")} className={"px-4 py-2 rounded-lg text-sm font-medium transition " + (isDark ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-700")}>{t.nav_contact}</button>
             </div>
 
-            {/* Right actions */}
             <div className="flex items-center gap-2">
               {user ? (
                 <>
                   <span className={"hidden lg:block text-sm font-semibold " + subtext}>{user.split("@")[0]}</span>
-                  <a href="/dashboard" className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition no-underline">
-                    {t.dashboard}
-                  </a>
-                  <button onClick={logout} className={"text-sm font-medium transition " + subtext + " hover:text-red-500"}>
-                    {t.logout}
-                  </button>
+                  <a href="/dashboard" className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition no-underline">{t.dashboard}</a>
+                  <button onClick={logout} className={"text-sm font-medium transition hover:text-red-500 " + subtext}>{t.logout}</button>
                 </>
               ) : (
                 <>
-                  <a href="/login" className={"hidden md:block px-4 py-2 text-sm font-medium transition rounded-lg " + (isDark ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-700")}>
-                    {t.login}
-                  </a>
-                  <a href="/login" className="px-5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition shadow-sm no-underline">
-                    {t.start_free}
-                  </a>
+                  <a href="/login" className={"hidden md:block px-4 py-2 text-sm font-medium transition rounded-lg " + (isDark ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-700")}>{t.login}</a>
+                  <a href="/login" className="px-5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition shadow-sm no-underline">{t.start_free}</a>
                 </>
               )}
-
-              {/* Mobile menu toggle */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className={"md:hidden p-2 rounded-lg transition " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-100")}
-              >
-                <div className="w-5 h-0.5 bg-current mb-1" />
-                <div className="w-5 h-0.5 bg-current mb-1" />
-                <div className="w-5 h-0.5 bg-current" />
+              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className={"md:hidden p-2 rounded-lg transition " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-100")}>
+                <div className={"w-5 h-0.5 mb-1 " + (isDark ? "bg-gray-300" : "bg-gray-700")} />
+                <div className={"w-5 h-0.5 mb-1 " + (isDark ? "bg-gray-300" : "bg-gray-700")} />
+                <div className={"w-5 h-0.5 " + (isDark ? "bg-gray-300" : "bg-gray-700")} />
               </button>
             </div>
           </div>
 
-          {/* Mobile menu */}
           {mobileMenuOpen && (
             <div className={"md:hidden py-4 border-t space-y-1 " + border}>
-              <button onClick={() => scrollTo("features")} className={"w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-100")}>{t.nav_features}</button>
-              <button onClick={() => scrollTo("pricing")} className={"w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-100")}>{t.nav_pricing}</button>
-              <button onClick={() => scrollTo("about")} className={"w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-100")}>{t.nav_about}</button>
-              <button onClick={() => scrollTo("contact")} className={"w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-100")}>{t.nav_contact}</button>
+              <button onClick={() => scrollTo("features")} className={"w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition " + (isDark ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-700")}>{t.nav_features}</button>
+              <button onClick={() => scrollTo("pricing")} className={"w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition " + (isDark ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-700")}>{t.nav_pricing}</button>
+              <button onClick={() => scrollTo("about")} className={"w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition " + (isDark ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-700")}>{t.nav_about}</button>
+              <button onClick={() => scrollTo("contact")} className={"w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition " + (isDark ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-700")}>{t.nav_contact}</button>
               <div className="flex items-center gap-2 px-4 pt-2">
                 <button onClick={toggleLang} className="text-sm font-bold text-blue-600">{getLangLabel()}</button>
-                <button onClick={toggleTheme} className={"p-1.5 rounded-lg " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-100")}>
-                  {isDark ? <SunIcon /> : <MoonIcon />}
-                </button>
+                <button onClick={toggleTheme} className={"p-1.5 rounded-lg " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-100")}>{isDark ? <SunIcon /> : <MoonIcon />}</button>
               </div>
             </div>
           )}
@@ -234,35 +253,19 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO */}
-      <section className={"py-20 md:py-28 px-6 " + (isDark ? "bg-gray-950" : "bg-white")}>
+      <section className={"py-20 md:py-28 px-6 " + bg}>
         <div className="max-w-4xl mx-auto text-center">
           <div className={"inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-6 border " + (isDark ? "border-blue-800 bg-blue-950 text-blue-400" : "border-blue-200 bg-blue-50 text-blue-700")}>
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             {t.badge}
           </div>
-          <h1 className={"text-4xl md:text-6xl lg:text-7xl font-black mb-6 leading-[1.05] tracking-tight " + text}>
-            {t.hero_title}
-          </h1>
-          <p className={"text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed " + subtext}>
-            {t.hero_desc}
-          </p>
+          <h1 className={"text-4xl md:text-6xl lg:text-7xl font-black mb-6 leading-tight tracking-tight " + text}>{t.hero_title}</h1>
+          <p className={"text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed " + subtext}>{t.hero_desc}</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a
-              href={user ? "/dashboard" : "/login"}
-              className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-base transition shadow-lg hover:shadow-xl no-underline"
-            >
-              {t.start_free}
-            </a>
-            <button
-              onClick={() => scrollTo("features")}
-              className={"px-8 py-3.5 font-bold rounded-full text-base transition border-2 " + (isDark ? "border-gray-700 text-gray-200 hover:bg-gray-800" : "border-gray-900 text-gray-900 hover:bg-gray-50")}
-            >
-              {t.how_it_works}
-            </button>
+            <a href={user ? "/dashboard" : "/login"} className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-base transition shadow-lg hover:shadow-xl no-underline">{t.start_free}</a>
+            <button onClick={() => scrollTo("features")} className={"px-8 py-3.5 font-bold rounded-full text-base transition border-2 " + (isDark ? "border-gray-600 text-gray-200 hover:bg-gray-800" : "border-gray-900 text-gray-900 hover:bg-gray-50")}>{t.how_it_works}</button>
           </div>
-          <p className={"mt-5 text-sm " + subtext}>
-            {lang === "tr" ? "Kredi kartı gerekmez. Ücretsiz başla." : lang === "ar" ? "لا حاجة لبطاقة ائتمان. ابدأ مجاناً." : "No credit card required. Start for free."}
-          </p>
+          <p className={"mt-5 text-sm " + subtext}>{noCardLabel}</p>
         </div>
       </section>
 
@@ -283,9 +286,7 @@ export default function LandingPage() {
       {/* TESTIMONIALS */}
       <section className={"py-20 px-6 " + sectionBg}>
         <div className="max-w-7xl mx-auto">
-          <p className={"text-sm font-bold uppercase tracking-widest text-center mb-12 " + subtext}>
-            {lang === "tr" ? "Girişimciler Ne Diyor?" : lang === "ar" ? "ماذا يقول رواد الأعمال؟" : "What Entrepreneurs Are Saying"}
-          </p>
+          <p className={"text-sm font-bold uppercase tracking-widest text-center mb-12 " + subtext}>{testimonialLabel}</p>
           <div className="grid md:grid-cols-3 gap-6">
             {TESTIMONIALS.map((item, i) => (
               <div key={i} className={"p-7 rounded-2xl border " + cardBg}>
@@ -298,9 +299,7 @@ export default function LandingPage() {
                 </div>
                 <p className={"text-sm leading-relaxed mb-6 " + subtext}>"{item.quote}"</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                    {item.initial}
-                  </div>
+                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{item.initial}</div>
                   <div>
                     <div className={"text-sm font-bold " + text}>{item.name}</div>
                     <div className={"text-xs " + subtext}>{item.title}</div>
@@ -313,24 +312,17 @@ export default function LandingPage() {
       </section>
 
       {/* FEATURES */}
-      <section id="features" className={"py-20 px-6 " + (isDark ? "bg-gray-950" : "bg-white")}>
+      <section id="features" className={"py-20 px-6 " + bg}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <h2 className={"text-3xl md:text-4xl font-black mb-4 " + text}>{t.feat_title}</h2>
-            <p className={"text-lg max-w-xl mx-auto " + subtext}>
-              {lang === "tr" ? "Yapay zeka ile saniyeler içinde profesyonel iş planı oluştur." : lang === "ar" ? "أنشئ خطة عمل احترافية في ثوانٍ باستخدام الذكاء الاصطناعي." : "Create a professional business plan in seconds with AI."}
-            </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { icon: "🧠", title: t.feat1_t, desc: t.feat1_d, detail: lang === "tr" ? "Gemini 2.5 Flash ile desteklenen analizimiz, fikrinizi saniyeler içinde işler." : lang === "ar" ? "تحليلنا المدعوم بـ Gemini 2.5 Flash يعالج فكرتك في ثوانٍ." : "Our analysis powered by Gemini 2.5 Flash processes your idea in seconds." },
-              { icon: "🌍", title: t.feat2_t, desc: t.feat2_d, detail: lang === "tr" ? "Türkçe, İngilizce ve Arapça tam destek ile küresel piyasalara ulaş." : lang === "ar" ? "تواصل مع الأسواق العالمية بدعم كامل للعربية والإنجليزية والتركية." : "Reach global markets with full support for Arabic, English, and Turkish." },
-              { icon: "📄", title: t.feat3_t, desc: t.feat3_d, detail: lang === "tr" ? "Yatırımcı sunumları için hazır, profesyonel formatlı PDF raporları." : lang === "ar" ? "تقارير PDF احترافية جاهزة لعروض المستثمرين." : "Professional formatted PDF reports ready for investor presentations." },
-            ].map((item, i) => (
+            {FEATURES.map((item, i) => (
               <div key={i} className={"p-8 rounded-2xl border hover:shadow-lg transition-shadow " + cardBg}>
                 <div className="text-3xl mb-5">{item.icon}</div>
                 <h3 className={"text-lg font-bold mb-2 " + text}>{item.title}</h3>
-                <p className={"text-sm font-semibold mb-3 text-blue-500"}>{item.desc}</p>
+                <p className="text-sm font-semibold mb-3 text-blue-500">{item.desc}</p>
                 <p className={"text-sm leading-relaxed " + subtext}>{item.detail}</p>
               </div>
             ))}
@@ -341,18 +333,10 @@ export default function LandingPage() {
       {/* HOW IT WORKS */}
       <section className={"py-20 px-6 " + sectionBg}>
         <div className="max-w-5xl mx-auto text-center">
-          <h2 className={"text-3xl md:text-4xl font-black mb-4 " + text}>
-            {lang === "tr" ? "3 Adımda İş Planı" : lang === "ar" ? "خطة عمل في 3 خطوات" : "Business Plan in 3 Steps"}
-          </h2>
-          <p className={"text-lg mb-14 " + subtext}>
-            {lang === "tr" ? "Kayıt ol, fikrini anlat, planını indir." : lang === "ar" ? "سجّل، أخبرنا بفكرتك، نزّل خطتك." : "Sign up, describe your idea, download your plan."}
-          </p>
-          <div className="grid md:grid-cols-3 gap-8 relative">
-            {[
-              { step: "01", title: lang === "tr" ? "Kayıt Ol" : lang === "ar" ? "سجّل" : "Sign Up", desc: lang === "tr" ? "Ücretsiz hesap oluştur, e-posta ile doğrula." : lang === "ar" ? "أنشئ حساباً مجانياً وتحقق منه عبر البريد الإلكتروني." : "Create a free account and verify with email." },
-              { step: "02", title: lang === "tr" ? "Fikrni Anlat" : lang === "ar" ? "أخبرنا بفكرتك" : "Describe Your Idea", desc: lang === "tr" ? "5 kısa soruyu yanıtla: fikrin, sermaye, beceriler, hedefler, yönetim." : lang === "ar" ? "أجب على 5 أسئلة قصيرة: الفكرة، رأس المال، المهارات، الأهداف، الإدارة." : "Answer 5 short questions: idea, capital, skills, goals, management." },
-              { step: "03", title: lang === "tr" ? "Planını Al" : lang === "ar" ? "احصل على خطتك" : "Get Your Plan", desc: lang === "tr" ? "Yapay zeka kapsamlı planı hazırlar. PDF olarak indir." : lang === "ar" ? "يقوم الذكاء الاصطناعي بإعداد الخطة الشاملة. نزّلها بصيغة PDF." : "AI prepares your comprehensive plan. Download as PDF." },
-            ].map((item, i) => (
+          <h2 className={"text-3xl md:text-4xl font-black mb-4 " + text}>{howTitle}</h2>
+          <p className={"text-lg mb-14 " + subtext}>{howSubtitle}</p>
+          <div className="grid md:grid-cols-3 gap-8">
+            {HOW_STEPS.map((item, i) => (
               <div key={i} className={"p-8 rounded-2xl border text-left " + cardBg}>
                 <div className="text-5xl font-black text-blue-600/20 mb-4">{item.step}</div>
                 <h3 className={"text-lg font-bold mb-2 " + text}>{item.title}</h3>
@@ -364,24 +348,17 @@ export default function LandingPage() {
       </section>
 
       {/* ABOUT */}
-      <section id="about" className={"py-20 px-6 " + (isDark ? "bg-gray-950" : "bg-white")}>
+      <section id="about" className={"py-20 px-6 " + bg}>
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div>
-              <div className={"text-xs font-bold uppercase tracking-widest text-blue-600 mb-4"}>{t.nav_about}</div>
+              <div className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-4">{t.nav_about}</div>
               <h2 className={"text-3xl md:text-4xl font-black mb-6 leading-tight " + text}>{t.about_title}</h2>
               <p className={"text-lg leading-relaxed mb-6 " + subtext}>{t.about_text}</p>
-              <p className={"text-base leading-relaxed " + subtext}>
-                {lang === "tr" ? "Yapay zeka, veri analizi ve kullanıcı odaklı tasarımı bir araya getirerek girişimcilerin hayallerini gerçeğe dönüştürmelerine yardımcı oluyoruz." : lang === "ar" ? "نجمع بين الذكاء الاصطناعي وتحليل البيانات والتصميم المتمحور حول المستخدم لمساعدة رواد الأعمال على تحويل أحلامهم إلى واقع." : "We combine AI, data analysis, and user-centered design to help entrepreneurs turn their dreams into reality."}
-              </p>
+              <p className={"text-base leading-relaxed " + subtext}>{aboutDetail}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              {[
-                { num: "10K+", label: lang === "tr" ? "Aktif Kullanıcı" : lang === "ar" ? "مستخدم نشط" : "Active Users" },
-                { num: "60s", label: lang === "tr" ? "Ortalama Süre" : lang === "ar" ? "متوسط الوقت" : "Avg Generation" },
-                { num: "3", label: lang === "tr" ? "Dil Desteği" : lang === "ar" ? "لغات مدعومة" : "Languages" },
-                { num: "100%", label: lang === "tr" ? "Ücretsiz Başlangıç" : lang === "ar" ? "بداية مجانية" : "Free to Start" },
-              ].map((s, i) => (
+              {ABOUT_STATS.map((s, i) => (
                 <div key={i} className={"p-6 rounded-2xl border text-center " + cardBg}>
                   <div className="text-3xl font-black text-blue-600 mb-1">{s.num}</div>
                   <div className={"text-xs font-medium " + subtext}>{s.label}</div>
@@ -397,16 +374,12 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <h2 className={"text-3xl md:text-4xl font-black mb-4 " + text}>{t.price_title}</h2>
-            <p className={"text-lg " + subtext}>
-              {lang === "tr" ? "Büyüyen her girişim için esnek planlar." : lang === "ar" ? "خطط مرنة لكل شركة ناشئة في نمو." : "Flexible plans for every growing startup."}
-            </p>
+            <p className={"text-lg " + subtext}>{pricingSubtitle}</p>
           </div>
           <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-
-            {/* Free */}
             <div className={"p-8 rounded-2xl border-2 border-blue-600 relative " + (isDark ? "bg-gray-900" : "bg-white")}>
               <div className="absolute -top-3 left-6 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase">{t.popular}</div>
-              <div className={"text-xs font-bold uppercase tracking-widest text-blue-600 mb-2"}>{t.p_free_t}</div>
+              <div className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-2">{t.p_free_t}</div>
               <div className={"text-5xl font-black mb-1 " + text}>{t.p_free_p}</div>
               <div className={"text-sm mb-6 " + subtext}>{t.p_free_d}</div>
               <ul className="space-y-3 mb-8">
@@ -417,57 +390,43 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href={user ? "/dashboard" : "/login"} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-center transition no-underline block text-sm">
-                {t.start_free}
-              </a>
+              <a href={user ? "/dashboard" : "/login"} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-center transition no-underline block text-sm">{t.start_free}</a>
             </div>
 
-            {/* Pro */}
-            <div className={"p-8 rounded-2xl border " + cardBg + " relative opacity-80"}>
+            <div className={"p-8 rounded-2xl border relative opacity-80 " + cardBg}>
               <div className={"absolute top-4 right-4 text-xs font-bold px-3 py-1 rounded-full animate-pulse " + (isDark ? "bg-purple-900 text-purple-300" : "bg-purple-100 text-purple-700")}>{t.coming_soon}</div>
-              <div className={"text-xs font-bold uppercase tracking-widest text-purple-500 mb-2"}>{t.p_pro_t}</div>
+              <div className="text-xs font-bold uppercase tracking-widest text-purple-500 mb-2">{t.p_pro_t}</div>
               <div className={"text-5xl font-black mb-1 " + subtext}>{t.p_pro_p}</div>
               <div className={"text-sm mb-6 " + subtext}>{t.p_pro_d}</div>
               <ul className="space-y-3 mb-8">
                 {proItems.map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
-                    <svg className="w-5 h-5 text-purple-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                    </svg>
+                    <CheckIcon color="text-purple-500" />
                     <span className={"text-sm " + subtext}>{item}</span>
                   </li>
                 ))}
               </ul>
-              <button disabled className={"w-full py-3.5 font-bold rounded-full text-sm border cursor-not-allowed " + (isDark ? "border-gray-700 text-gray-600" : "border-gray-300 text-gray-400")}>
-                {t.coming_soon}
-              </button>
+              <button disabled className={"w-full py-3.5 font-bold rounded-full text-sm border cursor-not-allowed " + (isDark ? "border-gray-700 text-gray-600" : "border-gray-300 text-gray-400")}>{t.coming_soon}</button>
             </div>
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className={"py-20 px-6 " + (isDark ? "bg-gray-950" : "bg-white")}>
+      <section className={"py-20 px-6 " + bg}>
         <div className="max-w-3xl mx-auto">
-          <h2 className={"text-3xl md:text-4xl font-black mb-12 text-center " + text}>
-            {lang === "tr" ? "Sık Sorulan Sorular" : lang === "ar" ? "الأسئلة الشائعة" : "Frequently Asked Questions"}
-          </h2>
+          <h2 className={"text-3xl md:text-4xl font-black mb-12 text-center " + text}>{faqTitle}</h2>
           <div className="space-y-3">
             {FAQS.map((faq, i) => (
               <div key={i} className={"rounded-xl border overflow-hidden " + faqBg}>
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className={"w-full flex items-center justify-between px-6 py-5 text-left font-semibold text-sm transition " + (isDark ? "hover:bg-gray-800 text-gray-200" : "hover:bg-gray-50 text-gray-900")}
-                >
+                <button onClick={() => setOpenFaq(openFaq === i ? null : i)} className={"w-full flex items-center justify-between px-6 py-5 text-left font-semibold text-sm transition " + (isDark ? "hover:bg-gray-800 text-gray-200" : "hover:bg-gray-50 text-gray-900")}>
                   <span>{faq.q}</span>
                   <svg className={"w-5 h-5 flex-shrink-0 transition-transform " + (openFaq === i ? "rotate-180" : "") + " " + subtext} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
                 {openFaq === i && (
-                  <div className={"px-6 pb-5 text-sm leading-relaxed border-t " + border + " " + subtext + " pt-4"}>
-                    {faq.a}
-                  </div>
+                  <div className={"px-6 pb-5 text-sm leading-relaxed border-t pt-4 " + border + " " + subtext}>{faq.a}</div>
                 )}
               </div>
             ))}
@@ -479,32 +438,14 @@ export default function LandingPage() {
       <section id="contact" className={"py-20 px-6 " + sectionBg}>
         <div className="max-w-2xl mx-auto">
           <h2 className={"text-3xl md:text-4xl font-black mb-3 text-center " + text}>{t.contact_title}</h2>
-          <p className={"text-center mb-10 " + subtext}>
-            {lang === "tr" ? "Sorularınız için bize yazın." : lang === "ar" ? "اكتب لنا لأي أسئلة." : "Write to us for any questions."}
-          </p>
+          <p className={"text-center mb-10 " + subtext}>{contactSubtitle}</p>
           <form onSubmit={handleContactSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
-              <input
-                placeholder={t.form_name}
-                required
-                className={"w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-blue-500 transition " + inputBg}
-              />
-              <input
-                type="email"
-                placeholder={t.form_email}
-                required
-                className={"w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-blue-500 transition " + inputBg}
-              />
+              <input placeholder={t.form_name} required className={"w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-blue-500 transition " + inputBg} />
+              <input type="email" placeholder={t.form_email} required className={"w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-blue-500 transition " + inputBg} />
             </div>
-            <textarea
-              placeholder={t.form_msg}
-              required
-              rows={5}
-              className={"w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-blue-500 transition resize-none " + inputBg}
-            />
-            <button type="submit" className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full transition text-sm">
-              {t.form_btn}
-            </button>
+            <textarea placeholder={t.form_msg} required rows={5} className={"w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-blue-500 transition resize-none " + inputBg} />
+            <button type="submit" className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full transition text-sm">{t.form_btn}</button>
           </form>
         </div>
       </section>
@@ -512,19 +453,11 @@ export default function LandingPage() {
       {/* CTA BAND */}
       <section className={"py-20 px-6 " + (isDark ? "bg-blue-900" : "bg-blue-600")}>
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
-            {lang === "tr" ? "Bugün başla. Ücretsiz." : lang === "ar" ? "ابدأ اليوم. مجاناً." : "Get started today. For free."}
-          </h2>
-          <p className="text-blue-200 text-lg mb-8">
-            {lang === "tr" ? "Kredi kartı gerekmez. 30 saniyede hesap aç." : lang === "ar" ? "لا حاجة لبطاقة ائتمان. افتح حساباً في 30 ثانية." : "No credit card required. Open an account in 30 seconds."}
-          </p>
+          <h2 className="text-3xl md:text-4xl font-black text-white mb-4">{ctaTitle}</h2>
+          <p className="text-blue-200 text-lg mb-8">{ctaSubLabel}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href={user ? "/dashboard" : "/login"} className="px-8 py-3.5 bg-white text-blue-700 font-bold rounded-full text-base transition hover:bg-blue-50 no-underline shadow-lg">
-              {t.start_free}
-            </a>
-            <button onClick={() => scrollTo("features")} className="px-8 py-3.5 border-2 border-white text-white font-bold rounded-full text-base transition hover:bg-white/10">
-              {t.how_it_works}
-            </button>
+            <a href={user ? "/dashboard" : "/login"} className="px-8 py-3.5 bg-white text-blue-700 font-bold rounded-full text-base transition hover:bg-blue-50 no-underline shadow-lg">{t.start_free}</a>
+            <button onClick={() => scrollTo("features")} className="px-8 py-3.5 border-2 border-white text-white font-bold rounded-full text-base transition hover:bg-white/10">{t.how_it_works}</button>
           </div>
         </div>
       </section>
@@ -541,7 +474,7 @@ export default function LandingPage() {
               <p className={"text-sm leading-relaxed " + subtext}>{t.about_text}</p>
             </div>
             <div>
-              <h4 className={"text-sm font-bold mb-3 " + text}>{lang === "tr" ? "Ürün" : lang === "ar" ? "المنتج" : "Product"}</h4>
+              <h4 className={"text-sm font-bold mb-3 " + text}>{productLabel}</h4>
               <ul className={"space-y-2 text-sm " + subtext}>
                 <li><button onClick={() => scrollTo("features")} className="hover:text-blue-600 transition">{t.nav_features}</button></li>
                 <li><button onClick={() => scrollTo("pricing")} className="hover:text-blue-600 transition">{t.nav_pricing}</button></li>
@@ -549,21 +482,17 @@ export default function LandingPage() {
               </ul>
             </div>
             <div>
-              <h4 className={"text-sm font-bold mb-3 " + text}>{lang === "tr" ? "Şirket" : lang === "ar" ? "الشركة" : "Company"}</h4>
+              <h4 className={"text-sm font-bold mb-3 " + text}>{companyLabel}</h4>
               <ul className={"space-y-2 text-sm " + subtext}>
                 <li><button onClick={() => scrollTo("about")} className="hover:text-blue-600 transition">{t.nav_about}</button></li>
                 <li><button onClick={() => scrollTo("contact")} className="hover:text-blue-600 transition">{t.nav_contact}</button></li>
               </ul>
             </div>
             <div>
-              <h4 className={"text-sm font-bold mb-3 " + text}>{lang === "tr" ? "Dil" : lang === "ar" ? "اللغة" : "Language"}</h4>
+              <h4 className={"text-sm font-bold mb-3 " + text}>{langLabel}</h4>
               <div className="flex flex-wrap gap-2">
                 {(["tr", "en", "ar"] as const).map(l => (
-                  <button
-                    key={l}
-                    onClick={() => setLang(l)}
-                    className={"px-3 py-1 rounded-full text-xs font-bold border transition " + (lang === l ? "bg-blue-600 text-white border-blue-600" : (isDark ? "border-gray-700 text-gray-400 hover:border-blue-500" : "border-gray-300 text-gray-600 hover:border-blue-600"))}
-                  >
+                  <button key={l} onClick={() => setLang(l)} className={"px-3 py-1 rounded-full text-xs font-bold border transition " + (lang === l ? "bg-blue-600 text-white border-blue-600" : (isDark ? "border-gray-700 text-gray-400 hover:border-blue-500" : "border-gray-300 text-gray-600 hover:border-blue-600"))}>
                     {l === "tr" ? "Türkçe" : l === "en" ? "English" : "العربية"}
                   </button>
                 ))}
@@ -572,12 +501,10 @@ export default function LandingPage() {
           </div>
           <div className={"flex flex-col md:flex-row items-center justify-between pt-8 border-t text-sm " + border + " " + subtext}>
             <span>{t.footer}</span>
-            <div className="flex items-center gap-4 mt-4 md:mt-0">
-              <button onClick={toggleTheme} className="hover:text-blue-600 transition flex items-center gap-1.5">
-                {isDark ? <SunIcon /> : <MoonIcon />}
-                {isDark ? (lang === "tr" ? "Aydınlık" : lang === "ar" ? "فاتح" : "Light") : (lang === "tr" ? "Karanlık" : lang === "ar" ? "داكن" : "Dark")}
-              </button>
-            </div>
+            <button onClick={toggleTheme} className="hover:text-blue-600 transition flex items-center gap-1.5 mt-4 md:mt-0">
+              {isDark ? <SunIcon /> : <MoonIcon />}
+              {isDark ? lightModeLabel : darkModeLabel}
+            </button>
           </div>
         </div>
       </footer>

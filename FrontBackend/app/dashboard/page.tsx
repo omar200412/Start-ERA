@@ -37,10 +37,10 @@ function LogoutIcon() {
   );
 }
 
-function RocketIcon() {
+function PlusIcon() {
   return (
-    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
     </svg>
   );
 }
@@ -85,9 +85,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadProjects() {
       const cached = localStorage.getItem("user_projects");
-      if (cached) {
-        try { setProjects(JSON.parse(cached)); } catch {}
-      }
+      if (cached) { try { setProjects(JSON.parse(cached)); } catch {} }
       const token = localStorage.getItem("token");
       if (token) {
         try {
@@ -111,140 +109,178 @@ export default function DashboardPage() {
     p.status?.includes("مكتمل")
   ).length;
 
-  const bg = darkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900";
-  const navBg = darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-slate-200";
-  const cardBg = darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-100 shadow-sm";
-  const activityBg = darkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-slate-200 shadow-sm";
-  const ctaBg = darkMode ? "bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700" : "bg-gradient-to-br from-white to-blue-50/50 border-slate-200";
-  const modalBg = darkMode ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200";
-  const modalHeaderBg = darkMode ? "border-slate-800" : "border-slate-100";
-  const sectionBg = darkMode ? "bg-slate-800/50 border-slate-700" : "bg-slate-50 border-slate-100";
-  const homeBtnClass = darkMode ? "bg-slate-800 border-slate-700 text-blue-400" : "bg-white border-slate-200 text-blue-600";
-  const themeBtnClass = darkMode ? "bg-slate-800 border-slate-700 text-yellow-400" : "bg-white border-slate-200 text-slate-600";
+  const isDark = darkMode;
+  const bg = isDark ? "bg-gray-950 text-gray-100" : "bg-gray-50 text-gray-900";
+  const navBg = isDark ? "bg-gray-950/95 border-gray-800" : "bg-white/95 border-gray-200";
+  const cardBg = isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200";
+  const subtext = isDark ? "text-gray-400" : "text-gray-500";
+  const border = isDark ? "border-gray-800" : "border-gray-200";
+  const modalBg = isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200";
+  const sectionBg = isDark ? "bg-gray-800/50 border-gray-700" : "bg-gray-50 border-gray-100";
+  const hoverRow = isDark ? "hover:bg-gray-800" : "hover:bg-gray-50";
+
+  const lightModeLabel = lang === "tr" ? "Aydınlık" : lang === "ar" ? "فاتح" : "Light";
+  const darkModeLabel = lang === "tr" ? "Karanlık" : lang === "ar" ? "داكن" : "Dark";
+
+  const STATS = [
+    { label: t.total_plans, value: totalPlans, color: "text-blue-600" },
+    { label: t.completed, value: completedPlans, color: "text-green-600" },
+    { label: t.active_projects, value: totalPlans - completedPlans, color: "text-orange-500" },
+  ];
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} className={"min-h-screen font-sans transition-colors duration-500 " + bg}>
+    <div dir={isRTL ? "rtl" : "ltr"} className={"min-h-screen font-sans transition-colors duration-300 " + bg}>
       <Chatbot />
 
+      {/* Plan detail modal */}
       {viewingProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-          <div className={"relative w-full max-w-4xl max-h-[85vh] flex flex-col rounded-[32px] shadow-2xl border " + modalBg}>
-            <div className={"p-6 border-b flex justify-between items-start " + modalHeaderBg}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={"relative w-full max-w-4xl max-h-[85vh] flex flex-col rounded-2xl shadow-2xl border " + modalBg}>
+            <div className={"p-6 border-b flex justify-between items-start " + border}>
               <div>
-                <h2 className="text-2xl font-black text-blue-600">{viewingProject.title}</h2>
-                <p className="text-sm opacity-40 mt-0.5">{viewingProject.date}</p>
+                <h2 className={"text-xl font-black " + (isDark ? "text-gray-100" : "text-gray-900")}>{viewingProject.title}</h2>
+                <p className={"text-sm mt-0.5 " + subtext}>{viewingProject.date}</p>
               </div>
-              <button onClick={() => setViewingProject(null)} className={"p-2 rounded-full transition " + (darkMode ? "hover:bg-slate-800" : "hover:bg-slate-100")}>
+              <button onClick={() => setViewingProject(null)} className={"p-2 rounded-lg transition " + (isDark ? "hover:bg-gray-800 text-gray-400" : "hover:bg-gray-100 text-gray-500")}>
                 <CloseIcon />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
               {viewingProject.planData ? (
                 viewingProject.planData.map((section: any, idx: number) => (
-                  <div key={idx} className={"p-6 rounded-2xl border " + sectionBg}>
-                    <h3 className="text-lg font-bold mb-3 text-blue-600 border-b border-blue-500/20 pb-2">{section.title}</h3>
-                    <p className="leading-relaxed whitespace-pre-wrap opacity-80 text-sm">{section.content}</p>
+                  <div key={idx} className={"p-6 rounded-xl border " + sectionBg}>
+                    <h3 className="text-base font-bold mb-3 text-blue-600 border-b border-blue-500/20 pb-2">{section.title}</h3>
+                    <p className={"leading-relaxed whitespace-pre-wrap text-sm " + subtext}>{section.content}</p>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-20 opacity-40 font-bold">{t.missing_content}</div>
+                <div className={"text-center py-20 font-bold " + subtext}>{t.missing_content}</div>
               )}
             </div>
           </div>
         </div>
       )}
 
-      <nav className={"px-6 md:px-8 py-5 flex justify-between items-center sticky top-0 z-40 backdrop-blur-xl border-b " + navBg}>
-        <div className="flex items-center gap-3">
-          <a href="/">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg hover:scale-105 transition">S</div>
-          </a>
-          <span className="text-xl font-black tracking-tight hidden sm:block">Start <span className="text-blue-600">ERA</span></span>
-        </div>
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="hidden md:block text-right mr-2">
-            <p className="text-sm font-black leading-none">{user ? user.split("@")[0] : t.guest}</p>
-            <p className="text-[10px] opacity-40 font-bold uppercase tracking-widest mt-0.5">{t.pro_member}</p>
+      {/* Navbar */}
+      <nav className={"sticky top-0 z-40 border-b backdrop-blur-md " + navBg}>
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <a href="/" className="flex items-center gap-2 no-underline">
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">S</div>
+                <span className={"text-xl font-black tracking-tight hidden sm:block " + (isDark ? "text-gray-100" : "text-gray-900")}>Start <span className="text-blue-600">ERA</span></span>
+              </a>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className={"hidden md:block text-right mr-3 " + (isRTL ? "text-left ml-3 mr-0" : "")}>
+                <p className={"text-sm font-bold leading-none " + (isDark ? "text-gray-200" : "text-gray-900")}>{user ? user.split("@")[0] : t.guest}</p>
+                <p className={"text-xs font-medium " + subtext}>{t.pro_member}</p>
+              </div>
+
+              <button onClick={toggleLang} className={"text-sm font-bold px-2.5 py-1.5 rounded-lg border transition " + (isDark ? "border-gray-700 text-gray-300 hover:border-blue-500" : "border-gray-300 text-gray-600 hover:border-blue-600")}>
+                {getLangLabel()}
+              </button>
+
+              <a href="/" title={t.home_tooltip} className={"p-2.5 rounded-lg border transition no-underline " + (isDark ? "border-gray-700 text-blue-400 hover:bg-gray-800" : "border-gray-300 text-blue-600 hover:bg-gray-100")}>
+                <HomeIcon />
+              </a>
+
+              <button onClick={toggleTheme} className={"p-2.5 rounded-lg border transition " + (isDark ? "border-gray-700 text-yellow-400 hover:bg-gray-800" : "border-gray-300 text-gray-600 hover:bg-gray-100")} title={isDark ? lightModeLabel : darkModeLabel}>
+                {isDark ? <SunIcon /> : <MoonIcon />}
+              </button>
+
+              <button onClick={logout} className="p-2.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition border border-red-200" title={t.logout}>
+                <LogoutIcon />
+              </button>
+            </div>
           </div>
-          <button onClick={toggleLang} className="font-black text-sm px-2 hover:text-blue-600 transition">{getLangLabel()}</button>
-          <button onClick={() => window.location.href = "/"} title={t.home_tooltip} className={"p-2.5 rounded-xl border transition hover:bg-blue-600 hover:text-white hover:border-blue-600 " + homeBtnClass}>
-            <HomeIcon />
-          </button>
-          <button onClick={toggleTheme} className={"p-2.5 rounded-xl border transition " + themeBtnClass}>
-            {darkMode ? <SunIcon /> : <MoonIcon />}
-          </button>
-          <button onClick={logout} className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition">
-            <LogoutIcon />
-          </button>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto p-6 md:p-8">
-        <header className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tight">
-            {t.welcome}, <span className="text-blue-600">{user ? user.split("@")[0] : t.guest}</span>! 🚀
-          </h1>
-          <p className="text-lg opacity-60">{t.subtitle}</p>
-        </header>
+      <main className="max-w-7xl mx-auto px-6 py-10">
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 text-center">
-          {[
-            { label: t.total_plans, value: totalPlans, color: "" },
-            { label: t.completed, value: completedPlans, color: "text-green-500" },
-            { label: t.active_projects, value: totalPlans - completedPlans, color: "text-orange-500" },
-          ].map((stat, i) => (
-            <div key={i} className={"p-8 rounded-[28px] border " + cardBg}>
-              <p className="text-xs font-bold opacity-40 uppercase tracking-widest mb-3">{stat.label}</p>
+        {/* Header */}
+        <div className="mb-10">
+          <h1 className={"text-3xl md:text-4xl font-black mb-1 " + (isDark ? "text-gray-100" : "text-gray-900")}>
+            {t.welcome}, <span className="text-blue-600">{user ? user.split("@")[0] : t.guest}</span>! 👋
+          </h1>
+          <p className={"text-base " + subtext}>{t.subtitle}</p>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
+          {STATS.map((stat, i) => (
+            <div key={i} className={"p-6 rounded-2xl border " + cardBg}>
+              <p className={"text-xs font-bold uppercase tracking-widest mb-3 " + subtext}>{stat.label}</p>
               <div className={"text-5xl font-black " + stat.color}>{stat.value}</div>
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* New plan CTA */}
           <div className="lg:col-span-2">
             <a href="/planner" className="block group no-underline">
-              <div className={"p-8 md:p-10 rounded-[36px] border transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 " + ctaBg}>
+              <div className={"p-8 rounded-2xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 " + (isDark ? "bg-blue-950 border-blue-800" : "bg-blue-600")}>
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex-1 pr-4">
-                    <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-widest mb-4">{t.ai_badge}</div>
-                    <h2 className="text-3xl md:text-4xl font-black mb-3">{t.create_new_plan}</h2>
-                    <p className="opacity-60 text-base leading-relaxed">{t.create_plan_desc}</p>
+                    <div className="inline-block px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest mb-4">{t.ai_badge}</div>
+                    <h2 className="text-2xl md:text-3xl font-black mb-3 text-white">{t.create_new_plan}</h2>
+                    <p className="text-blue-100 text-sm leading-relaxed">{t.create_plan_desc}</p>
                   </div>
-                  <div className="p-5 bg-blue-600 text-white rounded-3xl shadow-xl group-hover:scale-110 transition-transform flex-shrink-0">
-                    <RocketIcon />
+                  <div className="p-4 bg-white/20 text-white rounded-2xl group-hover:scale-110 transition-transform flex-shrink-0">
+                    <PlusIcon />
                   </div>
                 </div>
-                <div className="font-black text-blue-600 text-lg flex items-center gap-2 group-hover:gap-4 transition-all">
+                <div className="font-bold text-white text-base flex items-center gap-2 group-hover:gap-4 transition-all">
                   {t.start_now} <span className={isRTL ? "rotate-180 inline-block" : ""}>→</span>
                 </div>
               </div>
             </a>
           </div>
 
+          {/* Recent activity */}
           <div>
-            <h3 className="text-xl font-black mb-5">{t.recent_activity}</h3>
-            <div className={"p-6 rounded-[36px] border min-h-[300px] " + activityBg}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={"text-lg font-black " + (isDark ? "text-gray-100" : "text-gray-900")}>{t.recent_activity}</h3>
+              {projects.length > 0 && (
+                <a href="/planner" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition no-underline">{t.start_now} →</a>
+              )}
+            </div>
+            <div className={"rounded-2xl border overflow-hidden " + cardBg}>
               {loadingProjects ? (
-                <div className="opacity-30 text-center py-20 text-sm font-bold">{t.loading_projects}</div>
+                <div className={"p-8 text-center text-sm " + subtext}>{t.loading_projects}</div>
               ) : projects.length === 0 ? (
-                <div className="opacity-30 text-center py-20 font-bold">{t.no_activity}</div>
+                <div className="p-8 text-center">
+                  <p className={"text-sm mb-4 " + subtext}>{t.no_activity}</p>
+                  <a href="/planner" className="inline-block px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-sm transition no-underline">{t.create_new_plan}</a>
+                </div>
               ) : (
-                projects.slice(0, 6).map((project, i) => (
-                  <div
-                    key={project.id ?? i}
-                    onClick={() => { toast(t.opening_plan); setViewingProject(project); }}
-                    className="flex items-center gap-4 cursor-pointer py-4 border-b last:border-0 dark:border-slate-800 hover:text-blue-600 transition-all group"
-                  >
-                    <div className="w-2.5 h-2.5 rounded-full bg-blue-600 flex-shrink-0 group-hover:scale-125 transition-transform" />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-sm truncate">{project.title}</h4>
-                      <p className="text-xs opacity-40 font-semibold mt-0.5">{project.date}</p>
+                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {projects.slice(0, 6).map((project, i) => (
+                    <div
+                      key={project.id ?? i}
+                      onClick={() => { toast(t.opening_plan); setViewingProject(project); }}
+                      className={"flex items-center gap-4 px-5 py-4 cursor-pointer transition-colors " + hoverRow}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <h4 className={"font-semibold text-sm truncate " + (isDark ? "text-gray-200" : "text-gray-800")}>{project.title}</h4>
+                        <p className={"text-xs mt-0.5 " + subtext}>{project.date}</p>
+                      </div>
+                      <svg className={"w-4 h-4 flex-shrink-0 " + subtext} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </div>
+
         </div>
       </main>
     </div>

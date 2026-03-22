@@ -78,9 +78,8 @@ function ArrowIcon() {
 }
 
 function Field({ icon, children, darkMode }: { icon: React.ReactNode; children: React.ReactNode; darkMode: boolean }) {
-  const cls = darkMode ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200";
   return (
-    <div className={"flex items-center gap-3 px-4 py-3.5 rounded-xl border focus-within:ring-2 focus-within:ring-blue-500 transition " + cls}>
+    <div className={"flex items-center gap-3 px-4 py-3.5 rounded-xl border focus-within:ring-2 focus-within:ring-blue-500 transition " + (darkMode ? "bg-gray-900 border-gray-700" : "bg-gray-50 border-gray-200")}>
       <span className="opacity-40 flex-shrink-0">{icon}</span>
       {children}
     </div>
@@ -112,8 +111,14 @@ export default function LoginPage() {
     setLang("tr");
   }
 
+  const isDark = darkMode;
   const inputClass = "bg-transparent border-none outline-none w-full text-sm font-medium placeholder:opacity-40";
-  const themeBtnClass = darkMode ? "bg-slate-800 text-yellow-400" : "bg-white text-slate-600 shadow";
+  const bg = isDark ? "bg-gray-950 text-gray-100" : "bg-gray-50 text-gray-900";
+  const cardBg = isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200";
+  const subtext = isDark ? "text-gray-400" : "text-gray-500";
+
+  const lightModeLabel = lang === "tr" ? "Aydınlık" : lang === "ar" ? "فاتح" : "Light";
+  const darkModeLabel = lang === "tr" ? "Karanlık" : lang === "ar" ? "داكن" : "Dark";
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
@@ -131,7 +136,7 @@ export default function LoginPage() {
       toast.success(t.success_register);
       setView("verify");
     } catch (err: any) {
-      toast.error(err.message === "Email already exists" ? (lang === "tr" ? "Bu email zaten kayıtlı." : "Email already registered.") : t.err_network);
+      toast.error(err.message === "Email already exists" ? (lang === "tr" ? "Bu e-posta zaten kayıtlı." : lang === "ar" ? "هذا البريد الإلكتروني مسجّل بالفعل." : "Email already registered.") : t.err_network);
     } finally {
       setLoading(false);
     }
@@ -180,60 +185,60 @@ export default function LoginPage() {
     }
   }
 
-  const pageBg = darkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900";
-  const cardBg = darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/90 border-white";
-  const submitBtn = loading
-    ? "bg-slate-500 cursor-not-allowed"
-    : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:-translate-y-0.5 hover:shadow-lg";
-
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} className={"min-h-screen flex items-center justify-center p-4 transition-colors duration-500 " + pageBg}>
+    <div dir={isRTL ? "rtl" : "ltr"} className={"min-h-screen flex items-center justify-center p-4 transition-colors duration-300 font-sans " + bg}>
 
+      {/* Top controls */}
       <div className={"absolute top-5 flex items-center gap-3 z-50 " + (isRTL ? "left-5" : "right-5")}>
-        <button onClick={toggleLang} className="font-black text-sm px-3 py-2 hover:text-blue-600 transition">
+        <button onClick={toggleLang} className={"text-sm font-bold px-3 py-1.5 rounded-lg border transition " + (isDark ? "border-gray-700 text-gray-300 hover:border-blue-500" : "border-gray-300 text-gray-600 hover:border-blue-600")}>
           {getLangLabel()}
         </button>
-        <button onClick={toggleTheme} className={"p-2.5 rounded-full transition " + themeBtnClass}>
-          {darkMode ? <SunIcon /> : <MoonIcon />}
+        <button onClick={toggleTheme} className={"p-2 rounded-lg border transition flex items-center gap-1.5 text-xs font-medium " + (isDark ? "border-gray-700 text-gray-400 hover:bg-gray-800" : "border-gray-300 text-gray-600 hover:bg-gray-100")}>
+          {isDark ? <SunIcon /> : <MoonIcon />}
+          <span className="hidden sm:inline">{isDark ? lightModeLabel : darkModeLabel}</span>
         </button>
       </div>
 
-      <div className={"w-full max-w-md p-8 rounded-[32px] shadow-2xl border backdrop-blur-xl " + cardBg}>
+      <div className={"w-full max-w-md p-8 rounded-2xl shadow-xl border " + cardBg}>
+
+        {/* Logo + header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl text-white font-black text-xl shadow-lg mb-5">S</div>
-          <h1 className="text-2xl font-black mb-1.5 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-            {view === "verify" ? t.title_verify : t.app_name}
+          <a href="/" className="inline-flex items-center gap-2 mb-6 no-underline">
+            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-base">S</div>
+            <span className={"text-xl font-black " + (isDark ? "text-gray-100" : "text-gray-900")}>Start <span className="text-blue-600">ERA</span></span>
+          </a>
+          <h1 className={"text-2xl font-black mb-1.5 " + (isDark ? "text-gray-100" : "text-gray-900")}>
+            {view === "verify" ? t.title_verify : view === "login" ? t.title_login : t.title_register}
           </h1>
-          <p className="text-sm opacity-60">
+          <p className={"text-sm " + subtext}>
             {view === "login" ? t.subtitle_login : view === "register" ? t.subtitle_register : t.subtitle_verify}
           </p>
         </div>
 
         <form onSubmit={view === "login" ? handleLogin : view === "register" ? handleRegister : handleVerify} className="space-y-4">
-
           {view === "register" && (
             <div className="space-y-1">
-              <label className="text-xs font-bold opacity-60 ml-1">{t.label_name}</label>
-              <Field icon={<UserIcon />} darkMode={darkMode}>
-                <input className={inputClass} placeholder={t.ph_name} value={name} onChange={e => setName(e.target.value)} />
+              <label className={"text-xs font-semibold ml-1 " + subtext}>{t.label_name}</label>
+              <Field icon={<UserIcon />} darkMode={isDark}>
+                <input className={inputClass + " " + (isDark ? "text-gray-100" : "text-gray-900")} placeholder={t.ph_name} value={name} onChange={e => setName(e.target.value)} />
               </Field>
             </div>
           )}
 
           {view !== "verify" && (
             <div className="space-y-1">
-              <label className="text-xs font-bold opacity-60 ml-1">{t.label_email}</label>
-              <Field icon={<MailIcon />} darkMode={darkMode}>
-                <input type="email" required className={inputClass} placeholder={t.ph_email} value={email} onChange={e => setEmail(e.target.value)} />
+              <label className={"text-xs font-semibold ml-1 " + subtext}>{t.label_email}</label>
+              <Field icon={<MailIcon />} darkMode={isDark}>
+                <input type="email" required className={inputClass + " " + (isDark ? "text-gray-100" : "text-gray-900")} placeholder={t.ph_email} value={email} onChange={e => setEmail(e.target.value)} />
               </Field>
             </div>
           )}
 
           {view !== "verify" && (
             <div className="space-y-1">
-              <label className="text-xs font-bold opacity-60 ml-1">{t.label_password}</label>
-              <Field icon={<LockIcon />} darkMode={darkMode}>
-                <input type={showPw ? "text" : "password"} required className={inputClass} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
+              <label className={"text-xs font-semibold ml-1 " + subtext}>{t.label_password}</label>
+              <Field icon={<LockIcon />} darkMode={isDark}>
+                <input type={showPw ? "text" : "password"} required className={inputClass + " " + (isDark ? "text-gray-100" : "text-gray-900")} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
                 <button type="button" onClick={() => setShowPw(!showPw)} className="opacity-40 hover:opacity-70 transition flex-shrink-0">
                   {showPw ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
@@ -243,14 +248,18 @@ export default function LoginPage() {
 
           {view === "verify" && (
             <div className="space-y-1">
-              <label className="text-xs font-bold opacity-60 ml-1">{t.label_code}</label>
-              <Field icon={<KeyIcon />} darkMode={darkMode}>
-                <input type="text" maxLength={6} className={inputClass + " text-center tracking-[0.6em] text-lg font-black"} placeholder={t.ph_code} value={code} onChange={e => setCode(e.target.value)} />
+              <label className={"text-xs font-semibold ml-1 " + subtext}>{t.label_code}</label>
+              <Field icon={<KeyIcon />} darkMode={isDark}>
+                <input type="text" maxLength={6} className={inputClass + " text-center tracking-[0.6em] text-lg font-black " + (isDark ? "text-gray-100" : "text-gray-900")} placeholder={t.ph_code} value={code} onChange={e => setCode(e.target.value)} />
               </Field>
             </div>
           )}
 
-          <button type="submit" disabled={loading} className={"w-full py-4 rounded-xl font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-2 mt-2 " + submitBtn}>
+          <button
+            type="submit"
+            disabled={loading}
+            className={"w-full py-3.5 rounded-full font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-2 mt-2 text-sm " + (loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg")}
+          >
             {loading ? (
               <span className="animate-pulse">{t.processing}</span>
             ) : (
@@ -263,13 +272,19 @@ export default function LoginPage() {
         </form>
 
         {view !== "verify" && (
-          <p className="text-center text-sm opacity-60 mt-6">
+          <p className={"text-center text-sm mt-6 " + subtext}>
             {view === "login" ? t.no_account : t.has_account}
-            <button onClick={() => setView(view === "login" ? "register" : "login")} className="ml-1.5 font-bold text-blue-600 underline underline-offset-4">
+            <button onClick={() => setView(view === "login" ? "register" : "login")} className="ml-1.5 font-bold text-blue-600 hover:text-blue-700 transition">
               {view === "login" ? t.link_register : t.link_login}
             </button>
           </p>
         )}
+
+        <p className={"text-center text-xs mt-6 " + subtext}>
+          <a href="/" className="hover:text-blue-600 transition no-underline">
+            {lang === "tr" ? "← Ana Sayfaya Dön" : lang === "ar" ? "← العودة إلى الرئيسية" : "← Back to Home"}
+          </a>
+        </p>
       </div>
     </div>
   );

@@ -36,19 +36,17 @@ function DownloadIcon() {
   );
 }
 
-function ResearchLoading({ status, darkMode }: { status: string; darkMode: boolean }) {
+function LoadingOverlay({ status, darkMode }: { status: string; darkMode: boolean }) {
   return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl rounded-3xl">
-      <div className="relative w-20 h-20 mb-6">
-        <div className="absolute inset-0 border-t-4 border-blue-500 rounded-full animate-spin" />
-        <div className="absolute inset-0 flex items-center justify-center text-3xl">🤖</div>
+    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl rounded-2xl">
+      <div className="relative w-16 h-16 mb-6">
+        <div className="absolute inset-0 border-t-4 border-blue-600 rounded-full animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center text-2xl">🤖</div>
       </div>
-      <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 animate-pulse">Start ERA AI</h3>
-      <div className="mt-4 flex flex-col items-center gap-3 px-6 text-center">
-        <span className={"text-sm font-semibold max-w-xs " + (darkMode ? "text-slate-300" : "text-slate-600")}>{status}</span>
-        <div className={"w-40 h-1 rounded-full overflow-hidden " + (darkMode ? "bg-slate-800" : "bg-slate-200")}>
-          <div className="h-full bg-blue-600 animate-pulse w-full" />
-        </div>
+      <p className="text-lg font-black text-blue-600 mb-3">Start ERA AI</p>
+      <p className={"text-sm text-center max-w-xs px-4 " + (darkMode ? "text-gray-400" : "text-gray-600")}>{status}</p>
+      <div className={"w-48 h-1 rounded-full overflow-hidden mt-4 " + (darkMode ? "bg-gray-800" : "bg-gray-200")}>
+        <div className="h-full bg-blue-600 animate-pulse w-full" />
       </div>
     </div>
   );
@@ -152,129 +150,148 @@ export default function PlannerPage() {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = "StartERA_Plan.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      a.href = url; a.download = "StartERA_Plan.pdf";
+      document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
       toast.dismiss(tid);
       toast.success(t.toast_pdf_success);
     } catch {
       toast.dismiss(tid);
-      toast.error(lang === "tr" ? "PDF oluşturulamadı." : "PDF generation failed.");
+      toast.error(lang === "tr" ? "PDF oluşturulamadı." : lang === "ar" ? "فشل إنشاء PDF." : "PDF generation failed.");
     }
   }
 
-  const bg = darkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900";
-  const navBg = darkMode ? "bg-slate-900/60 border-slate-800" : "bg-white/60 border-slate-200";
-  const cardBg = darkMode ? "bg-slate-900/80 border-slate-800" : "bg-white/80 border-white/60";
-  const resultBg = darkMode ? "bg-slate-900/90 border-slate-800" : "bg-white/90 border-white";
-  const sectionBg = darkMode ? "bg-slate-800/50 border-slate-700" : "bg-slate-50 border-slate-100";
-  const textareaBg = darkMode ? "bg-slate-950 text-white focus:bg-slate-900" : "bg-slate-100 text-slate-900 focus:bg-white";
-  const backBtnClass = darkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-200 text-slate-900 bg-white hover:bg-slate-50";
-  const newPlanClass = darkMode ? "border-slate-700 hover:bg-slate-800" : "border-slate-200 hover:bg-slate-50";
-  const themeBtnClass = darkMode ? "bg-slate-800 border-slate-700 text-yellow-400" : "bg-white border-slate-200 text-slate-600";
-  const progressBg = darkMode ? "bg-slate-800" : "bg-slate-200";
+  const isDark = darkMode;
+  const bg = isDark ? "bg-gray-950 text-gray-100" : "bg-gray-50 text-gray-900";
+  const navBg = isDark ? "bg-gray-950/95 border-gray-800" : "bg-white/95 border-gray-200";
+  const cardBg = isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200";
+  const subtext = isDark ? "text-gray-400" : "text-gray-600";
+  const border = isDark ? "border-gray-800" : "border-gray-200";
+  const textareaBg = isDark ? "bg-gray-800 text-gray-100 placeholder-gray-500 focus:bg-gray-900" : "bg-gray-50 text-gray-900 placeholder-gray-400 focus:bg-white";
+  const sectionBg = isDark ? "bg-gray-800/50 border-gray-700" : "bg-gray-50 border-gray-100";
+  const progressBg = isDark ? "bg-gray-800" : "bg-gray-200";
+  const lightModeLabel = lang === "tr" ? "Aydınlık" : lang === "ar" ? "فاتح" : "Light";
+  const darkModeLabel = lang === "tr" ? "Karanlık" : lang === "ar" ? "داكن" : "Dark";
 
   if (!user) {
     return (
       <div className={"flex h-screen items-center justify-center " + bg}>
         <div className="text-center">
-          <p className="opacity-50 font-bold mb-4">
+          <p className={"opacity-50 font-bold mb-4 " + subtext}>
             {lang === "tr" ? "Lütfen giriş yapın." : lang === "ar" ? "يرجى تسجيل الدخول." : "Please sign in."}
           </p>
-          <a href="/login" className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl no-underline">{t.login}</a>
+          <a href="/login" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-sm transition no-underline">{t.login}</a>
         </div>
       </div>
     );
   }
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} className={"min-h-screen transition-all duration-700 relative overflow-hidden " + bg}>
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className={"absolute -top-1/4 -left-1/4 w-3/4 h-3/4 rounded-full blur-[130px] opacity-15 " + (darkMode ? "bg-blue-800" : "bg-blue-300")} />
-        <div className={"absolute top-1/2 -right-1/4 w-2/3 h-2/3 rounded-full blur-[140px] opacity-15 " + (darkMode ? "bg-purple-800" : "bg-indigo-300")} />
-      </div>
+    <div dir={isRTL ? "rtl" : "ltr"} className={"min-h-screen font-sans transition-colors duration-300 " + bg}>
 
-      <nav className={"px-6 md:px-8 py-5 flex justify-between items-center sticky top-0 z-40 backdrop-blur-lg border-b " + navBg}>
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-lg">S</div>
-          <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Start ERA</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={toggleLang} className="font-black text-sm px-2 hover:text-blue-600 transition">{getLangLabel()}</button>
-          <button onClick={toggleTheme} className={"p-2.5 rounded-xl border transition " + themeBtnClass}>
-            {darkMode ? <SunIcon /> : <MoonIcon />}
-          </button>
-          <a href="/dashboard" className={"px-5 py-2 rounded-xl font-bold text-sm border no-underline transition " + backBtnClass}>{t.nav_back}</a>
+      {/* Navbar */}
+      <nav className={"sticky top-0 z-40 border-b backdrop-blur-md " + navBg}>
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">S</div>
+              <span className={"text-lg font-black " + (isDark ? "text-gray-100" : "text-gray-900")}>Start <span className="text-blue-600">ERA</span></span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={toggleLang} className={"text-sm font-bold px-2.5 py-1.5 rounded-lg border transition " + (isDark ? "border-gray-700 text-gray-300 hover:border-blue-500" : "border-gray-300 text-gray-600 hover:border-blue-600")}>{getLangLabel()}</button>
+              <button onClick={toggleTheme} className={"p-2.5 rounded-lg border transition " + (isDark ? "border-gray-700 text-yellow-400 hover:bg-gray-800" : "border-gray-300 text-gray-600 hover:bg-gray-100")} title={isDark ? lightModeLabel : darkModeLabel}>
+                {isDark ? <SunIcon /> : <MoonIcon />}
+              </button>
+              <a href="/dashboard" className={"px-4 py-2 rounded-full font-bold text-sm border no-underline transition " + (isDark ? "border-gray-700 text-gray-200 hover:bg-gray-800" : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50")}>{t.nav_back}</a>
+            </div>
+          </div>
         </div>
       </nav>
 
-      <div className="flex flex-col items-center justify-center p-6 w-full max-w-4xl mx-auto min-h-[calc(100vh-80px)]">
+      <div className="flex flex-col items-center justify-center p-6 w-full max-w-3xl mx-auto min-h-[calc(100vh-64px)]">
+
         {planResult ? (
-          <div className={"w-full p-8 md:p-12 rounded-[32px] shadow-2xl backdrop-blur-2xl border " + resultBg}>
+          /* Results */
+          <div className={"w-full p-8 md:p-10 rounded-2xl border " + cardBg}>
             <div className="text-center mb-10">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 text-4xl mb-5 shadow-lg shadow-green-500/20">🎉</div>
-              <h2 className="text-3xl md:text-4xl font-black mb-3">{t.success_title}</h2>
-              <p className="opacity-70">{t.success_desc}</p>
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-4xl mb-5">🎉</div>
+              <h2 className={"text-2xl md:text-3xl font-black mb-3 " + (isDark ? "text-gray-100" : "text-gray-900")}>{t.success_title}</h2>
+              <p className={subtext}>{t.success_desc}</p>
             </div>
-            <div className="space-y-5 mb-10">
+
+            <div className="space-y-4 mb-8">
               {planResult.map((section, idx) => (
-                <div key={idx} className={"p-6 rounded-2xl border " + sectionBg}>
-                  <h3 className="text-lg font-bold mb-3 text-blue-600 dark:text-blue-400 border-b border-dashed border-slate-200 dark:border-slate-700 pb-2">{section.title}</h3>
-                  <p className="leading-relaxed whitespace-pre-wrap opacity-85 text-sm md:text-base">{section.content}</p>
+                <div key={idx} className={"p-6 rounded-xl border " + sectionBg}>
+                  <h3 className="text-base font-bold mb-3 text-blue-600 border-b border-blue-500/20 pb-2">{section.title}</h3>
+                  <p className={"leading-relaxed whitespace-pre-wrap text-sm " + subtext}>{section.content}</p>
                 </div>
               ))}
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button onClick={downloadPDF} className="px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-xl transition-all flex items-center justify-center gap-2">
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button onClick={downloadPDF} className="px-7 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-sm transition flex items-center justify-center gap-2">
                 <DownloadIcon />
                 {t.download_pdf}
               </button>
               <button
                 onClick={() => { setPlanResult(null); setStep(1); setFormData(prev => ({ ...prev, idea: "", capital: "", skills: "", strategy: "", management: "" })); }}
-                className={"px-8 py-4 rounded-xl font-bold border transition " + newPlanClass}
+                className={"px-7 py-3.5 font-bold rounded-full text-sm border transition " + (isDark ? "border-gray-700 text-gray-200 hover:bg-gray-800" : "border-gray-300 text-gray-700 hover:bg-gray-50")}
               >
                 {t.new_plan}
               </button>
             </div>
           </div>
+
         ) : (
-          <div className="relative w-full max-w-2xl">
-            {loading && <ResearchLoading status={loadingStatus} darkMode={darkMode} />}
-            <div className="flex justify-between items-center mb-3 px-1">
-              <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t.step_progress}</span>
-              <span className="text-xs font-bold opacity-50">{t.step} {step} / 5</span>
-            </div>
-            <div className={"w-full rounded-full h-1.5 mb-8 overflow-hidden " + progressBg}>
-              <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 h-full transition-all duration-700 ease-out" style={{ width: (step / 5 * 100) + "%" }} />
-            </div>
-            <div className={"p-8 md:p-12 rounded-[32px] shadow-2xl backdrop-blur-xl border " + cardBg}>
-              <div className="mb-8">
-                <h2 className="text-3xl md:text-4xl font-black mb-3 tracking-tight">{currentQuestion.title}</h2>
-                <p className="opacity-70">{currentQuestion.subtitle}</p>
+          /* Wizard */
+          <div className="relative w-full">
+            {loading && <LoadingOverlay status={loadingStatus} darkMode={isDark} />}
+
+            {/* Progress */}
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t.step_progress}</span>
+                <span className={"text-xs font-bold " + subtext}>{t.step} {step} / 5</span>
               </div>
+              <div className={"w-full rounded-full h-2 overflow-hidden " + progressBg}>
+                <div className="bg-blue-600 h-full transition-all duration-500 ease-out rounded-full" style={{ width: (step / 5 * 100) + "%" }} />
+              </div>
+              {/* Step dots */}
+              <div className="flex justify-between mt-3">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <div key={s} className={"w-2 h-2 rounded-full transition-colors " + (s <= step ? "bg-blue-600" : (isDark ? "bg-gray-700" : "bg-gray-300"))} />
+                ))}
+              </div>
+            </div>
+
+            {/* Card */}
+            <div className={"p-8 md:p-10 rounded-2xl border " + cardBg}>
+              <div className="mb-7">
+                <div className={"text-xs font-bold uppercase tracking-widest text-blue-600 mb-2"}>{t.step} {step}</div>
+                <h2 className={"text-2xl md:text-3xl font-black mb-3 " + (isDark ? "text-gray-100" : "text-gray-900")}>{currentQuestion.title}</h2>
+                <p className={"text-sm " + subtext}>{currentQuestion.subtitle}</p>
+              </div>
+
               <textarea
                 rows={5}
-                className={"w-full p-5 rounded-2xl outline-none text-base resize-none transition-all border-none focus:ring-2 focus:ring-blue-500 " + textareaBg}
+                className={"w-full px-5 py-4 rounded-xl outline-none text-base resize-none transition-all border focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 " + textareaBg + " " + border}
                 placeholder={currentQuestion.ph}
                 value={formData[currentQuestion.key as keyof typeof formData] as string}
                 onChange={e => setFormData(prev => ({ ...prev, [currentQuestion.key]: e.target.value }))}
                 autoFocus
               />
-              <div className="flex justify-between items-center mt-8">
+
+              <div className="flex justify-between items-center mt-6">
                 {step > 1 ? (
-                  <button onClick={() => setStep(step - 1)} className="px-5 py-3 font-bold opacity-50 hover:opacity-90 transition">
+                  <button onClick={() => setStep(step - 1)} className={"px-5 py-2.5 font-semibold text-sm rounded-full border transition " + (isDark ? "border-gray-700 text-gray-300 hover:bg-gray-800" : "border-gray-300 text-gray-600 hover:bg-gray-100")}>
                     {isRTL ? "" : "← "}{t.back}{isRTL ? " →" : ""}
                   </button>
-                ) : (
-                  <div />
-                )}
+                ) : <div />}
+
                 <button
                   onClick={handleNext}
                   disabled={loading}
-                  className="px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-xl disabled:opacity-50 transition-all flex items-center gap-2"
+                  className="px-7 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-full text-sm transition flex items-center gap-2 shadow-md hover:shadow-lg"
                 >
                   {step === 5 ? (
                     <><SparkleIcon />{t.start_magic}</>
