@@ -4,6 +4,98 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const apiKey = process.env.GOOGLE_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
 
+// ─── SERVER-SIDE SCORE CORRECTION ────────────────────────────────────────────
+// We don't rely on AI to follow its own scoring rules.
+// Instead, we detect budget infeasibility ourselves and enforce it in code.
+
+function extractBudgetNumber(capital: string): number {
+  // Remove currency symbols and words, extract the first number found
+  const cleaned = capital.replace(/[₺$€£¥,]/g, "").replace(/[a-zA-ZğüşıöçĞÜŞİÖÇ\s]/g, " ");
+  const match = cleaned.match(/[\d]+(?:[.,]\d+)*/);
+  if (!match) return 0;
+  return parseFloat(match[0].replace(",", "."));
+}
+
+function detectIdeaCategory(idea: string): "physical_high" | "physical_low" | "digital" | "service" {
+  const lower = idea.toLowerCase();
+  // High-cost physical businesses
+  const highCost = ["kafe","cafe","coffee","restoran","restaurant","fabrika","factory","market","mağaza","store","shop","otel","hotel","bar","pub","gym","spor salonu","fırın","bakery","eczane","pharmacy","hastane","hospital","araba","car","vehicle","araç"];
+  // Low-cost physical
+  const lowCost = ["stant","stand","seyyar","seyyar","market tezgah"];
+  // Digital
+  const digital = ["app","uygulama","website","web site","platform","saas","yazılım","software","e-ticaret","ecommerce","online","dijital","digital","mobil","mobile","oyun","game"];
+  // Service
+  const service = ["danışman","consultant","freelance","hizmet","service","eğitim","training","koçluk","coaching","temizlik","cleaning","taşımacılık","logistics"];
+
+  if (highCost.some(w => lower.includes(w))) return "physical_high";
+  if (digital.some(w => lower.includes(w))) return "digital";
+  if (service.some(w => lower.includes(w))) return "service";
+  if (lowCost.some(w => lower.includes(w))) return "physical_low";
+  return "physical_low";
+}
+
+// Minimum viable budget thresholds (in TL equivalent roughly)
+const MIN_BUDGETS: Record<string, number> = {
+  physical_high: 150000, // 150K TL minimum for a cafe/restaurant/store
+  physical_low:  5000,
+  digital:       2000,   // Hosting, domain, tools
+  service:       500,    // Almost zero cost
+};
+
+function correctScores(
+  scores: Record<string, number>,
+  capital: string,
+  idea: string
+): Record<string, number> {
+  const budget = extractBudgetNumber(capital);
+  const category = detectIdeaCategory(idea);
+  const minRequired = MIN_BUDGETS[category];
+
+  // If budget is 0 (couldn't parse) or clearly symbolic (< 1% of minimum), apply max correction
+  if (budget === 0 || budget < minRequired * 0.01) {
+    // Completely impossible — cap everything at 2
+    return Object.fromEntries(Object.keys(scores).map(k => [k, Math.min(scores[k], 2)]));
+  }
+
+  // Calculate feasibility ratio (how much of minimum budget they have)
+  const ratio = budget / minRequired;
+
+  if (ratio < 0.05) {
+    // < 5% of needed budget → cap at 2
+    const cap = 2;
+    return Object.fromEntries(Object.keys(scores).map(k => [k, Math.min(scores[k], cap)]));
+  }
+  if (ratio < 0.20) {
+    // < 20% of needed budget → cap at 3
+    const cap = 3;
+    return Object.fromEntries(Object.keys(scores).map(k => [k, Math.min(scores[k], cap)]));
+  }
+  if (ratio < 0.50) {
+    // < 50% of needed budget → cap at 5
+    // But allow market/problem to stay higher since the IDEA might be good
+    return {
+      ...scores,
+      revenue:     Math.min(scores.revenue, 4),
+      risk:        Math.min(scores.risk, 4),
+      solution:    Math.min(scores.solution, 5),
+      features:    Math.min(scores.features, 5),
+      competition: Math.min(scores.competition, 5),
+    };
+  }
+  if (ratio < 0.80) {
+    // 50-80% of needed budget → slightly constrain
+    return {
+      ...scores,
+      revenue: Math.min(scores.revenue, 6),
+      risk:    Math.min(scores.risk, 5),
+    };
+  }
+
+  // Budget is >= 80% of minimum → trust AI scores as-is
+  return scores;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -14,126 +106,77 @@ export async function POST(request: Request) {
     }
 
     const langInstruction =
-      language === "tr" ? "Tüm yanıtını yalnızca Türkçe ver." :
-      language === "ar" ? "أعطِ جميع إجاباتك باللغة العربية فقط." :
-      "Give your entire response in English only.";
+      language === "tr" ? "Respond entirely in Turkish." :
+      language === "ar" ? "Respond entirely in Arabic." :
+      "Respond entirely in English.";
 
-    const prompt = `
-You are a brutally honest angel investor and startup analyst. Your job is to evaluate startup ideas based on REAL-WORLD feasibility — not theoretical potential.
+    // Short, clear prompt — no contradictions
+    const prompt = `You are a ruthless but constructive startup analyst. ${langInstruction}
 
-${langInstruction}
-
----
-STARTUP TO EVALUATE:
 IDEA: ${idea}
-CAPITAL/BUDGET: ${capital}
+BUDGET: ${capital}
 SKILLS: ${skills}
 GOALS: ${strategy}
 MANAGEMENT: ${management}
----
 
-CRITICAL SCORING RULES — READ CAREFULLY:
+Evaluate this startup honestly. Score based on EXECUTION feasibility with THIS specific budget and skills — not the idea in theory.
 
-**RULE 1: BUDGET MISMATCH DESTROYS ALL SCORES**
-If the budget is wildly insufficient for the idea (e.g. opening a cafe with 500 TL, building a factory with $100), 
-then EVERY score must be low (1-3 range) — not just one or two scores.
-- You CANNOT give market=8 or problem=8 if the person cannot even enter that market with their budget.
-- A great problem does NOT matter if the solution is financially impossible.
-- The scores represent THIS SPECIFIC PERSON'S chance of success, not the abstract quality of the idea.
+If the budget cannot realistically cover startup costs, say so clearly in the plan and give low scores.
+Always end with concrete alternatives the person can do with their actual budget.
 
-**RULE 2: SCORES = EXECUTION FEASIBILITY, NOT IDEA QUALITY**
-Ask yourself: "If THIS person, with THIS budget, with THESE skills, tries to execute this — will they succeed?"
-- Scoring the idea in a vacuum is WRONG.
-- Score the realistic probability of success given ALL constraints.
-
-**RULE 3: STRICT SCORE THRESHOLDS**
-- 8-10: Strong execution feasibility. Budget matches. Skills match. Real market advantage.
-- 6-7: Feasible but with serious challenges. Budget is tight but possible.
-- 4-5: Significant problems. Budget insufficient OR market too saturated.
-- 2-3: Not feasible. Budget is far too low OR idea has fundamental flaws.
-- 1: Completely impossible. No chance of success with given resources.
-
-**RULE 4: NEVER LIE WITH NUMBERS**
-If the plan text says "this is financially impossible", the scores MUST be 1-3. 
-It is INCONSISTENT and WRONG to write "this cannot work" in the text but give scores of 6, 7, 8.
-The numbers must match the words.
-
-**RULE 5: ALWAYS PROVIDE ALTERNATIVES**
-If the idea is infeasible: suggest what the person CAN realistically do with their actual budget.
-Make alternatives concrete, specific, and actually startable with that exact budget.
-
----
-
-Return ONLY valid JSON, no markdown, no explanation, nothing else:
-
+Return ONLY this JSON (no markdown):
 {
   "scores": {
-    "solution": <integer 1-10>,
-    "problem": <integer 1-10>,
-    "features": <integer 1-10>,
-    "market": <integer 1-10>,
-    "revenue": <integer 1-10>,
-    "competition": <integer 1-10>,
-    "risk": <integer 1-10>
+    "solution": <1-10>,
+    "problem": <1-10>,
+    "features": <1-10>,
+    "market": <1-10>,
+    "revenue": <1-10>,
+    "competition": <1-10>,
+    "risk": <1-10>
   },
   "plan": [
-    {
-      "title": "1. GENEL DEĞERLENDİRME",
-      "content": "Honest verdict: Is this feasible with the given budget and skills? State the budget gap with real numbers if applicable. No false encouragement."
-    },
-    {
-      "title": "2. PAZAR VE REKABETÇİ ANALİZ",
-      "content": "Real market conditions, competitor strength, and whether this budget can realistically compete."
-    },
-    {
-      "title": "3. FİNANSAL GERÇEKLİK KONTROLÜ",
-      "content": "Actual cost breakdown for this type of business. Compare against the given budget. Show the gap in numbers. Break-even analysis."
-    },
-    {
-      "title": "4. YAPICI ALTERNATİFLER VE YOL HARİTASI",
-      "content": "If infeasible: list 2-3 concrete alternatives the person can START TODAY with their exact budget. If feasible: 90-day action plan."
-    }
+    {"title": "1. GENEL DEĞERLENDİRME", "content": "..."},
+    {"title": "2. PAZAR VE REKABETÇİ ANALİZ", "content": "..."},
+    {"title": "3. FİNANSAL GERÇEKLİK KONTROLÜ", "content": "..."},
+    {"title": "4. YAPICI ALTERNATİFLER VE YOL HARİTASI", "content": "..."}
   ]
-}
-
-FINAL CHECK BEFORE RESPONDING:
-- Look at your scores. If any score is above 5 but your plan text says the idea is impossible — FIX the scores DOWN.
-- The overall score (average of all 7) should reflect the TOTAL picture. If budget makes execution impossible, overall MUST be below 4.
-- Be the investor who saves someone from wasting their money, not the one who flatters them into failure.
-`;
+}`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
-    let text = result.response.text();
+    let text = result.response.text().trim();
 
-    // Strip all markdown fences aggressively
+    // Strip markdown fences
     text = text.replace(/^```json\s*/m, "").replace(/^```\s*/m, "").replace(/\s*```$/m, "").trim();
 
     let parsed: any;
     try {
       parsed = JSON.parse(text);
     } catch {
-      // Try to extract JSON from the text
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        try {
-          parsed = JSON.parse(jsonMatch[0]);
-        } catch {
-          return NextResponse.json({ plan: text, scores: null }, { status: 200 });
-        }
+        try { parsed = JSON.parse(jsonMatch[0]); }
+        catch { return NextResponse.json({ plan: text, scores: null }, { status: 200 }); }
       } else {
         return NextResponse.json({ plan: text, scores: null }, { status: 200 });
       }
     }
 
-    // Validate, clamp scores 1-10, calculate real average
     if (parsed.scores) {
       const keys = ["solution", "problem", "features", "market", "revenue", "competition", "risk"];
+
+      // Step 1: Clamp AI scores to 1-10
       for (const key of keys) {
         const val = Number(parsed.scores[key]);
         parsed.scores[key] = isNaN(val) ? 5 : Math.min(10, Math.max(1, Math.round(val)));
       }
-      const vals = keys.map((k) => parsed.scores[k]);
+
+      // Step 2: Apply server-side budget correction (this is the real enforcement)
+      parsed.scores = correctScores(parsed.scores, capital || "", idea || "");
+
+      // Step 3: Recalculate true overall average
+      const vals = keys.map(k => parsed.scores[k]);
       parsed.scores.overall =
         Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
     }
