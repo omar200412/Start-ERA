@@ -4,96 +4,127 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const apiKey = process.env.GOOGLE_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// ─── SERVER-SIDE SCORE CORRECTION ────────────────────────────────────────────
-// We don't rely on AI to follow its own scoring rules.
-// Instead, we detect budget infeasibility ourselves and enforce it in code.
+// ─── BUDGET ANALYSIS ─────────────────────────────────────────────────────────
 
-function extractBudgetNumber(capital: string): number {
-  // Remove currency symbols and words, extract the first number found
-  const cleaned = capital.replace(/[₺$€£¥,]/g, "").replace(/[a-zA-ZğüşıöçĞÜŞİÖÇ\s]/g, " ");
-  const match = cleaned.match(/[\d]+(?:[.,]\d+)*/);
-  if (!match) return 0;
-  return parseFloat(match[0].replace(",", "."));
+function parseBudget(capital: string): number {
+  if (!capital) return 0;
+  // Remove all non-numeric characters except dots and commas
+  let s = capital
+    .replace(/[₺$€£¥]/g, "")
+    .replace(/[^\d.,]/g, " ")
+    .trim();
+  // Handle "1.500.000" (Turkish dot-thousands) → "1500000"
+  // Handle "1,500,000" (English comma-thousands) → "1500000"
+  // Handle "1.5" (decimal) → "1.5"
+  const parts = s.match(/[\d]+/g);
+  if (!parts || parts.length === 0) return 0;
+  if (parts.length === 1) return parseFloat(parts[0]);
+  // Multiple parts: likely thousands separators → join them
+  return parseFloat(parts.join(""));
 }
 
-function detectIdeaCategory(idea: string): "physical_high" | "physical_low" | "digital" | "service" {
-  const lower = idea.toLowerCase();
-  // High-cost physical businesses
-  const highCost = ["kafe","cafe","coffee","restoran","restaurant","fabrika","factory","market","mağaza","store","shop","otel","hotel","bar","pub","gym","spor salonu","fırın","bakery","eczane","pharmacy","hastane","hospital","araba","car","vehicle","araç"];
-  // Low-cost physical
-  const lowCost = ["stant","stand","seyyar","seyyar","market tezgah"];
-  // Digital
-  const digital = ["app","uygulama","website","web site","platform","saas","yazılım","software","e-ticaret","ecommerce","online","dijital","digital","mobil","mobile","oyun","game"];
-  // Service
-  const service = ["danışman","consultant","freelance","hizmet","service","eğitim","training","koçluk","coaching","temizlik","cleaning","taşımacılık","logistics"];
+type IdeaType = "physical_high" | "physical_mid" | "digital" | "service";
 
-  if (highCost.some(w => lower.includes(w))) return "physical_high";
-  if (digital.some(w => lower.includes(w))) return "digital";
-  if (service.some(w => lower.includes(w))) return "service";
-  if (lowCost.some(w => lower.includes(w))) return "physical_low";
-  return "physical_low";
+function classifyIdea(idea: string): IdeaType {
+  const t = (idea || "").toLowerCase();
+
+  const physicalHigh = [
+    "kafe","cafe","coffee shop","kahvehane","kahve","restoran","restaurant","lokal",
+    "fabrika","factory","otel","hotel","bar","pub","disko","nightclub",
+    "market","süpermarket","supermarket","mağaza","dükkan","store","shop","boutique",
+    "gym","spor salonu","fitness","fırın","bakery","pastane","eczane","pharmacy",
+    "hastane","klinik","clinic","araba","otomobil","vehicle","araç","fabrika",
+    "üretim","manufacturing","çiftlik","farm","tarım"
+  ];
+  const physicalMid = [
+    "stant","stand","seyyar","küçük dükkan","atölye","workshop","kuaför",
+    "berber","barber","güzellik salonu","beauty salon","temizlik şirketi"
+  ];
+  const digital = [
+    "app","uygulama","website","web site","web sitesi","platform","saas",
+    "yazılım","software","e-ticaret","ecommerce","e-commerce","online store",
+    "online mağaza","dijital","digital","mobil","mobile","oyun","game",
+    "blog","içerik","content","youtube","podcast","sosyal medya","social media",
+    "dropshipping","affiliate","nft","kripto","crypto","api","bot"
+  ];
+  const service = [
+    "danışman","consultant","freelance","serbest","koçluk","coaching",
+    "eğitim","training","öğretmen","teacher","ders","teaching","tercüme",
+    "translation","tasarım","design","grafik","graphic","fotoğraf","photo",
+    "video","editing","yazarlık","writing","muhasebe","accounting","hukuk","law"
+  ];
+
+  if (physicalHigh.some(w => t.includes(w))) return "physical_high";
+  if (digital.some(w => t.includes(w))) return "digital";
+  if (service.some(w => t.includes(w))) return "service";
+  if (physicalMid.some(w => t.includes(w))) return "physical_mid";
+  // Default: assume physical mid
+  return "physical_mid";
 }
 
-// Minimum viable budget thresholds (in TL equivalent roughly)
-const MIN_BUDGETS: Record<string, number> = {
-  physical_high: 150000, // 150K TL minimum for a cafe/restaurant/store
-  physical_low:  5000,
-  digital:       2000,   // Hosting, domain, tools
-  service:       500,    // Almost zero cost
+// Minimum viable budget in TRY (Turkish Lira)
+const MIN_TRY: Record<IdeaType, number> = {
+  physical_high: 500_000,  // Cafe, restaurant, store — realistic 2024 Turkey
+  physical_mid:  50_000,   // Small stand, workshop
+  digital:       5_000,    // Hosting, domain, tools, freelancer
+  service:       1_000,    // Almost zero cost
 };
 
-function correctScores(
-  scores: Record<string, number>,
-  capital: string,
-  idea: string
-): Record<string, number> {
-  const budget = extractBudgetNumber(capital);
-  const category = detectIdeaCategory(idea);
-  const minRequired = MIN_BUDGETS[category];
-
-  // If budget is 0 (couldn't parse) or clearly symbolic (< 1% of minimum), apply max correction
-  if (budget === 0 || budget < minRequired * 0.01) {
-    // Completely impossible — cap everything at 2
-    return Object.fromEntries(Object.keys(scores).map(k => [k, Math.min(scores[k], 2)]));
-  }
-
-  // Calculate feasibility ratio (how much of minimum budget they have)
-  const ratio = budget / minRequired;
-
-  if (ratio < 0.05) {
-    // < 5% of needed budget → cap at 2
-    const cap = 2;
-    return Object.fromEntries(Object.keys(scores).map(k => [k, Math.min(scores[k], cap)]));
-  }
-  if (ratio < 0.20) {
-    // < 20% of needed budget → cap at 3
-    const cap = 3;
-    return Object.fromEntries(Object.keys(scores).map(k => [k, Math.min(scores[k], cap)]));
-  }
-  if (ratio < 0.50) {
-    // < 50% of needed budget → cap at 5
-    // But allow market/problem to stay higher since the IDEA might be good
-    return {
-      ...scores,
-      revenue:     Math.min(scores.revenue, 4),
-      risk:        Math.min(scores.risk, 4),
-      solution:    Math.min(scores.solution, 5),
-      features:    Math.min(scores.features, 5),
-      competition: Math.min(scores.competition, 5),
-    };
-  }
-  if (ratio < 0.80) {
-    // 50-80% of needed budget → slightly constrain
-    return {
-      ...scores,
-      revenue: Math.min(scores.revenue, 6),
-      risk:    Math.min(scores.risk, 5),
-    };
-  }
-
-  // Budget is >= 80% of minimum → trust AI scores as-is
-  return scores;
+interface FeasibilityResult {
+  ratio: number;          // budget / min_required
+  maxScore: number;       // Hard cap for ALL scores
+  feasible: boolean;
+  budgetTRY: number;
+  minRequiredTRY: number;
+  ideaType: IdeaType;
 }
+
+function analyzeFeasibility(capital: string, idea: string): FeasibilityResult {
+  const budget = parseBudget(capital);
+  const ideaType = classifyIdea(idea);
+  const minRequired = MIN_TRY[ideaType];
+
+  // If budget is 0 (unparseable or not given), treat as very low
+  const effectiveBudget = budget === 0 ? 0 : budget;
+  const ratio = minRequired === 0 ? 1 : effectiveBudget / minRequired;
+
+  let maxScore: number;
+  let feasible: boolean;
+
+  if (ratio <= 0.01) {
+    maxScore = 2;
+    feasible = false;
+  } else if (ratio <= 0.05) {
+    maxScore = 2;
+    feasible = false;
+  } else if (ratio <= 0.15) {
+    maxScore = 3;
+    feasible = false;
+  } else if (ratio <= 0.35) {
+    maxScore = 4;
+    feasible = false;
+  } else if (ratio <= 0.60) {
+    maxScore = 6;
+    feasible = true; // marginal
+  } else if (ratio <= 0.85) {
+    maxScore = 7;
+    feasible = true;
+  } else {
+    maxScore = 10; // no cap
+    feasible = true;
+  }
+
+  return { ratio, maxScore, feasible, budgetTRY: effectiveBudget, minRequiredTRY: minRequired, ideaType };
+}
+
+function enforceScoreCap(scores: Record<string, number>, cap: number): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const key of Object.keys(scores)) {
+    result[key] = Math.min(scores[key], cap);
+  }
+  return result;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
@@ -105,12 +136,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ detail: "API Key Missing" }, { status: 503 });
     }
 
+    // ── Step 1: Analyze feasibility BEFORE calling AI ──────────────────────
+    const feasibility = analyzeFeasibility(capital || "", idea || "");
+    const { maxScore, feasible, budgetTRY, minRequiredTRY, ideaType } = feasibility;
+
+    // Build a feasibility context string to inject into prompt
+    const feasibilityContext = feasible
+      ? `Budget analysis: This budget (${budgetTRY} TRY) covers approximately ${Math.round(feasibility.ratio * 100)}% of the minimum required (${minRequiredTRY} TRY) for a ${ideaType} business. It is tight but potentially viable.`
+      : `BUDGET ALERT: This budget (${budgetTRY} TRY) is only ${Math.round(feasibility.ratio * 100)}% of the minimum required (${minRequiredTRY} TRY) for a ${ideaType} business. This is financially IMPOSSIBLE to execute. Say this clearly. Score cap is ${maxScore}/10 for all dimensions.`;
+
     const langInstruction =
       language === "tr" ? "Respond entirely in Turkish." :
       language === "ar" ? "Respond entirely in Arabic." :
       "Respond entirely in English.";
 
-    // Short, clear prompt — no contradictions
     const prompt = `You are a ruthless but constructive startup analyst. ${langInstruction}
 
 IDEA: ${idea}
@@ -119,21 +158,20 @@ SKILLS: ${skills}
 GOALS: ${strategy}
 MANAGEMENT: ${management}
 
-Evaluate this startup honestly. Score based on EXECUTION feasibility with THIS specific budget and skills — not the idea in theory.
+SYSTEM NOTE (non-negotiable): ${feasibilityContext}
 
-If the budget cannot realistically cover startup costs, say so clearly in the plan and give low scores.
-Always end with concrete alternatives the person can do with their actual budget.
+Write an honest analysis. ${!feasible ? "This startup CANNOT be launched with this budget. State this clearly and provide concrete alternatives the person can do with their actual budget." : "Be constructive but realistic about the challenges."}
 
-Return ONLY this JSON (no markdown):
+Return ONLY this JSON (no markdown, no extra text):
 {
   "scores": {
-    "solution": <1-10>,
-    "problem": <1-10>,
-    "features": <1-10>,
-    "market": <1-10>,
-    "revenue": <1-10>,
-    "competition": <1-10>,
-    "risk": <1-10>
+    "solution": <1-${maxScore}>,
+    "problem": <1-${maxScore}>,
+    "features": <1-${maxScore}>,
+    "market": <1-${maxScore}>,
+    "revenue": <1-${maxScore}>,
+    "competition": <1-${maxScore}>,
+    "risk": <1-${maxScore}>
   },
   "plan": [
     {"title": "1. GENEL DEĞERLENDİRME", "content": "..."},
@@ -166,16 +204,16 @@ Return ONLY this JSON (no markdown):
     if (parsed.scores) {
       const keys = ["solution", "problem", "features", "market", "revenue", "competition", "risk"];
 
-      // Step 1: Clamp AI scores to 1-10
+      // ── Step 2: Clamp AI scores to 1-10 ───────────────────────────────────
       for (const key of keys) {
         const val = Number(parsed.scores[key]);
-        parsed.scores[key] = isNaN(val) ? 5 : Math.min(10, Math.max(1, Math.round(val)));
+        parsed.scores[key] = isNaN(val) ? 3 : Math.min(10, Math.max(1, Math.round(val)));
       }
 
-      // Step 2: Apply server-side budget correction (this is the real enforcement)
-      parsed.scores = correctScores(parsed.scores, capital || "", idea || "");
+      // ── Step 3: HARD ENFORCE our calculated cap — AI cannot override this ─
+      parsed.scores = enforceScoreCap(parsed.scores, maxScore);
 
-      // Step 3: Recalculate true overall average
+      // ── Step 4: Recalculate overall as true average ───────────────────────
       const vals = keys.map(k => parsed.scores[k]);
       parsed.scores.overall =
         Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
