@@ -4,13 +4,51 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const apiKey = process.env.GOOGLE_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// ── Budget feasibility enforcement ────────────────────────────────────────
+// ── Parse budget: handles "5.000.000", "5,000,000", "5000000", "5M", "5 milyon" etc ──
 function parseBudget(capital: string): number {
   if (!capital) return 0;
-  const digits = (capital.match(/[\d]+/g) || []);
-  if (digits.length === 0) return 0;
-  if (digits.length === 1) return parseFloat(digits[0]);
-  return parseFloat(digits.join(""));
+  const lower = capital.toLowerCase();
+
+  // Handle written words first
+  let multiplier = 1;
+  if (lower.includes("milyar") || lower.includes("billion") || lower.includes("miliار")) multiplier = 1_000_000_000;
+  else if (lower.includes("milyon") || lower.includes("million") || lower.includes("مليون")) multiplier = 1_000_000;
+  else if (lower.includes("bin") || lower.includes("thousand") || lower.includes("ألف")) multiplier = 1_000;
+  // Handle M/K/B suffixes
+  else if (/\d\s*b\b/i.test(lower)) multiplier = 1_000_000_000;
+  else if (/\d\s*m\b/i.test(lower)) multiplier = 1_000_000;
+  else if (/\d\s*k\b/i.test(lower)) multiplier = 1_000;
+
+  // Extract the numeric part
+  // Remove currency symbols
+  let s = lower.replace(/[₺$€£¥]/g, "");
+
+  // Detect format: if dots used as thousand separators (e.g. "5.000.000")
+  // vs decimal (e.g. "5.5")
+  // Rule: if there are multiple dots OR dot followed by 3 digits at end → thousand separator
+  const dotCount = (s.match(/\./g) || []).length;
+  const commaCount = (s.match(/,/g) || []).length;
+
+  if (dotCount > 1) {
+    // "5.000.000" → remove dots
+    s = s.replace(/\./g, "");
+  } else if (dotCount === 1 && /\.\d{3}/.test(s) && commaCount === 0) {
+    // "5.000" → thousand separator
+    s = s.replace(/\./g, "");
+  } else if (commaCount > 1) {
+    // "5,000,000" → remove commas
+    s = s.replace(/,/g, "");
+  } else if (commaCount === 1 && /,\d{3}/.test(s) && dotCount === 0) {
+    // "5,000" → thousand separator
+    s = s.replace(/,/g, "");
+  } else {
+    // treat remaining dot/comma as decimal
+    s = s.replace(/,/, ".");
+  }
+
+  const match = s.match(/[\d]+(?:\.\d+)?/);
+  if (!match) return 0;
+  return parseFloat(match[0]) * multiplier;
 }
 
 type IdeaType = "physical_high" | "physical_mid" | "digital" | "service";
@@ -18,7 +56,7 @@ type IdeaType = "physical_high" | "physical_mid" | "digital" | "service";
 function classifyIdea(idea: string): IdeaType {
   const t = (idea || "").toLowerCase();
   const physicalHigh = ["kafe","cafe","coffee","kahvehane","restoran","restaurant","fabrika","factory","otel","hotel","bar","pub","market","süpermarket","supermarket","mağaza","dükkan","store","shop","boutique","gym","spor salonu","fırın","bakery","pastane","eczane","pharmacy","hastane","klinik","clinic","araba","otomobil","araç","üretim","manufacturing","çiftlik","farm","tarım"];
-  const digital = ["app","uygulama","website","web site","web sitesi","platform","saas","yazılım","software","e-ticaret","ecommerce","e-commerce","online","dijital","digital","mobil","mobile","oyun","game","blog","youtube","podcast","sosyal medya","social media","dropshipping","affiliate","kripto","crypto","api","bot"];
+  const digital = ["app","uygulama","website","web site","web sitesi","platform","saas","yazılım","software","e-ticaret","ecommerce","e-commerce","online","dijital","digital","mobil","mobile","oyun","game","blog","youtube","podcast","sosyal medya","social media","dropshipping","affiliate","kripto","crypto","api","bot","it ","it company","tech","teknoloji","technology","startup","girişim"];
   const service = ["danışman","consultant","freelance","serbest","koçluk","coaching","eğitim","training","öğretmen","ders","tercüme","translation","tasarım","design","grafik","graphic","fotoğraf","photo","video","editing","yazarlık","writing","muhasebe","accounting","hukuk","law","temizlik","cleaning"];
   if (physicalHigh.some(w => t.includes(w))) return "physical_high";
   if (digital.some(w => t.includes(w))) return "digital";
@@ -33,29 +71,28 @@ const MIN_TRY: Record<IdeaType, number> = {
   service:       1_000,
 };
 
-function getScoreCap(capital: string, idea: string): number {
+function getScoreCap(capital: string, idea: string): { cap: number; ratio: number; budgetOk: boolean } {
   const budget = parseBudget(capital);
   const ideaType = classifyIdea(idea);
   const minRequired = MIN_TRY[ideaType];
-  if (budget === 0) return 2;
+  if (budget === 0) return { cap: 10, ratio: 1, budgetOk: true }; // can't parse → don't penalize
   const ratio = budget / minRequired;
-  if (ratio <= 0.05) return 2;
-  if (ratio <= 0.15) return 3;
-  if (ratio <= 0.35) return 4;
-  if (ratio <= 0.60) return 6;
-  if (ratio <= 0.85) return 7;
-  return 10;
+  if (ratio <= 0.03) return { cap: 2, ratio, budgetOk: false };
+  if (ratio <= 0.10) return { cap: 3, ratio, budgetOk: false };
+  if (ratio <= 0.30) return { cap: 5, ratio, budgetOk: false };
+  if (ratio <= 0.70) return { cap: 7, ratio, budgetOk: true };
+  return { cap: 10, ratio, budgetOk: true }; // budget is adequate → no cap
 }
 
 function enforceScoreCap(scores: Record<string, number>, cap: number): Record<string, number> {
+  // Never cap "risk" — high risk score means LOW risk which is always good
   const result: Record<string, number> = {};
   for (const key of Object.keys(scores)) {
-    result[key] = Math.min(scores[key], cap);
+    result[key] = key === "risk" ? scores[key] : Math.min(scores[key], cap);
   }
   return result;
 }
 
-// ── Strip all markdown fences from AI output ──────────────────────────────
 function stripFences(text: string): string {
   return text
     .replace(/^```json\s*/gm, "")
@@ -69,52 +106,61 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { idea, capital, skills, strategy, management, language } = body;
 
-    if (!apiKey) {
-      return NextResponse.json({ detail: "API Key Missing" }, { status: 503 });
-    }
+    if (!apiKey) return NextResponse.json({ detail: "API Key Missing" }, { status: 503 });
 
-    const scoreCap = getScoreCap(capital || "", idea || "");
+    const { cap, ratio, budgetOk } = getScoreCap(capital || "", idea || "");
     const budgetNum = parseBudget(capital || "");
     const ideaType = classifyIdea(idea || "");
     const minRequired = MIN_TRY[ideaType];
 
     const langInstruction =
-      language === "tr" ? "Respond entirely in Turkish." :
-      language === "ar" ? "Respond entirely in Arabic." :
-      "Respond entirely in English.";
+      language === "tr" ? "Write your ENTIRE response in Turkish only. Use Turkish for all text including titles, content and any analysis." :
+      language === "ar" ? "Write your ENTIRE response in Arabic only." :
+      "Write your ENTIRE response in English only.";
 
-    const feasibilityNote = scoreCap <= 4
-      ? `CRITICAL: Budget (${budgetNum} TRY) is only ${Math.round(budgetNum/minRequired*100)}% of minimum needed (${minRequired} TRY) for this type of business. This is financially IMPOSSIBLE. All scores must be between 1 and ${scoreCap}. Say so clearly in the plan and suggest what the person CAN do with their actual budget.`
-      : `Budget covers ${Math.round(budgetNum/minRequired*100)}% of minimum needed. Score cap is ${scoreCap}/10.`;
+    // Budget context injected into prompt
+    const budgetContext = !budgetOk
+      ? `BUDGET NOTE: The stated budget (${budgetNum.toLocaleString()} TRY) is only ${Math.round(ratio * 100)}% of the typical minimum (${minRequired.toLocaleString()} TRY) needed for this type of business. Be honest about this gap but still be constructive. Suggest what they CAN do with this budget.`
+      : budgetNum > 0
+      ? `BUDGET NOTE: The budget (${budgetNum.toLocaleString()} TRY) is ${ratio >= 2 ? "well above" : "sufficient for"} the typical minimum for this business type. Focus your critique on the idea clarity, market, and execution — not the budget.`
+      : "";
 
-    const prompt = `You are a brutally honest startup analyst. ${langInstruction}
+    const prompt = `You are a candid but supportive startup mentor — like a good angel investor who tells the truth but always wants to help. You give honest feedback without being cruel. ${langInstruction}
 
-${feasibilityNote}
+${budgetContext}
 
-STARTUP:
+STARTUP TO EVALUATE:
 Idea: ${idea}
 Budget: ${capital}
 Skills: ${skills}
 Goals: ${strategy}
 Management: ${management}
 
-Return ONLY valid JSON, absolutely no markdown, no backticks, no extra text before or after:
+SCORING GUIDE (score each 1-10 based on execution feasibility with this specific budget and skills):
+- 8-10: Strong. Genuinely viable with real advantages.
+- 6-7: Solid foundation but notable challenges to address.
+- 4-5: Needs significant work — explain what's missing and how to fix it.
+- 2-3: Serious problems — be direct but point toward a better path.
+- 1: Only if truly impossible — explain why and offer a better alternative.
 
-{"scores":{"solution":NUMBER,"problem":NUMBER,"features":NUMBER,"market":NUMBER,"revenue":NUMBER,"competition":NUMBER,"risk":NUMBER},"plan":[{"title":"1. GENEL DEĞERLENDİRME","content":"..."},{"title":"2. PAZAR VE REKABETÇİ ANALİZ","content":"..."},{"title":"3. FİNANSAL GERÇEKLİK KONTROLÜ","content":"..."},{"title":"4. YAPICI ALTERNATİFLER VE YOL HARİTASI","content":"..."}]}
+TONE: Direct and honest, but never mean. If something is bad, say it clearly AND say what would make it better. Think "this won't work because X, but here's what would work instead."
 
-All scores must be integers between 1 and ${scoreCap}. No score can exceed ${scoreCap}.`;
+Return ONLY valid JSON with no markdown backticks, no extra text before or after the JSON:
+
+{"scores":{"solution":NUMBER,"problem":NUMBER,"features":NUMBER,"market":NUMBER,"revenue":NUMBER,"competition":NUMBER,"risk":NUMBER},"plan":[{"title":"1. GENEL DEĞERLENDİRME","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"2. PAZAR VE REKABETÇİ ANALİZ","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"3. FİNANSAL GERÇEKLİK KONTROLÜ","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"4. YAPICI ALTERNATİFLER VE YOL HARİTASI","content":"WRITE IN THE SPECIFIED LANGUAGE"}]}
+
+Scores must be integers 1-10. Be fair — a good budget with a vague idea should score low on solution/features but not everything. A bad budget with a great idea should score low on revenue/market but acknowledge the idea quality.`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     let text = result.response.text();
 
-    // Aggressively clean the response
     text = stripFences(text);
 
-    // Extract JSON object if there's surrounding text
+    // Extract just the JSON object
     const jsonStart = text.indexOf("{");
     const jsonEnd = text.lastIndexOf("}");
-    if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+    if (jsonStart !== -1 && jsonEnd > jsonStart) {
       text = text.slice(jsonStart, jsonEnd + 1);
     }
 
@@ -122,32 +168,34 @@ All scores must be integers between 1 and ${scoreCap}. No score can exceed ${sco
     try {
       parsed = JSON.parse(text);
     } catch (e) {
-      console.error("JSON parse failed:", text.slice(0, 300));
+      console.error("JSON parse failed:", text.slice(0, 500));
       return NextResponse.json({ detail: "AI response could not be parsed" }, { status: 500 });
     }
 
-    // ── Validate structure ────────────────────────────────────────────────
     if (!parsed.scores || !Array.isArray(parsed.plan)) {
-      console.error("Unexpected structure:", Object.keys(parsed));
+      console.error("Bad structure:", Object.keys(parsed));
       return NextResponse.json({ detail: "Unexpected AI response structure" }, { status: 500 });
     }
 
-    // ── Clamp scores to 1-10 then enforce cap ─────────────────────────────
+    // Clamp all scores to 1-10
     const scoreKeys = ["solution","problem","features","market","revenue","competition","risk"];
     for (const key of scoreKeys) {
       const val = Number(parsed.scores[key]);
-      parsed.scores[key] = isNaN(val) ? 1 : Math.min(10, Math.max(1, Math.round(val)));
+      parsed.scores[key] = isNaN(val) ? 5 : Math.min(10, Math.max(1, Math.round(val)));
     }
-    parsed.scores = enforceScoreCap(parsed.scores, scoreCap);
 
-    // ── Recalculate overall as true average ───────────────────────────────
+    // Apply budget-based cap (never caps "risk" score)
+    if (cap < 10) {
+      parsed.scores = enforceScoreCap(parsed.scores, cap);
+    }
+
+    // Recalculate overall as true average
     const vals = scoreKeys.map(k => parsed.scores[k]);
     const overall = Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
 
-    // ── Return cleanly separated: scores and plan array ───────────────────
     return NextResponse.json({
       scores: { ...parsed.scores, overall },
-      plan: JSON.stringify(parsed.plan),   // just the array, stringified
+      plan: JSON.stringify(parsed.plan),
     }, { status: 200 });
 
   } catch (error: any) {
