@@ -39,6 +39,10 @@ export default function LandingPage() {
   const isRTL = lang === "ar";
   const [idea, setIdea] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactMsg, setContactMsg] = useState("");
+  const [contactLoading, setContactLoading] = useState(false);
   const ideaRef = useRef<HTMLTextAreaElement>(null);
   const maxChars = 400;
 
@@ -77,6 +81,24 @@ export default function LandingPage() {
   function scrollTo(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMobileMenuOpen(false);
+  }
+
+  async function handleContact(e: React.FormEvent) {
+    e.preventDefault();
+    setContactLoading(true);
+    try {
+      await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: contactName, email: contactEmail, message: contactMsg }),
+      });
+      toast.success(lang === "tr" ? "Mesajınız alındı!" : lang === "ar" ? "تم استلام رسالتك!" : "Message received! We'll be in touch.");
+      setContactName(""); setContactEmail(""); setContactMsg("");
+    } catch {
+      toast.error(lang === "tr" ? "Hata oluştu, tekrar deneyin." : lang === "ar" ? "حدث خطأ." : "Something went wrong.");
+    } finally {
+      setContactLoading(false);
+    }
   }
 
   const freeItems = [t.li_1, t.li_2, t.li_3, t.li_4];
@@ -413,13 +435,15 @@ export default function LandingPage() {
           <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-6 " + sub}>[06] {lang === "tr" ? "İLETİŞİM" : lang === "ar" ? "التواصل" : "CONTACT"}</p>
           <h2 className={"text-4xl font-black mb-3 " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.contact_title}</h2>
           <p className={"mb-10 " + sub}>{L.contactSub}</p>
-          <form onSubmit={e => { e.preventDefault(); toast.success(lang === "tr" ? "Mesajınız alındı!" : lang === "ar" ? "تم استلام رسالتك!" : "Message received!"); }} className="space-y-4">
+          <form onSubmit={handleContact} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
-              <input placeholder={t.form_name} required className={"w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-green-500/20 transition " + faqInputBg} />
-              <input type="email" placeholder={t.form_email} required className={"w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-green-500/20 transition " + faqInputBg} />
+              <input placeholder={t.form_name} required value={contactName} onChange={e => setContactName(e.target.value)} className={"w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-green-500/20 transition " + faqInputBg} />
+              <input type="email" placeholder={t.form_email} required value={contactEmail} onChange={e => setContactEmail(e.target.value)} className={"w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-green-500/20 transition " + faqInputBg} />
             </div>
-            <textarea placeholder={t.form_msg} required rows={5} className={"w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-green-500/20 transition resize-none " + faqInputBg} />
-            <button type="submit" className="w-full py-3.5 bg-gray-900 hover:bg-gray-700 text-white font-bold rounded-full text-sm transition">{t.form_btn}</button>
+            <textarea placeholder={t.form_msg} required rows={5} value={contactMsg} onChange={e => setContactMsg(e.target.value)} className={"w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-green-500/20 transition resize-none " + faqInputBg} />
+            <button type="submit" disabled={contactLoading} className={"w-full py-3.5 font-bold rounded-full text-sm transition " + (contactLoading ? "bg-gray-400 cursor-not-allowed text-white" : "bg-gray-900 hover:bg-gray-700 text-white")}>
+              {contactLoading ? (lang === "tr" ? "Gönderiliyor..." : lang === "ar" ? "جارٍ الإرسال..." : "Sending...") : t.form_btn}
+            </button>
           </form>
         </div>
       </section>

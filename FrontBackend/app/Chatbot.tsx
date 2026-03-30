@@ -79,7 +79,7 @@ export default function Chatbot() {
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition active:scale-95 text-2xl"
+          className="w-14 h-14 bg-green-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition active:scale-95 text-2xl"
           aria-label="Open chat"
         >
           💬
@@ -87,7 +87,7 @@ export default function Chatbot() {
       ) : (
         <div className={`w-80 md:w-96 h-[500px] flex flex-col rounded-2xl shadow-2xl border transition-all ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
           {/* Header */}
-          <div className="p-4 bg-blue-600 text-white rounded-t-2xl flex justify-between items-center flex-shrink-0">
+          <div className="p-4 bg-green-600 text-white rounded-t-2xl flex justify-between items-center flex-shrink-0">
             <span className="font-bold text-sm">Start ERA AI 🚀</span>
             <button onClick={() => setIsOpen(false)} className="hover:opacity-75 text-lg leading-none">✕</button>
           </div>
@@ -101,7 +101,7 @@ export default function Chatbot() {
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed ${
                   msg.role === 'user'
-                    ? 'bg-blue-600 text-white rounded-tr-none'
+                    ? 'bg-green-600 text-white rounded-tr-none'
                     : msg.isError
                     ? `rounded-tl-none border ${darkMode ? 'bg-slate-700 text-orange-400 border-orange-500/30' : 'bg-orange-50 text-orange-600 border-orange-200'}`
                     : `rounded-tl-none ${darkMode ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-900'}`
@@ -129,12 +129,12 @@ export default function Chatbot() {
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder={PLACEHOLDER[lang] ?? PLACEHOLDER.en}
               disabled={isLoading}
-              className={`flex-1 p-2 rounded-lg outline-none text-sm border transition ${darkMode ? 'bg-slate-900 text-white border-slate-700 focus:border-blue-500' : 'bg-slate-50 text-slate-900 border-slate-200 focus:border-blue-400'}`}
+              className={`flex-1 p-2 rounded-lg outline-none text-sm border transition ${darkMode ? 'bg-slate-900 text-white border-slate-700 focus:border-green-500' : 'bg-slate-50 text-slate-900 border-slate-200 focus:border-green-400'}`}
             />
             <button
               onClick={handleSend}
               disabled={isLoading || !input.trim()}
-              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 transition w-10 h-10 flex items-center justify-center flex-shrink-0"
+              className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-40 transition w-10 h-10 flex items-center justify-center flex-shrink-0"
             >
               🚀
             </button>

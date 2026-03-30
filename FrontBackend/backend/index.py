@@ -121,7 +121,15 @@ class BusinessPlanRequest(BaseModel):
     language: str = "tr"
 
 class PDFRequest(BaseModel):
-    text: str
+    text: str = ""
+
+class PDFPlanRequest(BaseModel):
+    plan_data: list[dict]
+
+class ContactRequest(BaseModel):
+    name: str
+    email: str
+    message: str
 
 # -------------------- E-POSTA --------------------
 def send_email(to_email, code):
@@ -226,6 +234,30 @@ def login(user: UserAuth):
 
 # -------------------- AI & CHAT ROTALARI --------------------
 
+@app.post("/api/contact")
+def contact(req: ContactRequest):
+    try:
+        if not MAIL_USERNAME or not MAIL_PASSWORD:
+            # No mail config — just log and return success
+            print(f"Contact from {req.name} <{req.email}>: {req.message}")
+            return {"message": "success"}
+        msg = MIMEMultipart()
+        msg['From'] = MAIL_USERNAME
+        msg['To'] = MAIL_USERNAME  # send to yourself
+        msg['Subject'] = f"Start ERA Contact: {req.name}"
+        body = f"From: {req.name} <{req.email}>\n\n{req.message}"
+        msg.attach(MIMEText(body, 'plain'))
+        server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
+        server.starttls()
+        server.login(MAIL_USERNAME, MAIL_PASSWORD)
+        server.sendmail(MAIL_USERNAME, MAIL_USERNAME, msg.as_string())
+        server.quit()
+        return {"message": "success"}
+    except Exception as e:
+        print(f"Contact email error: {e}")
+        return {"message": "success"}  # Always return success to user
+
+
 @app.post("/api/chat")
 def chat(req: ChatRequest):
     if not model: raise HTTPException(503, "API Key Missing")
@@ -301,18 +333,80 @@ def generate_plan(req: BusinessPlanRequest):
 # -------------------- PDF OLUŞTURMA --------------------
 
 @app.post("/api/create_pdf")
-def create_pdf(req: PDFRequest):
+def create_pdf(req: PDFPlanRequest):
     pdf_file = "/tmp/StartERA_Plan.pdf" if platform.system() != "Windows" else "Plan.pdf"
     try:
-        doc = SimpleDocTemplate(pdf_file, pagesize=A4)
-        
-        # Encode string to handle special characters appropriately for ReportLab
-        text_content = req.text.replace("\n", "<br/>") 
-        
-        style = getSampleStyleSheet()['Normal']
-        style.fontName = "Helvetica" # Switch to a safer font or add a custom TTF for Turkish/Arabic chars if needed later
-        
-        doc.build([Paragraph(text_content, style)])
-        return FileResponse(pdf_file, media_type="application/pdf")
-    except:
+        from reportlab.lib.units import cm
+        from reportlab.lib import colors
+
+        doc = SimpleDocTemplate(
+            pdf_file,
+            pagesize=A4,
+            rightMargin=2*cm,
+            leftMargin=2*cm,
+            topMargin=2*cm,
+            bottomMargin=2*cm,
+        )
+
+        styles = getSampleStyleSheet()
+
+        title_style = ParagraphStyle(
+            "PlanTitle",
+            parent=styles["Heading1"],
+            fontName="Helvetica-Bold",
+            fontSize=13,
+            textColor=HexColor("#166534"),
+            spaceAfter=6,
+            spaceBefore=14,
+        )
+        body_style = ParagraphStyle(
+            "PlanBody",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=10,
+            leading=15,
+            textColor=HexColor("#1f2937"),
+            spaceAfter=8,
+        )
+        header_style = ParagraphStyle(
+            "Header",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=18,
+            textColor=HexColor("#16a34a"),
+            alignment=TA_CENTER,
+            spaceAfter=4,
+        )
+        sub_header_style = ParagraphStyle(
+            "SubHeader",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=10,
+            textColor=HexColor("#6b7280"),
+            alignment=TA_CENTER,
+            spaceAfter=16,
+        )
+
+        story = []
+
+        # Cover header
+        story.append(Paragraph("Start ERA", header_style))
+        story.append(Paragraph("AI-Powered Business Plan", sub_header_style))
+        story.append(Spacer(1, 0.3*cm))
+
+        for section in req.plan_data:
+            title = section.get("title", "")
+            content = section.get("content", "")
+            if title:
+                story.append(Paragraph(title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"), title_style))
+            if content:
+                # Escape HTML special chars and preserve newlines
+                safe_content = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br/>").replace("\r", "")
+                story.append(Paragraph(safe_content, body_style))
+            story.append(Spacer(1, 0.2*cm))
+
+        doc.build(story)
+        return FileResponse(pdf_file, media_type="application/pdf", filename="StartERA_Plan.pdf")
+    except Exception as e:
+        print(f"PDF Error: {e}")
         raise HTTPException(500, "PDF Error")

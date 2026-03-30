@@ -79,7 +79,7 @@ function ArrowIcon() {
 
 function Field({ icon, children, darkMode }: { icon: React.ReactNode; children: React.ReactNode; darkMode: boolean }) {
   return (
-    <div className={"flex items-center gap-3 px-4 py-3.5 rounded-xl border focus-within:ring-2 focus-within:ring-blue-500 transition " + (darkMode ? "bg-gray-900 border-gray-700" : "bg-gray-50 border-gray-200")}>
+    <div className={"flex items-center gap-3 px-4 py-3.5 rounded-xl border focus-within:ring-2 focus-within:ring-green-500 transition " + (darkMode ? "bg-gray-900 border-gray-700" : "bg-gray-50 border-gray-200")}>
       <span className="opacity-40 flex-shrink-0">{icon}</span>
       {children}
     </div>
@@ -190,7 +190,7 @@ export default function LoginPage() {
 
       {/* Top controls */}
       <div className={"absolute top-5 flex items-center gap-3 z-50 " + (isRTL ? "left-5" : "right-5")}>
-        <button onClick={toggleLang} className={"text-sm font-bold px-3 py-1.5 rounded-lg border transition " + (isDark ? "border-gray-700 text-gray-300 hover:border-blue-500" : "border-gray-300 text-gray-600 hover:border-blue-600")}>
+        <button onClick={toggleLang} className={"text-sm font-bold px-3 py-1.5 rounded-lg border transition " + (isDark ? "border-gray-700 text-gray-300 hover:border-green-500" : "border-gray-300 text-gray-600 hover:border-green-600")}>
           {getLangLabel()}
         </button>
         <button onClick={toggleTheme} className={"p-2 rounded-lg border transition flex items-center gap-1.5 text-xs font-medium " + (isDark ? "border-gray-700 text-gray-400 hover:bg-gray-800" : "border-gray-300 text-gray-600 hover:bg-gray-100")}>
@@ -204,8 +204,8 @@ export default function LoginPage() {
         {/* Logo + header */}
         <div className="text-center mb-8">
           <a href="/" className="inline-flex items-center gap-2 mb-6 no-underline">
-            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-base">S</div>
-            <span className={"text-xl font-black " + (isDark ? "text-gray-100" : "text-gray-900")}>Start <span className="text-blue-600">ERA</span></span>
+            <div className="w-9 h-9 bg-green-600 rounded-xl flex items-center justify-center text-white font-black text-base">S</div>
+            <span className={"text-xl font-black " + (isDark ? "text-gray-100" : "text-gray-900")}>Start <span className="text-green-600">ERA</span></span>
           </a>
           <h1 className={"text-2xl font-black mb-1.5 " + (isDark ? "text-gray-100" : "text-gray-900")}>
             {view === "verify" ? t.title_verify : view === "login" ? t.title_login : t.title_register}
@@ -258,7 +258,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className={"w-full py-3.5 rounded-full font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-2 mt-2 text-sm " + (loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg")}
+            className={"w-full py-3.5 rounded-full font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-2 mt-2 text-sm " + (loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700 shadow-md hover:shadow-lg")}
           >
             {loading ? (
               <span className="animate-pulse">{t.processing}</span>
@@ -274,14 +274,14 @@ export default function LoginPage() {
         {view !== "verify" && (
           <p className={"text-center text-sm mt-6 " + subtext}>
             {view === "login" ? t.no_account : t.has_account}
-            <button onClick={() => setView(view === "login" ? "register" : "login")} className="ml-1.5 font-bold text-blue-600 hover:text-blue-700 transition">
+            <button onClick={() => setView(view === "login" ? "register" : "login")} className="ml-1.5 font-bold text-green-600 hover:text-green-700 transition">
               {view === "login" ? t.link_register : t.link_login}
             </button>
           </p>
         )}
 
         <p className={"text-center text-xs mt-6 " + subtext}>
-          <a href="/" className="hover:text-blue-600 transition no-underline">
+          <a href="/" className="hover:text-green-600 transition no-underline">
             {lang === "tr" ? "← Ana Sayfaya Dön" : lang === "ar" ? "← العودة إلى الرئيسية" : "← Back to Home"}
           </a>
         </p>

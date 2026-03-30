@@ -104,6 +104,9 @@ export default function DashboardPage() {
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
   const [idea, setIdea] = useState("");
+  const [showAll, setShowAll] = useState(false);
+  const ideaRef = React.useRef<HTMLTextAreaElement>(null);
+  const [ideaHighlight, setIdeaHighlight] = useState(false);
 
   function getLangLabel() {
     if (lang === "tr") return "EN";
@@ -144,6 +147,17 @@ export default function DashboardPage() {
     window.location.href = "/planner";
   }
 
+  function handleTrendingClick(trendIdea: string) {
+    setIdea(trendIdea);
+    toast.success(lang === "tr" ? "Fikir seçildi! Aşağıya bakın." : lang === "ar" ? "تم اختيار الفكرة!" : "Idea applied! See below.");
+    setTimeout(() => {
+      ideaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      ideaRef.current?.focus();
+      setIdeaHighlight(true);
+      setTimeout(() => setIdeaHighlight(false), 1500);
+    }, 100);
+  }
+
   const totalPlans = projects.length;
   const completedPlans = projects.filter(p =>
     p.status?.toLowerCase().includes("comp") ||
@@ -174,6 +188,8 @@ export default function DashboardPage() {
     { idea: lang === "tr" ? "Yerel zanaatkarlara pazar yeri platformu" : lang === "ar" ? "منصة سوق للحرفيين المحليين" : "Marketplace platform for local artisans", tag: "E-commerce", score: 7.8 },
     { idea: lang === "tr" ? "Yapay zeka destekli CV oluşturucu" : lang === "ar" ? "منشئ سيرة ذاتية بالذكاء الاصطناعي" : "AI-powered CV builder for job seekers", tag: "HR Tech", score: 8.3 },
   ];
+
+  const displayedProjects = showAll ? projects : projects.slice(0, 6);
 
   return (
     <div dir={isRTL ? "rtl" : "ltr"} className={"min-h-screen font-sans " + (isDark ? "bg-gray-950 text-gray-100" : "bg-gray-50 text-gray-900")}>
@@ -285,11 +301,12 @@ export default function DashboardPage() {
               </div>
               <div className="p-5">
                 <textarea
+                  ref={ideaRef}
                   value={idea}
                   onChange={e => setIdea(e.target.value.slice(0, 400))}
                   placeholder={placeholderText}
                   rows={3}
-                  className={"w-full resize-none outline-none text-sm leading-relaxed mb-3 " + (isDark ? "bg-gray-900 text-gray-200 placeholder-gray-600" : "bg-white text-gray-800 placeholder-gray-400")}
+                  className={"w-full resize-none outline-none text-sm leading-relaxed mb-3 rounded-lg px-2 py-1 transition-all duration-300 " + (ideaHighlight ? "ring-2 ring-green-400 bg-green-50 dark:bg-green-950" : "") + " " + (isDark ? "bg-gray-900 text-gray-200 placeholder-gray-600" : "bg-white text-gray-800 placeholder-gray-400")}
                 />
                 <div className="flex items-center justify-between">
                   <span className={"text-xs " + (isDark ? "text-gray-600" : "text-gray-400")}>{charsLeft}</span>
@@ -309,7 +326,9 @@ export default function DashboardPage() {
               <div className={"px-5 py-4 border-b flex items-center justify-between " + (isDark ? "border-gray-800" : "border-gray-100")}>
                 <h3 className={"text-sm font-bold " + (isDark ? "text-gray-200" : "text-gray-800")}>{myPlansLabel}</h3>
                 {projects.length > 5 && (
-                  <button className="text-xs font-medium text-green-600 hover:text-green-700 transition">{viewAllLabel}</button>
+                  <button onClick={() => setShowAll(p => !p)} className="text-xs font-medium text-green-600 hover:text-green-700 transition">
+                    {showAll ? (lang === "tr" ? "Daha Az" : lang === "ar" ? "عرض أقل" : "Show Less") : viewAllLabel}
+                  </button>
                 )}
               </div>
 
@@ -332,14 +351,20 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {projects.slice(0, 6).map((project, i) => (
+                  {displayedProjects.map((project, i) => (
                     <div
                       key={project.id ?? i}
                       onClick={() => { toast(t.opening_plan); setViewingProject(project); }}
                       className={"flex items-center gap-4 px-5 py-4 cursor-pointer transition-colors group " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-50")}
                     >
-                      {/* Score ring */}
-                      <ScoreRing score={7 + Math.floor(Math.random() * 2)} />
+                      {/* Score ring — use real overall score if available, else show dash */}
+                      {(project as any).scores?.overall ? (
+                        <ScoreRing score={(project as any).scores.overall} />
+                      ) : (
+                        <div className="w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 dark:border-gray-700">
+                          <span className={"text-xs font-bold " + (isDark ? "text-gray-500" : "text-gray-400")}>—</span>
+                        </div>
+                      )}
 
                       <div className="flex-1 min-w-0">
                         <h4 className={"font-semibold text-sm truncate " + (isDark ? "text-gray-200" : "text-gray-800")}>{project.title}</h4>
@@ -406,7 +431,7 @@ export default function DashboardPage() {
                 {TRENDING_IDEAS.map((item, i) => (
                   <div
                     key={i}
-                    onClick={() => { setIdea(item.idea); }}
+                  onClick={() => handleTrendingClick(item.idea)}
                     className={"px-5 py-4 cursor-pointer transition group " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-50")}
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
