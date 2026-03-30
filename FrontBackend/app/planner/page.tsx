@@ -564,6 +564,12 @@ export default function PlannerPage() {
                 placeholder={currentQuestion.ph}
                 value={formData[currentQuestion.key as keyof typeof formData] as string}
                 onChange={e => setFormData(prev => ({ ...prev, [currentQuestion.key]: e.target.value }))}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey && !loading) {
+                    e.preventDefault();
+                    handleNext();
+                  }
+                }}
                 autoFocus
               />
               <div className="flex justify-between items-center mt-6">
