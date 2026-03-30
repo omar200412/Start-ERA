@@ -103,10 +103,7 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
-  const [idea, setIdea] = useState("");
   const [showAll, setShowAll] = useState(false);
-  const ideaRef = React.useRef<HTMLTextAreaElement>(null);
-  const [ideaHighlight, setIdeaHighlight] = useState(false);
 
   function getLangLabel() {
     if (lang === "tr") return "EN";
@@ -140,22 +137,13 @@ export default function DashboardPage() {
     loadProjects();
   }, []);
 
-  function handleGenerateIdea() {
-    if (idea.trim()) {
-      sessionStorage.setItem("planner_form", JSON.stringify({ idea, capital: "", skills: "", strategy: "", management: "", language: lang }));
+  function goToPlanner(prefillIdea?: string) {
+    if (prefillIdea?.trim()) {
+      sessionStorage.setItem("planner_form", JSON.stringify({ idea: prefillIdea, capital: "", skills: "", strategy: "", management: "", language: lang }));
+    } else {
+      sessionStorage.removeItem("planner_form");
     }
     window.location.href = "/planner";
-  }
-
-  function handleTrendingClick(trendIdea: string) {
-    setIdea(trendIdea);
-    toast.success(lang === "tr" ? "Fikir seçildi! Aşağıya bakın." : lang === "ar" ? "تم اختيار الفكرة!" : "Idea applied! See below.");
-    setTimeout(() => {
-      ideaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      ideaRef.current?.focus();
-      setIdeaHighlight(true);
-      setTimeout(() => setIdeaHighlight(false), 1500);
-    }, 100);
   }
 
   const totalPlans = projects.length;
@@ -167,21 +155,11 @@ export default function DashboardPage() {
 
   const isDark = darkMode;
 
-  const placeholderText = lang === "tr"
-    ? "Yeni bir girişim fikri girin..."
-    : lang === "ar"
-    ? "أدخل فكرة شركة ناشئة جديدة..."
-    : "Enter a new startup idea...";
-
-  const charsLeft = `${400 - idea.length} ${lang === "tr" ? "karakter kaldı" : lang === "ar" ? "حرف متبقٍ" : "characters left"}`;
-
   const newPlanLabel = lang === "tr" ? "Yeni İş Planı" : lang === "ar" ? "خطة عمل جديدة" : "New Business Plan";
   const myPlansLabel = lang === "tr" ? "Planlarım" : lang === "ar" ? "خططي" : "My Plans";
   const viewAllLabel = lang === "tr" ? "Tümünü Gör" : lang === "ar" ? "عرض الكل" : "View all";
   const emptyLabel = lang === "tr" ? "Henüz plan yok. İlk planını oluştur!" : lang === "ar" ? "لا توجد خطط بعد. أنشئ خطتك الأولى!" : "No plans yet. Create your first one!";
-  const loadingLabel = lang === "tr" ? "Yükleniyor..." : lang === "ar" ? "جارٍ التحميل..." : "Loading...";
-  const openLabel = lang === "tr" ? "Aç" : lang === "ar" ? "فتح" : "Open";
-  const generateLabel = lang === "tr" ? "Önizleme Oluştur" : lang === "ar" ? "إنشاء معاينة" : "Generate Preview";
+
 
   const TRENDING_IDEAS = [
     { idea: lang === "tr" ? "Fatura ödemelerini otomatikleştiren uygulama" : lang === "ar" ? "تطبيق لأتمتة مدفوعات الفواتير" : "App that automates invoice payments", tag: "FinTech", score: 8.1 },
@@ -291,35 +269,22 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            {/* New idea input — startup.ai style */}
-            <div className={"rounded-2xl border overflow-hidden " + (isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200")}>
-              <div className={"px-5 py-4 border-b " + (isDark ? "border-gray-800" : "border-gray-100")}>
-                <h3 className={"text-sm font-bold flex items-center gap-2 " + (isDark ? "text-gray-200" : "text-gray-800")}>
-                  <PlusIcon />
-                  {newPlanLabel}
-                </h3>
+            {/* Create New Plan CTA */}
+            <a
+              href="/planner"
+              className={"flex items-center gap-4 rounded-2xl border p-5 transition group no-underline " + (isDark ? "bg-gray-900 border-gray-800 hover:border-green-700" : "bg-white border-gray-200 hover:border-green-400")}
+            >
+              <div className="w-11 h-11 rounded-xl bg-green-600 flex items-center justify-center text-white flex-shrink-0 group-hover:scale-105 transition-transform shadow-sm">
+                <PlusIcon />
               </div>
-              <div className="p-5">
-                <textarea
-                  ref={ideaRef}
-                  value={idea}
-                  onChange={e => setIdea(e.target.value.slice(0, 400))}
-                  placeholder={placeholderText}
-                  rows={3}
-                  className={"w-full resize-none outline-none text-sm leading-relaxed mb-3 rounded-lg px-2 py-1 transition-all duration-300 " + (ideaHighlight ? "ring-2 ring-green-400 bg-green-50 dark:bg-green-950" : "") + " " + (isDark ? "bg-gray-900 text-gray-200 placeholder-gray-600" : "bg-white text-gray-800 placeholder-gray-400")}
-                />
-                <div className="flex items-center justify-between">
-                  <span className={"text-xs " + (isDark ? "text-gray-600" : "text-gray-400")}>{charsLeft}</span>
-                  <button
-                    onClick={handleGenerateIdea}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-full text-xs transition shadow-sm"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                    {generateLabel}
-                  </button>
+              <div>
+                <div className={"font-bold text-sm " + (isDark ? "text-gray-100" : "text-gray-900")}>{newPlanLabel}</div>
+                <div className={"text-xs mt-0.5 " + (isDark ? "text-gray-500" : "text-gray-400")}>
+                  {lang === "tr" ? "Yeni bir girişim fikri analiz et" : lang === "ar" ? "حلّل فكرة جديدة بالذكاء الاصطناعي" : "Analyse a new startup idea with AI"}
                 </div>
               </div>
-            </div>
+              <svg className={"w-4 h-4 ml-auto flex-shrink-0 group-hover:text-green-600 transition " + (isDark ? "text-gray-600" : "text-gray-300")} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </a>
 
             {/* My plans */}
             <div className={"rounded-2xl border overflow-hidden " + (isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200")}>
@@ -431,7 +396,7 @@ export default function DashboardPage() {
                 {TRENDING_IDEAS.map((item, i) => (
                   <div
                     key={i}
-                  onClick={() => handleTrendingClick(item.idea)}
+                  onClick={() => goToPlanner(item.idea)}
                     className={"px-5 py-4 cursor-pointer transition group " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-50")}
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
