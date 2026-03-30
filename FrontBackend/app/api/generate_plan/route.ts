@@ -77,10 +77,10 @@ function getScoreCap(capital: string, idea: string): { cap: number; ratio: numbe
   const minRequired = MIN_TRY[ideaType];
   if (budget === 0) return { cap: 10, ratio: 1, budgetOk: true }; // can't parse → don't penalize
   const ratio = budget / minRequired;
-  if (ratio <= 0.03) return { cap: 2, ratio, budgetOk: false };
-  if (ratio <= 0.10) return { cap: 3, ratio, budgetOk: false };
-  if (ratio <= 0.30) return { cap: 5, ratio, budgetOk: false };
-  if (ratio <= 0.70) return { cap: 7, ratio, budgetOk: true };
+  if (ratio <= 0.03) return { cap: 4, ratio, budgetOk: false };
+  if (ratio <= 0.10) return { cap: 5, ratio, budgetOk: false };
+  if (ratio <= 0.30) return { cap: 6, ratio, budgetOk: false };
+  if (ratio <= 0.70) return { cap: 8, ratio, budgetOk: true };
   return { cap: 10, ratio, budgetOk: true }; // budget is adequate → no cap
 }
 
@@ -136,20 +136,29 @@ Skills: ${skills}
 Goals: ${strategy}
 Management: ${management}
 
-SCORING GUIDE (score each 1-10 based on execution feasibility with this specific budget and skills):
-- 8-10: Strong. Genuinely viable with real advantages.
-- 6-7: Solid foundation but notable challenges to address.
-- 4-5: Needs significant work — explain what's missing and how to fix it.
-- 2-3: Serious problems — be direct but point toward a better path.
-- 1: Only if truly impossible — explain why and offer a better alternative.
+SCORING RULES — read carefully before scoring:
+- If the budget is adequate AND the idea has market potential → most scores should be 6-8.
+- If the budget is strong AND the idea is well-defined → scores can reach 8-10.
+- A broad idea like "IT company" or "e-commerce" with good funding → score 5-6 (not lower). It's a valid starting point.
+- Only go below 4 when there is a SPECIFIC concrete problem (market doesn't exist, illegal, budget is truly zero).
+- NEVER score any dimension below 3 unless the idea is physically or legally impossible.
+- Vagueness should lower ONLY the "solution" and "features" scores, not market/revenue/risk.
+- A well-funded entrepreneur who hasn't fully defined their niche deserves encouragement, not punishment.
 
-TONE: Direct and honest, but never mean. If something is bad, say it clearly AND say what would make it better. Think "this won't work because X, but here's what would work instead."
+SCORING GUIDE per dimension (1-10):
+- 8-10: Strong. Reward good budget + clear idea with real market.
+- 6-7: Solid. Good money OR good idea, with gaps to address.
+- 4-5: Needs more definition — say specifically what to clarify/fix.
+- 3: One specific serious problem — still constructive.
+- 1-2: Only if truly impossible or illegal. Extremely rare.
+
+TONE: Balanced, honest, and encouraging. Acknowledge what's strong, then explain what needs work and how to improve it.
 
 Return ONLY valid JSON with no markdown backticks, no extra text before or after the JSON:
 
 {"scores":{"solution":NUMBER,"problem":NUMBER,"features":NUMBER,"market":NUMBER,"revenue":NUMBER,"competition":NUMBER,"risk":NUMBER},"plan":[{"title":"1. GENEL DEĞERLENDİRME","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"2. PAZAR VE REKABETÇİ ANALİZ","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"3. FİNANSAL GERÇEKLİK KONTROLÜ","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"4. YAPICI ALTERNATİFLER VE YOL HARİTASI","content":"WRITE IN THE SPECIFIED LANGUAGE"}]}
 
-Scores must be integers 1-10. Be fair — a good budget with a vague idea should score low on solution/features but not everything. A bad budget with a great idea should score low on revenue/market but acknowledge the idea quality.`;
+Scores must be integers 1-10. A funded idea with real market potential should score 6+ on most dimensions. Be fair and calibrated.`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
