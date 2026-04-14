@@ -106,8 +106,10 @@ function stripFences(text: string): string {
 }
 
 // ── Exponential Backoff Retry for Gemini API (handles 503 / 429) ──
-const MAX_RETRIES = 3;
-const BASE_DELAY_MS = 2000;
+// Serverless-friendly: short delays to stay within Vercel's 60s timeout.
+// Each Gemini call can take 15-30s, so we budget: ~30s call + 0.5s wait + ~30s retry = ~60s max.
+const MAX_RETRIES = 2;
+const BASE_DELAY_MS = 500;
 
 async function callGeminiWithRetry(
   model: any,
@@ -126,7 +128,7 @@ async function callGeminiWithRetry(
         || String(err?.message).toLowerCase().includes("resource exhausted");
 
       if (isRetryable && attempt < MAX_RETRIES) {
-        const delay = BASE_DELAY_MS * Math.pow(2, attempt); // 2s → 4s → 8s
+        const delay = Math.min(BASE_DELAY_MS * Math.pow(2, attempt), 1500); // 500ms → 1000ms → 1500ms (capped)
         console.warn(`Gemini API error (${status || err?.message}). Retry ${attempt + 1}/${MAX_RETRIES} in ${delay}ms...`);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
