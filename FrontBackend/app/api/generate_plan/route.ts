@@ -101,6 +101,39 @@ function stripFences(text: string): string {
     .trim();
 }
 
+// ── Exponential Backoff Retry for Gemini API (handles 503 / 429) ──
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 2000;
+
+async function callGeminiWithRetry(
+  model: any,
+  requestPayload: any,
+): Promise<any> {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const result = await model.generateContent(requestPayload);
+      return result;
+    } catch (err: any) {
+      const status = err?.status ?? err?.httpStatusCode ?? err?.code;
+      const isRetryable = status === 503 || status === 429
+        || String(err?.message).includes("503")
+        || String(err?.message).includes("429")
+        || String(err?.message).toLowerCase().includes("overloaded")
+        || String(err?.message).toLowerCase().includes("resource exhausted");
+
+      if (isRetryable && attempt < MAX_RETRIES) {
+        const delay = BASE_DELAY_MS * Math.pow(2, attempt); // 2s → 4s → 8s
+        console.warn(`Gemini API error (${status || err?.message}). Retry ${attempt + 1}/${MAX_RETRIES} in ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // Non-retryable error or max retries exhausted
+      throw err;
+    }
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -195,7 +228,7 @@ Return ONLY valid JSON. No markdown backticks, no extra text before or after the
 {"scores":{"problem":NUMBER,"solution":NUMBER,"features":NUMBER,"market":NUMBER,"revenue":NUMBER,"competition":NUMBER,"risk":NUMBER},"plan":[{"title":"1. GENEL DEĞERLENDİRME","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"2. PAZAR VE REKABETÇİ ANALİZ","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"3. FİNANSAL GERÇEKLİK KONTROLÜ","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"4. YAPICI ALTERNATİFLER VE YOL HARİTASI","content":"WRITE IN THE SPECIFIED LANGUAGE"}]}`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent({
+    const result = await callGeminiWithRetry(model, {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         maxOutputTokens: 4000,
@@ -220,7 +253,7 @@ Return ONLY valid JSON. No markdown backticks, no extra text before or after the
       try {
         const sanitized = text.replace(
           /"content"\s*:\s*"((?:[^"\\]|\\.)*?)"/g,
-          (_match, inner) => `"content":"${inner.replace(/(?<!\\)"/g, "'")}"`
+          (_match: string, inner: string) => `"content":"${inner.replace(/(?<!\\)"/g, "'")}"`
         );
         parsed = JSON.parse(sanitized);
         console.warn("JSON recovered after sanitizing unescaped quotes.");
@@ -264,6 +297,12 @@ Return ONLY valid JSON. No markdown backticks, no extra text before or after the
 
   } catch (error: any) {
     console.error("Generate Plan Error:", error);
-    return NextResponse.json({ detail: String(error?.message || "Server Error") }, { status: 500 });
+    return NextResponse.json(
+      {
+        status: "error",
+        message: "Sunucularımız şu an çok yoğun, lütfen birkaç saniye sonra tekrar deneyin.",
+      },
+      { status: 500 }
+    );
   }
 }
