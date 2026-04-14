@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// ── VERCEL TIMEOUT OVERRIDE (CRITICAL) ──
+// Prevents Vercel Hobby tier from killing the function after 10 seconds.
+export const maxDuration = 60;
+
 const apiKey = process.env.GOOGLE_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
 
@@ -55,9 +59,9 @@ type IdeaType = "physical_high" | "physical_mid" | "digital" | "service";
 
 function classifyIdea(idea: string): IdeaType {
   const t = (idea || "").toLowerCase();
-  const physicalHigh = ["kafe","cafe","coffee","kahvehane","restoran","restaurant","fabrika","factory","otel","hotel","bar","pub","market","süpermarket","supermarket","mağaza","dükkan","store","shop","boutique","gym","spor salonu","fırın","bakery","pastane","eczane","pharmacy","hastane","klinik","clinic","araba","otomobil","araç","üretim","manufacturing","çiftlik","farm","tarım"];
-  const digital = ["app","uygulama","website","web site","web sitesi","platform","saas","yazılım","software","e-ticaret","ecommerce","e-commerce","online","dijital","digital","mobil","mobile","oyun","game","blog","youtube","podcast","sosyal medya","social media","dropshipping","affiliate","kripto","crypto","api","bot","it ","it company","tech","teknoloji","technology","startup","girişim"];
-  const service = ["danışman","consultant","freelance","serbest","koçluk","coaching","eğitim","training","öğretmen","ders","tercüme","translation","tasarım","design","grafik","graphic","fotoğraf","photo","video","editing","yazarlık","writing","muhasebe","accounting","hukuk","law","temizlik","cleaning"];
+  const physicalHigh = ["kafe", "cafe", "coffee", "kahvehane", "restoran", "restaurant", "fabrika", "factory", "otel", "hotel", "bar", "pub", "market", "süpermarket", "supermarket", "mağaza", "dükkan", "store", "shop", "boutique", "gym", "spor salonu", "fırın", "bakery", "pastane", "eczane", "pharmacy", "hastane", "klinik", "clinic", "araba", "otomobil", "araç", "üretim", "manufacturing", "çiftlik", "farm", "tarım"];
+  const digital = ["app", "uygulama", "website", "web site", "web sitesi", "platform", "saas", "yazılım", "software", "e-ticaret", "ecommerce", "e-commerce", "online", "dijital", "digital", "mobil", "mobile", "oyun", "game", "blog", "youtube", "podcast", "sosyal medya", "social media", "dropshipping", "affiliate", "kripto", "crypto", "api", "bot", "it ", "it company", "tech", "teknoloji", "technology", "startup", "girişim"];
+  const service = ["danışman", "consultant", "freelance", "serbest", "koçluk", "coaching", "eğitim", "training", "öğretmen", "ders", "tercüme", "translation", "tasarım", "design", "grafik", "graphic", "fotoğraf", "photo", "video", "editing", "yazarlık", "writing", "muhasebe", "accounting", "hukuk", "law", "temizlik", "cleaning"];
   if (physicalHigh.some(w => t.includes(w))) return "physical_high";
   if (digital.some(w => t.includes(w))) return "digital";
   if (service.some(w => t.includes(w))) return "service";
@@ -66,9 +70,9 @@ function classifyIdea(idea: string): IdeaType {
 
 const MIN_TRY: Record<IdeaType, number> = {
   physical_high: 500_000,
-  physical_mid:  50_000,
-  digital:       5_000,
-  service:       1_000,
+  physical_mid: 50_000,
+  digital: 5_000,
+  service: 1_000,
 };
 
 function getScoreCap(capital: string, idea: string): { cap: number; ratio: number; budgetOk: boolean } {
@@ -148,15 +152,15 @@ export async function POST(request: Request) {
 
     const langInstruction =
       language === "tr" ? "Write your ENTIRE response in Turkish only. Use Turkish for all text including titles, content and any analysis." :
-      language === "ar" ? "Write your ENTIRE response in Arabic only." :
-      "Write your ENTIRE response in English only.";
+        language === "ar" ? "Write your ENTIRE response in Arabic only." :
+          "Write your ENTIRE response in English only.";
 
     // Budget context injected into prompt
     const budgetContext = !budgetOk
       ? `BUDGET NOTE: The stated budget (${budgetNum.toLocaleString()} TRY) is only ${Math.round(ratio * 100)}% of the typical minimum (${minRequired.toLocaleString()} TRY) needed for this type of business. Be honest about this gap but still be constructive. Suggest what they CAN do with this budget.`
       : budgetNum > 0
-      ? `BUDGET NOTE: The budget (${budgetNum.toLocaleString()} TRY) is ${ratio >= 2 ? "well above" : "sufficient for"} the typical minimum for this business type. Focus your critique on the idea clarity, market, and execution — not the budget.`
-      : "";
+        ? `BUDGET NOTE: The budget (${budgetNum.toLocaleString()} TRY) is ${ratio >= 2 ? "well above" : "sufficient for"} the typical minimum for this business type. Focus your critique on the idea clarity, market, and execution — not the budget.`
+        : "";
 
     const prompt = `You are an elite VC investor and startup mentor. You must evaluate the user's startup profile and generate 7 metrics on a scale of 1 to 10. A score of 10 is ALWAYS the best/safest outcome for the user. ${langInstruction}
 
@@ -227,12 +231,20 @@ Return ONLY valid JSON. No markdown backticks, no extra text before or after the
 
 {"scores":{"problem":NUMBER,"solution":NUMBER,"features":NUMBER,"market":NUMBER,"revenue":NUMBER,"competition":NUMBER,"risk":NUMBER},"plan":[{"title":"1. GENEL DEĞERLENDİRME","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"2. PAZAR VE REKABETÇİ ANALİZ","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"3. FİNANSAL GERÇEKLİK KONTROLÜ","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"4. YAPICI ALTERNATİFLER VE YOL HARİTASI","content":"WRITE IN THE SPECIFIED LANGUAGE"}]}`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    // ── ADDED MAX TOKENS HERE TO FIX TRUNCATION (CRITICAL) ──
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        maxOutputTokens: 8192,
+        temperature: 0.7,
+      }
+    });
+
     const result = await callGeminiWithRetry(model, {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
-    let text = result.response.text();
 
+    let text = result.response.text();
     text = stripFences(text);
 
     // Extract just the JSON object
@@ -272,7 +284,7 @@ Return ONLY valid JSON. No markdown backticks, no extra text before or after the
     }
 
     // Clamp all scores to 1-10
-    const scoreKeys = ["solution","problem","features","market","revenue","competition","risk"];
+    const scoreKeys = ["solution", "problem", "features", "market", "revenue", "competition", "risk"];
     for (const key of scoreKeys) {
       const val = Number(parsed.scores[key]);
       parsed.scores[key] = isNaN(val) ? 5 : Math.min(10, Math.max(1, Math.round(val)));
