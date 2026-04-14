@@ -284,6 +284,7 @@ export default function PlannerPage() {
   async function generatePlan() {
     setLoading(true);
     setShowSkeleton(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setLoadingStatus(t.status_gathering);
     setTimeout(() => setLoadingStatus(t.status_generating), 1500);
 

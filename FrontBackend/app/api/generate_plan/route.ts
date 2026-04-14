@@ -235,7 +235,7 @@ Return ONLY valid JSON. No markdown backticks, no extra text before or after the
 
     // ── ADDED MAX TOKENS HERE TO FIX TRUNCATION (CRITICAL) ──
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash",
       generationConfig: {
         maxOutputTokens: 8192,
         temperature: 0.7,
