@@ -230,9 +230,6 @@ Return ONLY valid JSON. No markdown backticks, no extra text before or after the
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await callGeminiWithRetry(model, {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        maxOutputTokens: 4000,
-      },
     });
     let text = result.response.text();
 
