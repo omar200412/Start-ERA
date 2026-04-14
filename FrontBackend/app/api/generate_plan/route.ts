@@ -154,6 +154,8 @@ SCORING GUIDE per dimension (1-10):
 
 TONE: Balanced, honest, and encouraging. Acknowledge what's strong, then explain what needs work and how to improve it.
 
+ZORUNLU KURAL: Çıktıyı SADECE geçerli bir JSON formatında ver. JSON içindeki metin değerlerinde (content) ASLA çift tırnak (") kullanma. Vurgu yapmak veya alıntı yapmak için sadece tek tırnak (') kullan.
+
 Return ONLY valid JSON with no markdown backticks, no extra text before or after the JSON:
 
 {"scores":{"solution":NUMBER,"problem":NUMBER,"features":NUMBER,"market":NUMBER,"revenue":NUMBER,"competition":NUMBER,"risk":NUMBER},"plan":[{"title":"1. GENEL DEĞERLENDİRME","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"2. PAZAR VE REKABETÇİ ANALİZ","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"3. FİNANSAL GERÇEKLİK KONTROLÜ","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"4. YAPICI ALTERNATİFLER VE YOL HARİTASI","content":"WRITE IN THE SPECIFIED LANGUAGE"}]}
@@ -161,7 +163,12 @@ Return ONLY valid JSON with no markdown backticks, no extra text before or after
 Scores must be integers 1-10. A funded idea with real market potential should score 6+ on most dimensions. Be fair and calibrated.`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        maxOutputTokens: 4000,
+      },
+    });
     let text = result.response.text();
 
     text = stripFences(text);
@@ -176,9 +183,25 @@ Scores must be integers 1-10. A funded idea with real market potential should sc
     let parsed: any;
     try {
       parsed = JSON.parse(text);
-    } catch (e) {
-      console.error("JSON parse failed:", text.slice(0, 500));
-      return NextResponse.json({ detail: "AI response could not be parsed" }, { status: 500 });
+    } catch (firstError) {
+      // Attempt to fix unescaped double quotes inside JSON string values
+      try {
+        const sanitized = text.replace(
+          /"content"\s*:\s*"((?:[^"\\]|\\.)*?)"/g,
+          (_match, inner) => `"content":"${inner.replace(/(?<!\\)"/g, "'")}"`
+        );
+        parsed = JSON.parse(sanitized);
+        console.warn("JSON recovered after sanitizing unescaped quotes.");
+      } catch (secondError) {
+        console.error("JSON parse failed (unrecoverable):", text.slice(0, 500));
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Yapay zeka analizde zorlandı, lütfen 'Önizleme Oluştur' butonuna tekrar tıklayın.",
+          },
+          { status: 400 }
+        );
+      }
     }
 
     if (!parsed.scores || !Array.isArray(parsed.plan)) {
