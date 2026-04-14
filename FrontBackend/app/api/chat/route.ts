@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const finalPrompt = `${guardrail}\n\n[Frontend Context]: ${frontendContext}\n\nKullanıcının Mesajı: ${message}`;
 
     // Initialize the Gemini 3 Flash model
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
     
     // Generate the AI response
     const result = await model.generateContent(finalPrompt);
