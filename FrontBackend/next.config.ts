@@ -6,9 +6,6 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // NOT: 'eslint' bloğu kaldırıldı. Next.js 15+ sürümlerinde bu ayar next.config.ts içinde desteklenmez.
-  // ESLint, varsayılan olarak build sırasında çalışır veya ayrı bir config dosyasından yönetilir.
-
   // Rota ve bellek optimizasyonları
   typedRoutes: false,
   experimental: {
@@ -26,15 +23,9 @@ const nextConfig: NextConfig = {
     return config;
   },
 
-  // 👇 API Yönlendirmesi
-  rewrites: async () => {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "/api", // Tüm /api/... istekleri api/index.py dosyasına gider
-      },
-    ];
-  },
+  // 👇 API Yönlendirmesi kaldirildi
+  // Python backend kullanılacaksa Next.js ortamında rewrite ayarlanabilir
+  // Örneğin: destination: "http://127.0.0.1:8000/api/:path*"
 };
 
 export default nextConfig;

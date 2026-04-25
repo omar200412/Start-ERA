@@ -1,6 +1,10 @@
 import os
+import sys
 import requests
 from dotenv import load_dotenv
+
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 # .env dosyasından anahtarı al
 load_dotenv()
