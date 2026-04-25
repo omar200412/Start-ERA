@@ -30,7 +30,7 @@ MAIL_SERVER = os.getenv("MAIL_SERVER", "mail.plan-iq.net")
 MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
 MAIL_USERNAME = os.getenv("MAIL_USERNAME")
 MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
-MODEL_NAME = "gemini-2.0-flash-lite"
+MODEL_NAME = "gemini-2.0-flash"
 
 try:
     if API_KEY:
