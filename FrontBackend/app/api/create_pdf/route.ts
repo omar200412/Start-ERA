@@ -12,6 +12,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const planData: PlanSection[] = body.plan_data || body.plan || [];
+    const lang = body.language || 'en';
 
     if (!planData || !Array.isArray(planData) || planData.length === 0) {
       return NextResponse.json({ detail: 'No plan data provided' }, { status: 400 });
@@ -51,16 +52,20 @@ export async function POST(request: Request) {
     const defaultFont = hasFonts ? 'Roboto' : 'Helvetica';
     const boldFont = hasFonts ? 'Roboto-Bold' : 'Helvetica-Bold';
 
+    const subtitle = lang === 'tr' ? 'Yapay Zeka Destekli İş Planı' :
+                     lang === 'ar' ? 'خطة عمل مدعومة بالذكاء الاصطناعي' :
+                     'AI-Powered Business Plan';
+
     // Cover header
     doc.font(boldFont)
        .fontSize(20)
-       .fillColor('#179923')
+       .fillColor('black')
        .text('Start ERA', { align: 'center' });
        
     doc.font(defaultFont)
        .fontSize(11)
        .fillColor('black')
-       .text('AI-Powered Business Plan', { align: 'center' });
+       .text(subtitle, { align: 'center' });
        
     doc.moveDown(1);
     
@@ -71,7 +76,7 @@ export async function POST(request: Request) {
     for (const section of sections) {
       doc.font(boldFont)
          .fontSize(14)
-         .fillColor('#176935')
+         .fillColor('black')
          .text(section.title);
          
       doc.moveDown(0.5);

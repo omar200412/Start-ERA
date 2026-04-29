@@ -351,7 +351,7 @@ export default function PlannerPage() {
       const res = await fetch("/api/create_pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan_data: planResult }),
+        body: JSON.stringify({ plan_data: planResult, language: lang }),
       });
       if (!res.ok) throw new Error("PDF error");
       const blob = await res.blob();
