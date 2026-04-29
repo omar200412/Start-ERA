@@ -232,7 +232,7 @@ Goal/Strategy: ${strategy}
 Management: ${management}`;
 
     const result = await callAnthropicWithRetry({
-      model: "claude-3-5-haiku-latest",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 8192,
       temperature: 0.7,
       system: systemPrompt,
