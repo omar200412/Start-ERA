@@ -185,10 +185,10 @@ body {
   box-shadow: 0 0 10px rgba(100, 200, 255, 0.7);
   opacity: 0.7;
   transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-  animation: pulse 2s infinite alternate;
+  animation: thumb-pulse 2s infinite alternate;
 }
 
-@keyframes pulse {
+@keyframes thumb-pulse {
   0% {
     opacity: 0.5;
     transform: translate(-50%, -50%) scale(0.9);

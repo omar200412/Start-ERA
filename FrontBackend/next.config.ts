@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
     forceSwcTransforms: false,
   },
   
+  serverExternalPackages: ['pdfkit'],
+  
   // Turbopack boş obje (Hata önlemek için)
   turbopack: {},
 
