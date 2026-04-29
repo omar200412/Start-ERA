@@ -88,7 +88,7 @@ export async function POST(request: Request) {
     
     const pdfBytes = await endPromise;
 
-    return new NextResponse(pdfBytes, {
+    return new NextResponse(new Uint8Array(pdfBytes), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
