@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Anthropic from '@anthropic-ai/sdk';
 
 // Fetch the API key securely from your Vercel Environment Variables
-const apiKey = process.env.GOOGLE_API_KEY || "";
-const genAI = new GoogleGenerativeAI(apiKey);
+const apiKey = process.env.ANTHROPIC_API_KEY || "";
+const anthropic = new Anthropic({ apiKey });
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const { message, system_prompt } = body;
 
     if (!apiKey) {
-      console.error("Missing GOOGLE_API_KEY in environment variables.");
+      console.error("Missing ANTHROPIC_API_KEY in environment variables.");
       return NextResponse.json({ detail: "API Key Missing" }, { status: 503 });
     }
 
@@ -24,16 +24,19 @@ export async function POST(request: Request) {
     Cevapların kısa, dostane ve hedefe yönelik olmalıdır.
     `;
 
-    // Combine the guardrail, any frontend context, and the actual user message
+    // Combine the guardrail and any frontend context
     const frontendContext = system_prompt ? system_prompt : "";
-    const finalPrompt = `${guardrail}\n\n[Frontend Context]: ${frontendContext}\n\nKullanıcının Mesajı: ${message}`;
+    const finalSystemPrompt = `${guardrail}\n\n[Frontend Context]: ${frontendContext}`;
 
-    // Initialize the Gemini 3 Flash model
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    
-    // Generate the AI response
-    const result = await model.generateContent(finalPrompt);
-    const responseText = result.response.text();
+    // Initialize Claude request
+    const result = await anthropic.messages.create({
+      model: "claude-3-5-haiku-latest",
+      max_tokens: 1024,
+      system: finalSystemPrompt,
+      messages: [{ role: "user", content: `Kullanıcının Mesajı: ${message}` }]
+    });
+
+    const responseText = result.content[0].type === 'text' ? result.content[0].text : "";
 
     // Send the response back to your Chatbot frontend
     return NextResponse.json({ reply: responseText }, { status: 200 });

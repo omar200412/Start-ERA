@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Anthropic from '@anthropic-ai/sdk';
 
 // ── VERCEL TIMEOUT OVERRIDE (CRITICAL) ──
 // Prevents Vercel Hobby tier from killing the function after 10 seconds.
 export const maxDuration = 60;
 
-const apiKey = process.env.GOOGLE_API_KEY || "";
-const genAI = new GoogleGenerativeAI(apiKey);
+const apiKey = process.env.ANTHROPIC_API_KEY || "";
+const anthropic = new Anthropic({ apiKey });
 
 // ── Parse budget: handles "5.000.000", "5,000,000", "5000000", "5M", "5 milyon" etc ──
 function parseBudget(capital: string): number {
@@ -105,19 +105,17 @@ function stripFences(text: string): string {
     .trim();
 }
 
-// ── Exponential Backoff Retry for Gemini API (handles 503 / 429) ──
+// ── Exponential Backoff Retry for Anthropic API (handles 503 / 429) ──
 // Serverless-friendly: short delays to stay within Vercel's 60s timeout.
-// Each Gemini call can take 15-30s, so we budget: ~30s call + 0.5s wait + ~30s retry = ~60s max.
 const MAX_RETRIES = 2;
 const BASE_DELAY_MS = 500;
 
-async function callGeminiWithRetry(
-  model: any,
+async function callAnthropicWithRetry(
   requestPayload: any,
 ): Promise<any> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const result = await model.generateContent(requestPayload);
+      const result = await anthropic.messages.create(requestPayload);
       return result;
     } catch (err: any) {
       const status = err?.status ?? err?.httpStatusCode ?? err?.code;
@@ -125,11 +123,11 @@ async function callGeminiWithRetry(
         || String(err?.message).includes("503")
         || String(err?.message).includes("429")
         || String(err?.message).toLowerCase().includes("overloaded")
-        || String(err?.message).toLowerCase().includes("resource exhausted");
+        || String(err?.message).toLowerCase().includes("rate limit");
 
       if (isRetryable && attempt < MAX_RETRIES) {
         const delay = Math.min(BASE_DELAY_MS * Math.pow(2, attempt), 1500); // 500ms → 1000ms → 1500ms (capped)
-        console.warn(`Gemini API error (${status || err?.message}). Retry ${attempt + 1}/${MAX_RETRIES} in ${delay}ms...`);
+        console.warn(`Anthropic API error (${status || err?.message}). Retry ${attempt + 1}/${MAX_RETRIES} in ${delay}ms...`);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
@@ -164,18 +162,9 @@ export async function POST(request: Request) {
         ? `BUDGET NOTE: The budget (${budgetNum.toLocaleString()} TRY) is ${ratio >= 2 ? "well above" : "sufficient for"} the typical minimum for this business type. Focus your critique on the idea clarity, market, and execution — not the budget.`
         : "";
 
-    const prompt = `You are an elite VC investor and startup mentor. You must evaluate the user's startup profile and generate 7 metrics on a scale of 1 to 10. A score of 10 is ALWAYS the best/safest outcome for the user. ${langInstruction}
+    const systemPrompt = `You are an elite VC investor and startup mentor. You must evaluate the user's startup profile and generate 7 metrics on a scale of 1 to 10. A score of 10 is ALWAYS the best/safest outcome for the user. ${langInstruction}
 
 ${budgetContext}
-
-═══════════════════════════════════════════
-USER'S STARTUP PROFILE:
-═══════════════════════════════════════════
-Idea: ${idea}
-Capital: ${capital}
-Skills: ${skills}
-Goal/Strategy: ${strategy}
-Management: ${management}
 
 ═══════════════════════════════════════════
 CROSS-REFERENCING SCORING ALGORITHM (MANDATORY):
@@ -212,7 +201,7 @@ You MUST calculate these scores by cross-referencing the user's 5 inputs. Do NOT
    → Does the user's specific skillset give them a competitive edge, or are they bringing a knife to a gunfight?
 
 7. RISK (Cross-reference: ALL 5 inputs)
-   → This is the holistic safety score. 10 = very safe, 1 = extremely risky.
+   → This is holistic safety score. 10 = very safe, 1 = extremely risky.
    → [Low Capital + Unrealistic Goal + Solo Management + Complex Idea + No Skills] = VERY HIGH RISK (Score: 1-2).
    → [Sufficient Capital + Realistic Goal + Strong Team + Good Skills] = LOW RISK (Score: 8-10).
    → Be brutally honest here. This score protects the user from making a catastrophic mistake.
@@ -233,20 +222,24 @@ Return ONLY valid JSON. No markdown backticks, no extra text before or after the
 
 {"scores":{"problem":NUMBER,"solution":NUMBER,"features":NUMBER,"market":NUMBER,"revenue":NUMBER,"competition":NUMBER,"risk":NUMBER},"plan":[{"title":"1. GENEL DEĞERLENDİRME","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"2. PAZAR VE REKABETÇİ ANALİZ","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"3. FİNANSAL GERÇEKLİK KONTROLÜ","content":"WRITE IN THE SPECIFIED LANGUAGE"},{"title":"4. YAPICI ALTERNATİFLER VE YOL HARİTASI","content":"WRITE IN THE SPECIFIED LANGUAGE"}]}`;
 
-    // ── ADDED MAX TOKENS HERE TO FIX TRUNCATION (CRITICAL) ──
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      generationConfig: {
-        maxOutputTokens: 8192,
-        temperature: 0.7,
-      }
+    const userMessage = `═══════════════════════════════════════════
+USER'S STARTUP PROFILE:
+═══════════════════════════════════════════
+Idea: ${idea}
+Capital: ${capital}
+Skills: ${skills}
+Goal/Strategy: ${strategy}
+Management: ${management}`;
+
+    const result = await callAnthropicWithRetry({
+      model: "claude-3-5-haiku-latest",
+      max_tokens: 8192,
+      temperature: 0.7,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userMessage }],
     });
 
-    const result = await callGeminiWithRetry(model, {
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-    });
-
-    let text = result.response.text();
+    let text = result.content[0].type === 'text' ? result.content[0].text : "";
     text = stripFences(text);
 
     // Extract just the JSON object
