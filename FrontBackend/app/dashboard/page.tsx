@@ -429,6 +429,15 @@ export default function DashboardPage() {
                     <div className={"text-xs " + subFine}>{lang === "tr" ? "Yeni bir fikir analiz et" : lang === "ar" ? "حلّل فكرة جديدة" : "Analyze a new idea"}</div>
                   </div>
                 </a>
+                <a href="/idea-generation" className={"flex items-center gap-3 p-3.5 rounded-xl transition no-underline group " + (isDark ? "hover:bg-gray-800" : "hover:bg-purple-50")}>
+                  <div className={"w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 " + (isDark ? "bg-purple-900/50" : "bg-purple-100")} aria-hidden="true">
+                    <svg className={"w-4 h-4 " + (isDark ? "text-purple-400" : "text-purple-600")} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 3.214L13 21l-2.286-6.857L5 12l5.714-3.214z" /></svg>
+                  </div>
+                  <div>
+                    <div className={"text-sm font-bold " + (isDark ? "text-gray-200" : "text-gray-800")}>{lang === "tr" ? "Fikir Üretici" : lang === "ar" ? "مولّد الأفكار" : "Idea Generator"}</div>
+                    <div className={"text-xs " + subFine}>{lang === "tr" ? "Kişisel bağlamınla fikir üret" : lang === "ar" ? "ولّد أفكاراً بناءً على سياقك" : "Generate ideas from your context"}</div>
+                  </div>
+                </a>
                 <a href="/" className={"flex items-center gap-3 p-3.5 rounded-xl transition no-underline group " + (isDark ? "hover:bg-gray-800" : "hover:bg-gray-50")}>
                   <div className={"w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 " + (isDark ? "bg-gray-800" : "bg-gray-100")} aria-hidden="true">
                     <svg className={"w-4 h-4 " + (isDark ? "text-gray-400" : "text-gray-500")} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>

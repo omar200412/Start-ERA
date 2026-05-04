@@ -123,6 +123,7 @@ export default function LandingPage() {
     charsLeft:      `${maxChars - idea.length} ${lang === "tr" ? "karakter kaldı" : lang === "ar" ? "حرف متبقٍ" : "characters left"}`,
     generate:       lang === "tr" ? "Önizleme Oluştur" : lang === "ar" ? "إنشاء معاينة" : "Generate Preview",
     browse:         lang === "tr" ? "Fikirlere Göz At" : lang === "ar" ? "استعرض الأفكار" : "Browse Ideas",
+    ideaGen:        lang === "tr" ? "Fikir Üretici" : lang === "ar" ? "مولّد الأفكار" : "Idea Generator",
     getStarted:     lang === "tr" ? "Başla" : lang === "ar" ? "ابدأ" : "Get started",
     builtOn:        lang === "tr" ? "START ERA İLE OLUŞTURULDU" : lang === "ar" ? "مبني على START ERA" : "BUILT ON START ERA",
     communityTitle: lang === "tr" ? "Start ERA topluluğuna katıl; bağlantılar gelişir ve fikirler yeşerir." : lang === "ar" ? "انضم إلى مجتمع Start ERA حيث تزدهر العلاقات وتنمو الأفكار." : "Join our community at Start ERA, where connections thrive and ideas flourish.",
@@ -205,6 +206,7 @@ export default function LandingPage() {
             <button onClick={() => scrollTo("pricing")}  className={"hover:text-green-600 transition " + linkCls}>{t.nav_pricing}</button>
             <button onClick={() => scrollTo("about")}    className={"hover:text-green-600 transition " + linkCls}>{t.nav_about}</button>
             <button onClick={() => scrollTo("trending")} className={"hover:text-green-600 transition " + linkCls}>{L.browse}</button>
+            <a href="/idea-generation" className={"hover:text-green-600 transition no-underline " + linkCls}>{L.ideaGen}</a>
           </div>
 
           {/* Right controls */}
@@ -259,6 +261,7 @@ export default function LandingPage() {
             <button onClick={() => scrollTo("pricing")}  className={"block w-full text-left text-sm py-2 " + linkCls}>{t.nav_pricing}</button>
             <button onClick={() => scrollTo("about")}    className={"block w-full text-left text-sm py-2 " + linkCls}>{t.nav_about}</button>
             <button onClick={() => scrollTo("trending")} className={"block w-full text-left text-sm py-2 " + linkCls}>{L.browse}</button>
+            <a href="/idea-generation" className={"block w-full text-left text-sm py-2 no-underline " + linkCls}>{L.ideaGen}</a>
           </div>
         )}
       </nav>
@@ -290,6 +293,9 @@ export default function LandingPage() {
               <button onClick={() => scrollTo("trending")} className={"px-7 py-3.5 font-bold rounded-full text-sm transition border shadow-sm " + (d ? "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700" : "bg-white border-gray-200 text-gray-800 hover:bg-gray-50")}>
                 {L.browse}
               </button>
+              <a href="/idea-generation" className={"px-7 py-3.5 font-bold rounded-full text-sm transition border shadow-sm no-underline " + (d ? "bg-purple-900/60 border-purple-700 text-purple-200 hover:bg-purple-800/60" : "bg-purple-50 border-purple-200 text-purple-800 hover:bg-purple-100")}>
+                ✨ {L.ideaGen}
+              </a>
             </div>
           </div>
         </section>
