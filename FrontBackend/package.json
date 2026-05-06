@@ -9,8 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.75",
     "@anthropic-ai/sdk": "^0.91.1",
     "@vercel/postgres": "^0.10.0",
+    "ai": "^6.0.175",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.1",
     "jspdf": "^4.2.0",
@@ -21,7 +23,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hot-toast": "^2.6.0",
-    "resend": "^6.9.4"
+    "resend": "^6.9.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

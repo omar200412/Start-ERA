@@ -22,25 +22,25 @@ interface IdeaResult {
 // ── Loading steps per language ─────────────────────────────────────────────────
 const LOADING_STEPS_MAP: Record<string, string[]> = {
   tr: [
-    "Profiliniz analiz ediliyor...",
-    "Pazar fırsatları haritalanıyor...",
-    "Beceri-fırsat eşleştirmesi yapılıyor...",
+    "Claude AI profilinizi okuyor...",
+    "Becerileriniz pazar fırsatlarına eşleştiriliyor...",
     "Kârlılık modelleri hesaplanıyor...",
-    "Kişiselleştirilmiş fikirler üretiliyor...",
+    "Rekabet ortamı analiz ediliyor...",
+    "Kişiselleştirilmiş girişim planları oluşturuluyor...",
   ],
   en: [
-    "Analyzing your profile...",
-    "Mapping market opportunities...",
-    "Matching skills to opportunities...",
+    "Claude AI is reading your profile...",
+    "Mapping your skills to market opportunities...",
     "Calculating profitability models...",
-    "Generating personalized ideas...",
+    "Analyzing competitive landscape...",
+    "Crafting personalized startup blueprints...",
   ],
   ar: [
-    "جارٍ تحليل ملفك الشخصي...",
-    "رسم خريطة الفرص السوقية...",
-    "مطابقة المهارات مع الفرص...",
+    "يقرأ Claude AI ملفك الشخصي...",
+    "ربط مهاراتك بفرص السوق...",
     "حساب نماذج الربحية...",
-    "توليد أفكار مخصصة...",
+    "تحليل المشهد التنافسي...",
+    "صياغة خطط شركات ناشئة مخصصة...",
   ],
 };
 
@@ -49,7 +49,7 @@ const T: Record<string, Record<string, string>> = {
   tr: {
     badge: "Yapay Zeka Fikir Üretimi",
     title: "Sizin İçin Üretilen Fikirler",
-    subtitle: "Yapay zeka profilinizi analiz etti ve size özel 3 girişim fırsatı üretti.",
+    subtitle: "Claude AI profilinizi analiz etti ve size özel 3 girişim fırsatı üretti.",
     loading: "Fikirleriniz Üretiliyor",
     back: "Geri",
     home: "Ana Sayfa",
@@ -72,7 +72,7 @@ const T: Record<string, Record<string, string>> = {
   en: {
     badge: "AI Idea Generation",
     title: "Ideas Generated For You",
-    subtitle: "Our AI analyzed your profile and generated 3 personalized startup opportunities.",
+    subtitle: "Claude AI analyzed your profile and generated 3 personalized startup opportunities.",
     loading: "Generating Your Ideas",
     back: "Back",
     home: "Home",
@@ -95,7 +95,7 @@ const T: Record<string, Record<string, string>> = {
   ar: {
     badge: "توليد أفكار بالذكاء الاصطناعي",
     title: "أفكار مولّدة خصيصاً لك",
-    subtitle: "حلل الذكاء الاصطناعي ملفك الشخصي وأنتج 3 فرص شركات ناشئة مخصصة.",
+    subtitle: "حلل Claude AI ملفك الشخصي وأنتج 3 فرص شركات ناشئة مخصصة.",
     loading: "جارٍ توليد أفكارك",
     back: "عودة",
     home: "الرئيسية",
