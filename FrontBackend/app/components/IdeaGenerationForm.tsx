@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useThemeAuth } from "../context/ThemeAuthContext";
 import { IDEA_FORM_T } from "../lib/ideaFormTranslations";
 import {
@@ -27,6 +28,7 @@ const STEP_TYPES: InputType[] = ["textarea","textarea","dropdown","dropdown","dr
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export default function IdeaGenerationForm() {
+  const router = useRouter();
   const { darkMode, toggleTheme, lang, setLang } = useThemeAuth();
   const d = darkMode;
   const isRTL = lang === "ar";
@@ -71,9 +73,7 @@ export default function IdeaGenerationForm() {
   async function handleSubmit() {
     setIsSubmitting(true);
     sessionStorage.setItem("idea_generation_input", JSON.stringify(formData));
-    await new Promise(r => setTimeout(r, 2000));
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+    router.push("/idea-generation/results");
   }
 
   // Language cycle
