@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useThemeAuth } from "../context/ThemeAuthContext";
 import { TRANSLATIONS } from "../lib/translations";
@@ -202,6 +203,7 @@ function SectionIcon({ title }: { title: string }) {
 
 // ── Page component ─────────────────────────────────────────────────────────────
 export default function PlannerPage() {
+  const router = useRouter();
   const { user, darkMode, toggleTheme, lang, setLang } = useThemeAuth();
   const t = TRANSLATIONS[lang];
   const isRTL = lang === "ar";
@@ -274,11 +276,24 @@ export default function PlannerPage() {
   // ── Wizard logic ──────────────────────────────────────────────────────────
   const currentQuestion = t.questions[step - 1];
 
+  function handleValidationRedirect() {
+    // Extract location from the idea text (step 1) — the idea field typically contains location context
+    sessionStorage.setItem(
+      "idea_generation_input",
+      JSON.stringify({ location: formData.idea, budget: formData.capital })
+    );
+    sessionStorage.setItem(
+      "selected_idea_for_validation",
+      JSON.stringify({ title: "Custom Startup Idea", description: formData.idea })
+    );
+    router.push("/validation");
+  }
+
   function handleNext() {
     const val = formData[currentQuestion.key as keyof typeof formData];
     if (!val?.trim()) { toast.error(t.err_empty); return; }
     if (step < 5) setStep(step + 1);
-    else generatePlan();
+    else handleValidationRedirect();
   }
 
   async function generatePlan() {

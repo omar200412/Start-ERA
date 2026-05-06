@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useThemeAuth } from "./context/ThemeAuthContext";
 import { TRANSLATIONS } from "./lib/translations";
+import { Lightbulb, Target, ChevronRight } from "lucide-react";
 import Chatbot from "./Chatbot";
 
 // ── Icon components ────────────────────────────────────────────────────────────
@@ -141,6 +142,10 @@ export default function LandingPage() {
     product:        lang === "tr" ? "Ürün" : lang === "ar" ? "المنتج" : "Product",
     langLabel:      lang === "tr" ? "Dil" : lang === "ar" ? "اللغة" : "Language",
     aiBadge:        lang === "tr" ? "Yapay zeka destekli girişim oluşturucu" : lang === "ar" ? "منشئ الشركات الناشئة بالذكاء الاصطناعي" : "AI-powered startup builder",
+    flowATitle:     lang === "tr" ? "Bana Fikir Bul" : lang === "ar" ? "ساعدني في إيجاد فكرة" : "Help Me Find an Idea",
+    flowADesc:      lang === "tr" ? "7 hızlı soruyu cevaplayın, yapay zekamız becerilerinize ve bütçenize göre 3 kişiselleştirilmiş girişim planı oluştursun." : lang === "ar" ? "أجب عن 7 أسئلة سريعة وسيقوم الذكاء الاصطناعي بإنشاء 3 خطط شركات ناشئة مخصصة بناءً على مهاراتك وميزانيتك." : "Answer 7 quick questions and our AI will generate 3 personalized startup blueprints based on your skills and budget.",
+    flowBTitle:     lang === "tr" ? "Zaten Bir Fikrim Var" : lang === "ar" ? "لديّ فكرة بالفعل" : "I Already Have an Idea",
+    flowBDesc:      lang === "tr" ? "Mevcut iş fikrinizi yapay zeka pazar doğrulama motorumuzdan geçirerek talep ve rekabeti test edin." : lang === "ar" ? "قدّم فكرتك التجارية الحالية وشغّلها عبر محرك التحقق من السوق بالذكاء الاصطناعي لاختبار الطلب والمنافسة." : "Bring your existing business idea and run it through our AI market validation engine to test demand and competition.",
     openMenu:       lang === "tr" ? "Menüyü aç" : lang === "ar" ? "فتح القائمة" : "Open menu",
     closeMenu:      lang === "tr" ? "Menüyü kapat" : lang === "ar" ? "إغلاق القائمة" : "Close menu",
     submitIdea:     lang === "tr" ? "Fikri gönder" : lang === "ar" ? "إرسال الفكرة" : "Submit idea",
@@ -284,17 +289,36 @@ export default function LandingPage() {
             </h1>
             <p className={"text-lg mb-10 max-w-lg mx-auto leading-relaxed " + sub}>{L.heroSub}</p>
 
-            {/* CTA buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button onClick={handleGenerate} className="flex items-center gap-2 px-7 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-full text-sm transition shadow-md">
-                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                {L.generate}
-              </button>
-              <button onClick={() => scrollTo("trending")} className={"px-7 py-3.5 font-bold rounded-full text-sm transition border shadow-sm " + (d ? "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700" : "bg-white border-gray-200 text-gray-800 hover:bg-gray-50")}>
-                {L.browse}
-              </button>
-              <a href="/idea-generation" className={"px-7 py-3.5 font-bold rounded-full text-sm transition border shadow-sm no-underline " + (d ? "bg-purple-900/60 border-purple-700 text-purple-200 hover:bg-purple-800/60" : "bg-purple-50 border-purple-200 text-purple-800 hover:bg-purple-100")}>
-                ✨ {L.ideaGen}
+            {/* CTA Flow Cards */}
+            <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto mt-2">
+              {/* Flow A — Find an Idea */}
+              <a
+                href="/idea-generation"
+                className={"group rounded-2xl border p-6 text-left no-underline transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 " + (d ? "bg-gray-900/70 border-gray-800 hover:border-emerald-600" : "bg-white/70 border-gray-200 hover:border-emerald-400")}
+              >
+                <div className={"w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-colors " + (d ? "bg-emerald-950/60 text-emerald-400 group-hover:bg-emerald-900/80" : "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100")}>
+                  <Lightbulb className="w-5 h-5" />
+                </div>
+                <h3 className={"text-base font-black mb-1.5 group-hover:text-emerald-500 transition-colors " + pageText}>{L.flowATitle}</h3>
+                <p className={"text-xs leading-relaxed mb-4 " + sub}>{L.flowADesc}</p>
+                <span className={"inline-flex items-center gap-1 text-xs font-bold transition-colors " + (d ? "text-emerald-400" : "text-emerald-600")}>
+                  {L.getStarted} <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </a>
+
+              {/* Flow B — Validate Existing Idea */}
+              <a
+                href="/custom-idea"
+                className={"group rounded-2xl border p-6 text-left no-underline transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 " + (d ? "bg-gray-900/70 border-gray-800 hover:border-sky-600" : "bg-white/70 border-gray-200 hover:border-sky-400")}
+              >
+                <div className={"w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-colors " + (d ? "bg-sky-950/60 text-sky-400 group-hover:bg-sky-900/80" : "bg-sky-50 text-sky-600 group-hover:bg-sky-100")}>
+                  <Target className="w-5 h-5" />
+                </div>
+                <h3 className={"text-base font-black mb-1.5 group-hover:text-sky-500 transition-colors " + pageText}>{L.flowBTitle}</h3>
+                <p className={"text-xs leading-relaxed mb-4 " + sub}>{L.flowBDesc}</p>
+                <span className={"inline-flex items-center gap-1 text-xs font-bold transition-colors " + (d ? "text-sky-400" : "text-sky-600")}>
+                  {L.getStarted} <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </span>
               </a>
             </div>
           </div>
