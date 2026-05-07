@@ -94,11 +94,12 @@ export default function LoginPage() {
   const t = TRANSLATIONS[lang];
   const isRTL = lang === "ar";
 
-  const [view, setView] = useState<"login" | "register" | "verify">("login");
+  const [view, setView] = useState<"login" | "register" | "verify" | "forgot" | "reset">("login");
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
 
@@ -202,6 +203,66 @@ export default function LoginPage() {
     }
   }
 
+  // ── Forgot password: request reset code ────────────────────────────────
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/reset-password/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error("Error");
+      toast.success(
+        lang === "tr" ? "Kod gönderildi! E-postanızı kontrol edin."
+          : lang === "ar" ? "تم إرسال الرمز! تحقق من بريدك الإلكتروني."
+          : "Code sent! Check your email."
+      );
+      setView("reset");
+    } catch {
+      toast.error(t.err_network);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Reset password: confirm code + set new password ────────────────────
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/reset-password/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || "Error");
+      }
+      toast.success(
+        lang === "tr" ? "Şifre başarıyla sıfırlandı!"
+          : lang === "ar" ? "تم إعادة تعيين كلمة المرور بنجاح!"
+          : "Password reset successfully!"
+      );
+      setCode("");
+      setNewPassword("");
+      setView("login");
+    } catch (err: any) {
+      const msg = err.message;
+      if (msg === "Invalid code") {
+        toast.error(lang === "tr" ? "Geçersiz kod" : lang === "ar" ? "رمز غير صالح" : "Invalid code");
+      } else if (msg.includes("expired") || msg.includes("Expired")) {
+        toast.error(lang === "tr" ? "Kodun süresi doldu. Yeni kod isteyin." : lang === "ar" ? "انتهت صلاحية الرمز. اطلب رمزاً جديداً." : "Code expired. Please request a new one.");
+      } else {
+        toast.error(t.err_network);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div dir={isRTL ? "rtl" : "ltr"} className={"min-h-screen flex items-center justify-center p-4 transition-colors duration-300 font-sans " + bg}>
@@ -236,16 +297,22 @@ export default function LoginPage() {
               <span className={"text-xl font-black " + (isDark ? "text-gray-100" : "text-gray-900")}>Start <span className="text-green-600">ERA</span></span>
             </a>
             <h1 className={"text-2xl font-black mb-1.5 " + (isDark ? "text-gray-100" : "text-gray-900")}>
-              {view === "verify" ? t.title_verify : view === "login" ? t.title_login : t.title_register}
+              {view === "verify" ? t.title_verify
+                : view === "forgot" ? (lang === "tr" ? "Şifremi Unuttum" : lang === "ar" ? "نسيت كلمة المرور" : "Forgot Password")
+                : view === "reset" ? (lang === "tr" ? "Şifreyi Sıfırla" : lang === "ar" ? "إعادة تعيين كلمة المرور" : "Reset Password")
+                : view === "login" ? t.title_login : t.title_register}
             </h1>
             <p className={"text-sm " + subtext}>
-              {view === "login" ? t.subtitle_login : view === "register" ? t.subtitle_register : t.subtitle_verify}
+              {view === "forgot" ? (lang === "tr" ? "E-posta adresinizi girin, size bir kod göndereceğiz." : lang === "ar" ? "أدخل بريدك الإلكتروني وسنرسل لك رمزاً." : "Enter your email and we'll send you a code.")
+                : view === "reset" ? (lang === "tr" ? "E-postanıza gönderilen kodu ve yeni şifrenizi girin." : lang === "ar" ? "أدخل الرمز المرسل إلى بريدك الإلكتروني وكلمة المرور الجديدة." : "Enter the code sent to your email and your new password.")
+                : view === "login" ? t.subtitle_login
+                : view === "register" ? t.subtitle_register : t.subtitle_verify}
             </p>
           </div>
 
           {/* ── Form ─────────────────────────────────────────────────────────── */}
           <form
-            onSubmit={view === "login" ? handleLogin : view === "register" ? handleRegister : handleVerify}
+            onSubmit={view === "login" ? handleLogin : view === "register" ? handleRegister : view === "forgot" ? handleForgot : view === "reset" ? handleReset : handleVerify}
             className="space-y-4"
             noValidate
           >
@@ -269,7 +336,7 @@ export default function LoginPage() {
             )}
 
             {/* Email field */}
-            {view !== "verify" && (
+            {(view === "login" || view === "register" || view === "forgot") && (
               <div className="space-y-1">
                 <label htmlFor="auth-email" className={"text-xs font-semibold ml-1 " + subtext}>{t.label_email}</label>
                 <Field icon={<MailIcon />} darkMode={isDark}>
@@ -288,8 +355,8 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Password field */}
-            {view !== "verify" && (
+            {/* Password field (login & register only) */}
+            {(view === "login" || view === "register") && (
               <div className="space-y-1">
                 <label htmlFor="auth-password" className={"text-xs font-semibold ml-1 " + subtext}>{t.label_password}</label>
                 <Field icon={<LockIcon />} darkMode={isDark}>
@@ -317,7 +384,75 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Verification code */}
+            {/* Forgot password link (login view only) */}
+            {view === "login" && (
+              <div className={"text-right " + (isRTL ? "text-left" : "")}>
+                <button
+                  type="button"
+                  onClick={() => { setCode(""); setNewPassword(""); setView("forgot"); }}
+                  className={"text-xs font-semibold transition hover:text-green-600 " + subtext}
+                >
+                  {lang === "tr" ? "Şifremi Unuttum" : lang === "ar" ? "نسيت كلمة المرور" : "Forgot Password?"}
+                </button>
+              </div>
+            )}
+
+            {/* Reset code field (reset view) */}
+            {view === "reset" && (
+              <div className="space-y-1">
+                <label htmlFor="reset-code" className={"text-xs font-semibold ml-1 " + subtext}>
+                  {lang === "tr" ? "Doğrulama Kodu" : lang === "ar" ? "رمز التحقق" : "Verification Code"}
+                </label>
+                <Field icon={<KeyIcon />} darkMode={isDark}>
+                  <input
+                    id="reset-code"
+                    name="code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    className={inputClass + " text-center tracking-[0.6em] text-lg font-black " + (isDark ? "text-gray-100" : "text-gray-900")}
+                    placeholder={t.ph_code}
+                    value={code}
+                    onChange={e => setCode(e.target.value)}
+                  />
+                </Field>
+              </div>
+            )}
+
+            {/* New password field (reset view) */}
+            {view === "reset" && (
+              <div className="space-y-1">
+                <label htmlFor="new-password" className={"text-xs font-semibold ml-1 " + subtext}>
+                  {lang === "tr" ? "Yeni Şifre" : lang === "ar" ? "كلمة المرور الجديدة" : "New Password"}
+                </label>
+                <Field icon={<LockIcon />} darkMode={isDark}>
+                  <input
+                    id="new-password"
+                    name="newPassword"
+                    type={showPw ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    minLength={6}
+                    className={inputClass + " " + (isDark ? "text-gray-100" : "text-gray-900")}
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(!showPw)}
+                    aria-label={showPwLabel}
+                    aria-pressed={showPw}
+                    className="opacity-50 hover:opacity-80 transition flex-shrink-0"
+                  >
+                    {showPw ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                </Field>
+              </div>
+            )}
+
+            {/* Verification code (verify view — registration) */}
             {view === "verify" && (
               <div className="space-y-1">
                 <label htmlFor="verify-code" className={"text-xs font-semibold ml-1 " + subtext}>{t.label_code}</label>
@@ -349,7 +484,11 @@ export default function LoginPage() {
                 <span className="animate-pulse">{t.processing}</span>
               ) : (
                 <>
-                  {view === "login" ? t.btn_login : view === "register" ? t.btn_register : t.btn_verify}
+                  {view === "login" ? t.btn_login
+                    : view === "register" ? t.btn_register
+                    : view === "forgot" ? (lang === "tr" ? "Kod Gönder" : lang === "ar" ? "إرسال الرمز" : "Send Code")
+                    : view === "reset" ? (lang === "tr" ? "Şifreyi Sıfırla" : lang === "ar" ? "إعادة تعيين" : "Reset Password")
+                    : t.btn_verify}
                   <ArrowIcon />
                 </>
               )}
@@ -357,11 +496,20 @@ export default function LoginPage() {
           </form>
 
           {/* Toggle login/register */}
-          {view !== "verify" && (
+          {(view === "login" || view === "register") && (
             <p className={"text-center text-sm mt-6 " + subtext}>
               {view === "login" ? t.no_account : t.has_account}
               <button onClick={() => setView(view === "login" ? "register" : "login")} className="ml-1.5 font-bold text-green-600 hover:text-green-700 transition">
                 {view === "login" ? t.link_register : t.link_login}
+              </button>
+            </p>
+          )}
+
+          {/* Back to login (forgot/reset views) */}
+          {(view === "forgot" || view === "reset") && (
+            <p className={"text-center text-sm mt-6 " + subtext}>
+              <button onClick={() => setView("login")} className="font-bold text-green-600 hover:text-green-700 transition">
+                {lang === "tr" ? "← Giriş Yap'a Dön" : lang === "ar" ? "← العودة إلى تسجيل الدخول" : "← Back to Login"}
               </button>
             </p>
           )}
