@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useThemeAuth } from "../context/ThemeAuthContext";
 import {
   TrendingUp, Shield, DollarSign, Scale, Loader2, ArrowLeft,
   Sun, Moon, CheckCircle2, AlertTriangle, XCircle, BarChart3,
-  Sparkles, ChevronRight,
+  Sparkles, ChevronRight, Rocket,
 } from "lucide-react";
 
 interface ValidationData {
@@ -28,9 +29,9 @@ const LOADING_STEPS_MAP: Record<string, string[]> = {
 };
 
 const T: Record<string, Record<string, string>> = {
-  tr: { title: "Pazar Doğrulama", subtitle: "Girişim fikrinizin pazar analizi", back: "Geri", demandTitle: "Talep Trendi Puanı", compTitle: "Rekabet Yoğunluğu", revTitle: "Tahmini Gelir Aralığı", regTitle: "Yerel Düzenleme Notları", low: "Düşük", medium: "Orta", high: "Yüksek", monthly: "/ay", validating: "Fikriniz Doğrulanıyor", goBack: "Fikirlere Dön", noData: "Seçili fikir bulunamadı", noDataDesc: "Lütfen fikirler sayfasına dönün ve bir fikir seçin.", badge: "Yapay Zeka Doğrulaması", demandDesc: "Mevcut pazar talebini ölçer", compDesc: "Pazardaki rekabet seviyesi", revDesc: "İlk 6-12 ay tahmini", regDesc: "İşletme türüne özel yasal gereksinimler" },
-  en: { title: "Market Validation", subtitle: "Market analysis of your startup idea", back: "Back", demandTitle: "Demand Trend Score", compTitle: "Competition Intensity", revTitle: "Estimated Revenue Range", regTitle: "Local Regulation Notes", low: "Low", medium: "Medium", high: "High", monthly: "/mo", validating: "Validating Your Idea", goBack: "Back to Ideas", noData: "No idea selected", noDataDesc: "Please go back to the ideas page and select an idea.", badge: "AI Validation", demandDesc: "Measures current market demand", compDesc: "Level of competition in this market", revDesc: "Projected first 6-12 months", regDesc: "Legal requirements specific to this business type" },
-  ar: { title: "التحقق من السوق", subtitle: "تحليل السوق لفكرة شركتك الناشئة", back: "عودة", demandTitle: "درجة اتجاه الطلب", compTitle: "شدة المنافسة", revTitle: "نطاق الإيرادات المقدر", regTitle: "ملاحظات التنظيم المحلي", low: "منخفضة", medium: "متوسطة", high: "عالية", monthly: "/شهر", validating: "جارٍ التحقق من فكرتك", goBack: "العودة للأفكار", noData: "لم يتم اختيار فكرة", noDataDesc: "يرجى العودة إلى صفحة الأفكار واختيار فكرة.", badge: "تحقق بالذكاء الاصطناعي", demandDesc: "يقيس الطلب الحالي في السوق", compDesc: "مستوى المنافسة في هذا السوق", revDesc: "التوقعات لأول 6-12 شهر", regDesc: "المتطلبات القانونية الخاصة بهذا النوع من الأعمال" },
+  tr: { title: "Pazar Doğrulama", subtitle: "Girişim fikrinizin pazar analizi", back: "Geri", demandTitle: "Talep Trendi Puanı", compTitle: "Rekabet Yoğunluğu", revTitle: "Tahmini Gelir Aralığı", regTitle: "Yerel Düzenleme Notları", low: "Düşük", medium: "Orta", high: "Yüksek", monthly: "/ay", validating: "Fikriniz Doğrulanıyor", goBack: "Fikirlere Dön", noData: "Seçili fikir bulunamadı", noDataDesc: "Lütfen fikirler sayfasına dönün ve bir fikir seçin.", badge: "Yapay Zeka Doğrulaması", demandDesc: "Mevcut pazar talebini ölçer", compDesc: "Pazardaki rekabet seviyesi", revDesc: "İlk 6-12 ay tahmini", regDesc: "İşletme türüne özel yasal gereksinimler", proceedToLaunch: "Lansman Sistemine Geç" },
+  en: { title: "Market Validation", subtitle: "Market analysis of your startup idea", back: "Back", demandTitle: "Demand Trend Score", compTitle: "Competition Intensity", revTitle: "Estimated Revenue Range", regTitle: "Local Regulation Notes", low: "Low", medium: "Medium", high: "High", monthly: "/mo", validating: "Validating Your Idea", goBack: "Back to Ideas", noData: "No idea selected", noDataDesc: "Please go back to the ideas page and select an idea.", badge: "AI Validation", demandDesc: "Measures current market demand", compDesc: "Level of competition in this market", revDesc: "Projected first 6-12 months", regDesc: "Legal requirements specific to this business type", proceedToLaunch: "Proceed to Launch System" },
+  ar: { title: "التحقق من السوق", subtitle: "تحليل السوق لفكرة شركتك الناشئة", back: "عودة", demandTitle: "درجة اتجاه الطلب", compTitle: "شدة المنافسة", revTitle: "نطاق الإيرادات المقدر", regTitle: "ملاحظات التنظيم المحلي", low: "منخفضة", medium: "متوسطة", high: "عالية", monthly: "/شهر", validating: "جارٍ التحقق من فكرتك", goBack: "العودة للأفكار", noData: "لم يتم اختيار فكرة", noDataDesc: "يرجى العودة إلى صفحة الأفكار واختيار فكرة.", badge: "تحقق بالذكاء الاصطناعي", demandDesc: "يقيس الطلب الحالي في السوق", compDesc: "مستوى المنافسة في هذا السوق", revDesc: "التوقعات لأول 6-12 شهر", regDesc: "المتطلبات القانونية الخاصة بهذا النوع من الأعمال", proceedToLaunch: "انتقل إلى نظام الإطلاق" },
 };
 
 export default function ValidationPage() {
@@ -312,8 +313,20 @@ export default function ValidationPage() {
           </div>
         </div>
 
+        {/* Launch CTA */}
+        <div className="mt-10" style={{ animation: "fadeSlideIn 0.55s cubic-bezier(0.16,1,0.3,1) forwards" }}>
+          <Link href="/launch" id="proceed-to-launch-btn"
+            className="group relative flex items-center justify-center gap-3 w-full md:w-auto md:mx-auto px-10 py-4 rounded-2xl font-black text-base text-white no-underline overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98]"
+            style={{ background: "linear-gradient(135deg, #059669, #10b981, #34d399)" }}>
+            <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+            <Rocket className="w-5 h-5 relative z-10 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-8deg]" />
+            <span className="relative z-10">{t.proceedToLaunch}</span>
+            <ChevronRight className="w-5 h-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+          </Link>
+        </div>
+
         {/* Back CTA */}
-        <div className="flex justify-center mt-10" style={{ animation: "fadeSlideIn 0.55s cubic-bezier(0.16,1,0.3,1) forwards" }}>
+        <div className="flex justify-center mt-5" style={{ animation: "fadeSlideIn 0.6s cubic-bezier(0.16,1,0.3,1) forwards" }}>
           <button onClick={() => router.push("/idea-generation/results")} className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm border transition-all ${d ? "border-gray-700 text-gray-200 hover:bg-gray-800" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}>
             <ArrowLeft className="w-4 h-4" />
             {t.goBack}
