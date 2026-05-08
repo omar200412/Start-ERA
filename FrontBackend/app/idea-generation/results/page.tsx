@@ -22,21 +22,21 @@ interface IdeaResult {
 // ── Loading steps per language ─────────────────────────────────────────────────
 const LOADING_STEPS_MAP: Record<string, string[]> = {
   tr: [
-    "Claude AI profilinizi okuyor...",
+    "StartERA AI profilinizi okuyor...",
     "Becerileriniz pazar fırsatlarına eşleştiriliyor...",
     "Kârlılık modelleri hesaplanıyor...",
     "Rekabet ortamı analiz ediliyor...",
     "Kişiselleştirilmiş girişim planları oluşturuluyor...",
   ],
   en: [
-    "Claude AI is reading your profile...",
+    "StartERA AI is reading your profile...",
     "Mapping your skills to market opportunities...",
     "Calculating profitability models...",
     "Analyzing competitive landscape...",
     "Crafting personalized startup blueprints...",
   ],
   ar: [
-    "يقرأ Claude AI ملفك الشخصي...",
+    "يقرأ StartERA AI ملفك الشخصي...",
     "ربط مهاراتك بفرص السوق...",
     "حساب نماذج الربحية...",
     "تحليل المشهد التنافسي...",
@@ -49,7 +49,7 @@ const T: Record<string, Record<string, string>> = {
   tr: {
     badge: "Yapay Zeka Fikir Üretimi",
     title: "Sizin İçin Üretilen Fikirler",
-    subtitle: "Claude AI profilinizi analiz etti ve size özel 3 girişim fırsatı üretti.",
+    subtitle: "StartERA AI profilinizi analiz etti ve size özel 3 girişim fırsatı üretti.",
     loading: "Fikirleriniz Üretiliyor",
     back: "Geri",
     home: "Ana Sayfa",
@@ -72,7 +72,7 @@ const T: Record<string, Record<string, string>> = {
   en: {
     badge: "AI Idea Generation",
     title: "Ideas Generated For You",
-    subtitle: "Claude AI analyzed your profile and generated 3 personalized startup opportunities.",
+    subtitle: "StartERA AI analyzed your profile and generated 3 personalized startup opportunities.",
     loading: "Generating Your Ideas",
     back: "Back",
     home: "Home",
@@ -95,7 +95,7 @@ const T: Record<string, Record<string, string>> = {
   ar: {
     badge: "توليد أفكار بالذكاء الاصطناعي",
     title: "أفكار مولّدة خصيصاً لك",
-    subtitle: "حلل Claude AI ملفك الشخصي وأنتج 3 فرص شركات ناشئة مخصصة.",
+    subtitle: "حلل StartERA AI ملفك الشخصي وأنتج 3 فرص شركات ناشئة مخصصة.",
     loading: "جارٍ توليد أفكارك",
     back: "عودة",
     home: "الرئيسية",
@@ -272,8 +272,10 @@ export default function IdeaResultsPage() {
         {navbar}
         <div className="flex items-center justify-center px-6 py-24">
           <div className={`max-w-lg w-full p-10 rounded-3xl border text-center ${cardBg}`} style={{ animation: "fadeInScale 0.5s cubic-bezier(0.16,1,0.3,1) forwards" }}>
-            <div className="mx-auto mb-8 w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center">
-              <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+            <div className="flex items-center justify-center mb-8">
+              <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+              </div>
             </div>
             <h2 className={`text-2xl font-black mb-3 ${textPrimary}`} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.loading}</h2>
             <div className="space-y-3 text-left mt-6">
