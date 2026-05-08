@@ -308,7 +308,7 @@ export default function LandingPage() {
 
               {/* Flow B — Validate Existing Idea */}
               <a
-                href="/custom-idea"
+                href="/planner"
                 className={"group rounded-2xl border p-6 text-left no-underline transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 " + (d ? "bg-gray-900/70 border-gray-800 hover:border-sky-600" : "bg-white/70 border-gray-200 hover:border-sky-400")}
               >
                 <div className={"w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-colors " + (d ? "bg-sky-950/60 text-sky-400 group-hover:bg-sky-900/80" : "bg-sky-50 text-sky-600 group-hover:bg-sky-100")}>
