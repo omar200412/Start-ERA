@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useThemeAuth } from "../context/ThemeAuthContext";
 import {
   TrendingUp, Shield, DollarSign, Scale, Loader2, ArrowLeft,
@@ -315,14 +314,14 @@ export default function ValidationPage() {
 
         {/* Launch CTA */}
         <div className="mt-10" style={{ animation: "fadeSlideIn 0.55s cubic-bezier(0.16,1,0.3,1) forwards" }}>
-          <Link href="/launch" id="proceed-to-launch-btn"
-            className="group relative flex items-center justify-center gap-3 w-full md:w-auto md:mx-auto px-10 py-4 rounded-2xl font-black text-base text-white no-underline overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98]"
+          <button onClick={() => router.push('/launch')} id="proceed-to-launch-btn"
+            className="group relative flex items-center justify-center gap-3 w-full md:w-auto md:mx-auto px-10 py-4 rounded-2xl font-black text-base text-white overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] border-0 cursor-pointer"
             style={{ background: "linear-gradient(135deg, #059669, #10b981, #34d399)" }}>
             <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
             <Rocket className="w-5 h-5 relative z-10 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-8deg]" />
             <span className="relative z-10">{t.proceedToLaunch}</span>
             <ChevronRight className="w-5 h-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
-          </Link>
+          </button>
         </div>
 
         {/* Back CTA */}
