@@ -224,6 +224,26 @@ export default function DashboardPage() {
             </div>
             {/* Modal body */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {/* Go to Launch System CTA */}
+              <button
+                onClick={() => {
+                  // Store the project data so the Launch page can consume it
+                  sessionStorage.setItem(
+                    "selected_idea_for_validation",
+                    JSON.stringify({ title: viewingProject.title, planData: viewingProject.planData })
+                  );
+                  window.location.href = "/launch";
+                }}
+                className={
+                  "w-full flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-bold text-sm transition-all duration-200 shadow-md " +
+                  "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white hover:shadow-lg hover:-translate-y-0.5"
+                }
+              >
+                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.58-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                </svg>
+                {lang === "tr" ? "Lansman Sistemine Git" : lang === "ar" ? "انتقل إلى نظام الإطلاق" : "Go to Launch System"}
+              </button>
               {viewingProject.planData ? (
                 viewingProject.planData.map((section: any, idx: number) => (
                   <div key={idx} className={"rounded-xl border overflow-hidden " + (isDark ? "border-gray-800" : "border-gray-200")}>
