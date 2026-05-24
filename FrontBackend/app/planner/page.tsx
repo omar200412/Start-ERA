@@ -408,7 +408,7 @@ export default function PlannerPage() {
           <div className="flex items-center justify-between h-14">
             {/* Logo */}
             <a href="/" className="flex items-center gap-2 no-underline" aria-label="Start ERA — Home">
-              <img src="/logo.png" alt="Start ERA Logo" className="w-7 h-7 rounded-full object-cover" />
+              <img src="/logo.png" alt="Start ERA Logo" className="w-10 h-10 rounded-full object-cover" />
               <span className={"text-base font-black " + (isDark ? "text-gray-100" : "text-gray-900")}>Start ERA</span>
             </a>
             <div className="flex items-center gap-2">

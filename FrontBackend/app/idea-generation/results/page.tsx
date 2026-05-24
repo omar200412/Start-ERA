@@ -228,7 +228,7 @@ export default function IdeaResultsPage() {
     <nav className={`sticky top-0 z-40 border-b backdrop-blur-md ${navBg}`}>
       <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2 no-underline">
-          <img src="/logo.png" alt="Start ERA Logo" className="w-7 h-7 rounded-full object-cover" />
+          <img src="/logo.png" alt="Start ERA Logo" className="w-10 h-10 rounded-full object-cover" />
           <span className={`text-base font-black ${textPrimary}`}>Start ERA</span>
         </a>
         <div className="flex items-center gap-2">

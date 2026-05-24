@@ -202,7 +202,7 @@ export default function LandingPage() {
             className="flex items-center gap-2.5"
             aria-label="Start ERA — scroll to top"
           >
-            <img src="/logo.png" alt="Start ERA Logo" className="w-8 h-8 rounded-full object-cover" />
+            <img src="/logo.png" alt="Start ERA Logo" className="w-12 h-12 rounded-full object-cover" />
             <span className={"text-lg font-black " + pageText}>Start ERA</span>
           </button>
 
@@ -568,7 +568,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-10">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <img src="/logo.png" alt="Start ERA Logo" className="w-7 h-7 rounded-full object-cover" />
+                <img src="/logo.png" alt="Start ERA Logo" className="w-10 h-10 rounded-full object-cover" />
                 <span className="text-white font-black">Start ERA</span>
               </div>
               <p className="text-gray-400 text-sm max-w-xs leading-relaxed">{t.about_text}</p>
