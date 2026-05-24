@@ -270,7 +270,7 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2 no-underline" aria-label="Start ERA — Home">
-            <div className="w-7 h-7 bg-green-600 rounded-lg flex items-center justify-center text-white font-black text-xs" aria-hidden="true">S</div>
+            <img src="/logo.png" alt="Start ERA Logo" className="w-7 h-7 rounded-full object-cover" />
             <span className={"text-base font-black " + (isDark ? "text-gray-100" : "text-gray-900")}>Start ERA</span>
           </a>
 
