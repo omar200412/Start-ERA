@@ -356,7 +356,7 @@ export default function LandingPage() {
         <section aria-labelledby="how-heading" className={"py-24 px-6 " + (d ? "bg-gray-950" : "bg-white")}>
           <div className="max-w-6xl mx-auto">
             <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-16 " + sub}>[02] {L.howLabel}</p>
-            <div className="grid md:grid-cols-2 gap-16 items-center">
+            <div className="max-w-3xl mx-auto">
               <div className="space-y-0">
                 {/* h2 — section heading */}
                 <h2 id="how-heading" className={"sr-only"}>{L.howLabel}</h2>
@@ -376,33 +376,6 @@ export default function LandingPage() {
                     <p className={"text-sm leading-relaxed ml-11 " + sub}>{s.desc}</p>
                   </div>
                 ))}
-              </div>
-
-              {/* Green card with idea input */}
-              <div className="rounded-3xl p-8" style={{ background: greenCardGradient }}>
-                {/* h3 — sibling to step headings (both under the invisible how-heading h2) */}
-                <h3 className="text-3xl font-black text-white mb-6" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{L.shareIdea}</h3>
-                <div className={"rounded-2xl p-5 shadow-lg " + (d ? "bg-gray-900 border border-gray-700" : "bg-white")}>
-                  <label htmlFor="idea-input" className="sr-only">{L.placeholder}</label>
-                  <textarea
-                    id="idea-input"
-                    value={idea}
-                    onChange={e => setIdea(e.target.value.slice(0, maxChars))}
-                    placeholder={lang === "tr" ? "Fikrinizi buraya yazın..." : lang === "ar" ? "اكتب فكرتك هنا..." : "a website that helps you find a cat sitter in your area"}
-                    rows={5}
-                    className={"w-full resize-none outline-none text-sm leading-relaxed " + (d ? "bg-gray-900 text-gray-200 placeholder-gray-500" : "bg-white text-gray-800 placeholder-gray-500")}
-                  />
-                  <div className="flex items-center justify-between mt-3">
-                    <span className={"text-xs " + sub}>{L.charsLeft}</span>
-                    <button
-                      onClick={handleGenerate}
-                      aria-label={L.submitIdea}
-                      className="w-9 h-9 bg-gray-900 hover:bg-green-700 text-white rounded-full flex items-center justify-center transition shadow-md"
-                    >
-                      <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
