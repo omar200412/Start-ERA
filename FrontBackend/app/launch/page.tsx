@@ -200,7 +200,7 @@ export default function LaunchPage() {
       <nav className={`sticky top-0 z-40 border-b backdrop-blur-md ${navBg}`}>
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2 no-underline">
-            <div className="w-7 h-7 bg-green-600 rounded-lg flex items-center justify-center text-white font-black text-xs">S</div>
+            <img src="/logo.png" alt="Start ERA Logo" className="w-10 h-10 rounded-full object-cover" />
             <span className={`text-base font-black ${textP}`}>Start ERA</span>
           </a>
           <div className="flex items-center gap-2">

@@ -202,7 +202,7 @@ export default function LandingPage() {
             className="flex items-center gap-2.5"
             aria-label="Start ERA — scroll to top"
           >
-            <div className="w-8 h-8 bg-green-600 rounded-xl flex items-center justify-center text-white font-black text-sm" aria-hidden="true">S</div>
+            <img src="/logo.png" alt="Start ERA Logo" className="w-12 h-12 rounded-full object-cover" />
             <span className={"text-lg font-black " + pageText}>Start ERA</span>
           </button>
 
@@ -327,7 +327,7 @@ export default function LandingPage() {
         {/* ── COMMUNITY SECTION ─────────────────────────────────────────────── */}
         <section aria-labelledby="community-heading" className="bg-gray-950 py-24 px-6">
           <div className="max-w-6xl mx-auto">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-16">[01] {L.builtOn}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-16">{L.builtOn}</p>
             <div className="grid md:grid-cols-2 gap-16 items-start mb-16">
               {/* h2 — first section heading (directly under h1) */}
               <h2 id="community-heading" className="text-4xl md:text-5xl font-black text-white leading-tight" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
@@ -355,8 +355,8 @@ export default function LandingPage() {
         {/* ── HOW IT WORKS ──────────────────────────────────────────────────── */}
         <section aria-labelledby="how-heading" className={"py-24 px-6 " + (d ? "bg-gray-950" : "bg-white")}>
           <div className="max-w-6xl mx-auto">
-            <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-16 " + sub}>[02] {L.howLabel}</p>
-            <div className="grid md:grid-cols-2 gap-16 items-center">
+            <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-16 " + sub}>{L.howLabel}</p>
+            <div className="max-w-3xl mx-auto">
               <div className="space-y-0">
                 {/* h2 — section heading */}
                 <h2 id="how-heading" className={"sr-only"}>{L.howLabel}</h2>
@@ -377,33 +377,6 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-
-              {/* Green card with idea input */}
-              <div className="rounded-3xl p-8" style={{ background: greenCardGradient }}>
-                {/* h3 — sibling to step headings (both under the invisible how-heading h2) */}
-                <h3 className="text-3xl font-black text-white mb-6" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{L.shareIdea}</h3>
-                <div className={"rounded-2xl p-5 shadow-lg " + (d ? "bg-gray-900 border border-gray-700" : "bg-white")}>
-                  <label htmlFor="idea-input" className="sr-only">{L.placeholder}</label>
-                  <textarea
-                    id="idea-input"
-                    value={idea}
-                    onChange={e => setIdea(e.target.value.slice(0, maxChars))}
-                    placeholder={lang === "tr" ? "Fikrinizi buraya yazın..." : lang === "ar" ? "اكتب فكرتك هنا..." : "a website that helps you find a cat sitter in your area"}
-                    rows={5}
-                    className={"w-full resize-none outline-none text-sm leading-relaxed " + (d ? "bg-gray-900 text-gray-200 placeholder-gray-500" : "bg-white text-gray-800 placeholder-gray-500")}
-                  />
-                  <div className="flex items-center justify-between mt-3">
-                    <span className={"text-xs " + sub}>{L.charsLeft}</span>
-                    <button
-                      onClick={handleGenerate}
-                      aria-label={L.submitIdea}
-                      className="w-9 h-9 bg-gray-900 hover:bg-green-700 text-white rounded-full flex items-center justify-center transition shadow-md"
-                    >
-                      <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -411,7 +384,7 @@ export default function LandingPage() {
         {/* ── TRENDING ──────────────────────────────────────────────────────── */}
         <section id="trending" aria-labelledby="trending-heading" className={"py-24 px-6 " + sectionBg}>
           <div className="max-w-6xl mx-auto">
-            <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-8 " + sub}>[03] {L.trendingLabel}</p>
+            <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-8 " + sub}>{L.trendingLabel}</p>
             <h2 id="trending-heading" className={"text-4xl md:text-5xl font-black mb-16 max-w-3xl leading-tight " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
               {L.trendingTitle}
             </h2>
@@ -441,7 +414,7 @@ export default function LandingPage() {
         {/* ── PRICING ───────────────────────────────────────────────────────── */}
         <section id="pricing" aria-labelledby="pricing-heading" className={"py-24 px-6 " + (d ? "bg-gray-950" : "bg-white")}>
           <div className="max-w-6xl mx-auto">
-            <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-8 " + sub}>[04] {lang === "tr" ? "FİYATLANDIRMA" : lang === "ar" ? "الأسعار" : "PRICING"}</p>
+            <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-8 " + sub}>{lang === "tr" ? "FİYATLANDIRMA" : lang === "ar" ? "الأسعار" : "PRICING"}</p>
             <h2 id="pricing-heading" className={"text-4xl md:text-5xl font-black mb-4 " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.price_title}</h2>
             <p className={"mb-16 " + sub}>{L.pricingSub}</p>
             <div className="grid md:grid-cols-2 gap-6 max-w-3xl">
@@ -484,7 +457,7 @@ export default function LandingPage() {
         {/* ── ABOUT ─────────────────────────────────────────────────────────── */}
         <section id="about" aria-labelledby="about-heading" className="py-24 px-6 bg-gray-950">
           <div className="max-w-6xl mx-auto">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-8">[05] {lang === "tr" ? "HAKKIMIZDA" : lang === "ar" ? "من نحن" : "ABOUT"}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-8">{lang === "tr" ? "HAKKIMIZDA" : lang === "ar" ? "من نحن" : "ABOUT"}</p>
             <div className="grid md:grid-cols-2 gap-16 items-center">
               <div>
                 <h2 id="about-heading" className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.about_title}</h2>
@@ -510,7 +483,7 @@ export default function LandingPage() {
         {/* ── CONTACT ───────────────────────────────────────────────────────── */}
         <section id="contact" aria-labelledby="contact-heading" className={"py-24 px-6 " + (d ? "bg-gray-900" : "bg-white")}>
           <div className="max-w-2xl mx-auto text-center">
-            <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-6 " + sub}>[06] {lang === "tr" ? "İLETİŞİM" : lang === "ar" ? "التواصل" : "CONTACT"}</p>
+            <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-6 " + sub}>{lang === "tr" ? "İLETİŞİM" : lang === "ar" ? "التواصل" : "CONTACT"}</p>
             <h2 id="contact-heading" className={"text-4xl font-black mb-3 " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.contact_title}</h2>
             <p className={"mb-10 " + sub}>{L.contactSub}</p>
             <form onSubmit={handleContact} className="space-y-4" noValidate>
@@ -568,7 +541,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-10">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 bg-green-600 rounded-xl flex items-center justify-center text-white font-black text-xs" aria-hidden="true">S</div>
+                <img src="/logo.png" alt="Start ERA Logo" className="w-10 h-10 rounded-full object-cover" />
                 <span className="text-white font-black">Start ERA</span>
               </div>
               <p className="text-gray-400 text-sm max-w-xs leading-relaxed">{t.about_text}</p>

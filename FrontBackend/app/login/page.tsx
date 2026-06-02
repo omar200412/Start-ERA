@@ -293,7 +293,7 @@ export default function LoginPage() {
           {/* Logo + header */}
           <div className="text-center mb-8">
             <a href="/" className="inline-flex items-center gap-2 mb-6 no-underline" aria-label="Start ERA — Ana Sayfa">
-              <div className="w-9 h-9 bg-green-600 rounded-xl flex items-center justify-center text-white font-black text-base" aria-hidden="true">S</div>
+              <img src="/logo.png" alt="Start ERA Logo" className="w-12 h-12 rounded-full object-cover" />
               <span className={"text-xl font-black " + (isDark ? "text-gray-100" : "text-gray-900")}>Start <span className="text-green-600">ERA</span></span>
             </a>
             <h1 className={"text-2xl font-black mb-1.5 " + (isDark ? "text-gray-100" : "text-gray-900")}>
