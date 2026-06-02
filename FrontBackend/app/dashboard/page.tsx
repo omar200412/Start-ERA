@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { useThemeAuth } from "../context/ThemeAuthContext";
 import { TRANSLATIONS } from "../lib/translations";
 import Chatbot from "../Chatbot";
+import LanguageDropdown from "../components/LanguageDropdown";
 
 // ── Icon components (all decorative → aria-hidden) ─────────────────────────────
 function SunIcon() {
@@ -284,13 +285,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Language toggle */}
-            <button
-              onClick={toggleLang}
-              aria-label={switchLangLabel}
-              className={"text-xs font-bold px-2.5 py-1.5 rounded-lg border transition " + (isDark ? "border-gray-700 text-gray-300 hover:border-green-600" : "border-gray-200 text-gray-600 hover:border-green-500")}
-            >
-              {getLangLabel()}
-            </button>
+            <LanguageDropdown />
 
             {/* Theme toggle */}
             <button

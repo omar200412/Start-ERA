@@ -5,6 +5,7 @@ import { useThemeAuth } from "./context/ThemeAuthContext";
 import { TRANSLATIONS } from "./lib/translations";
 import { Lightbulb, Target, ChevronRight } from "lucide-react";
 import Chatbot from "./Chatbot";
+import LanguageDropdown from "./components/LanguageDropdown";
 
 // ── Icon components ────────────────────────────────────────────────────────────
 function SunIcon() {
@@ -217,13 +218,7 @@ export default function LandingPage() {
           {/* Right controls */}
           <div className="flex items-center gap-2">
             {/* Language switcher */}
-            <button
-              onClick={toggleLang}
-              aria-label={L.switchLang}
-              className={"text-sm font-bold transition " + sub + " hover:text-green-600"}
-            >
-              {getLangLabel()}
-            </button>
+            <LanguageDropdown />
 
             {/* Theme toggle */}
             <button

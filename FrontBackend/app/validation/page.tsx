@@ -8,6 +8,7 @@ import {
   Sun, Moon, CheckCircle2, AlertTriangle, XCircle, BarChart3,
   Sparkles, ChevronRight, Rocket,
 } from "lucide-react";
+import LanguageDropdown from "../components/LanguageDropdown";
 
 interface ValidationData {
   demandTrendScore: number;
@@ -214,9 +215,7 @@ export default function ValidationPage() {
             <span className={`text-base font-black ${textPrimary}`}>Start ERA</span>
           </a>
           <div className="flex items-center gap-2">
-            <button onClick={toggleLang} className={`text-xs font-bold px-2.5 py-1.5 rounded-lg border transition ${d ? "border-gray-700 text-gray-300 hover:border-green-600" : "border-gray-200 text-gray-600 hover:border-green-500"}`}>
-              {getLangLabel()}
-            </button>
+            <LanguageDropdown />
             <button onClick={toggleTheme} className={`p-2 rounded-lg transition flex items-center text-xs font-medium border ${d ? "border-gray-700 text-yellow-400 hover:bg-gray-800" : "border-gray-200 text-gray-600 hover:bg-gray-100"}`}>
               {d ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>

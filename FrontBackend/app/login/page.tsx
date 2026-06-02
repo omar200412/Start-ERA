@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import toast from "react-hot-toast";
 import { useThemeAuth } from "../context/ThemeAuthContext";
 import { TRANSLATIONS } from "../lib/translations";
+import LanguageDropdown from "../components/LanguageDropdown";
 
 // ── Icon components (all decorative → aria-hidden) ─────────────────────────────
 function SunIcon() {
@@ -269,13 +270,7 @@ export default function LoginPage() {
 
       {/* Top controls */}
       <div className={"absolute top-5 flex items-center gap-3 z-50 " + (isRTL ? "left-5" : "right-5")}>
-        <button
-          onClick={toggleLang}
-          aria-label={switchLangLabel}
-          className={"text-sm font-bold px-3 py-1.5 rounded-lg border transition " + (isDark ? "border-gray-700 text-gray-300 hover:border-green-500" : "border-gray-300 text-gray-600 hover:border-green-600")}
-        >
-          {getLangLabel()}
-        </button>
+        <LanguageDropdown />
         <button
           onClick={toggleTheme}
           aria-label={toggleThemeLabel}

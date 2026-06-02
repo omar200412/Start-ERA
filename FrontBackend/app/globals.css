@@ -354,7 +354,7 @@ body {
   height: 28px;
   border-top-color: rgba(0, 150, 255, 0.5);
   border-right-color: rgba(0, 150, 255, 0.3);
-  animation: spin 3s linear infinite;
+  animation: energy-spin 3s linear infinite;
 }
 
 .energy-ring:nth-child(2) {
@@ -362,7 +362,7 @@ body {
   height: 22px;
   border-bottom-color: rgba(0, 150, 255, 0.5);
   border-left-color: rgba(0, 150, 255, 0.3);
-  animation: spin 2s linear infinite reverse;
+  animation: energy-spin 2s linear infinite reverse;
 }
 
 .energy-ring:nth-child(3) {
@@ -370,10 +370,10 @@ body {
   height: 16px;
   border-left-color: rgba(0, 150, 255, 0.5);
   border-top-color: rgba(0, 150, 255, 0.3);
-  animation: spin 1.5s linear infinite;
+  animation: energy-spin 1.5s linear infinite;
 }
 
-@keyframes spin {
+@keyframes energy-spin {
   0% { transform: translate(-50%, -50%) rotate(0deg); }
   100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
