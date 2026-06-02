@@ -126,6 +126,7 @@ export default function LandingPage() {
     generate: lang === "tr" ? "Önizleme Oluştur" : lang === "ar" ? "إنشاء معاينة" : "Generate Preview",
     browse: lang === "tr" ? "Fikirlere Göz At" : lang === "ar" ? "استعرض الأفكار" : "Browse Ideas",
     ideaGen: lang === "tr" ? "Fikir Üretici" : lang === "ar" ? "مولّد الأفكار" : "Idea Generator",
+    businessPlan: lang === "tr" ? "İş Planı Oluştur" : lang === "ar" ? "خطة عمل" : "Business Planner",
     getStarted: lang === "tr" ? "Başla" : lang === "ar" ? "ابدأ" : "Get started",
     builtOn: lang === "tr" ? "START ERA İLE OLUŞTURULDU" : lang === "ar" ? "مبني على START ERA" : "BUILT ON START ERA",
     communityTitle: lang === "tr" ? "Start ERA topluluğuna katıl; bağlantılar gelişir ve fikirler yeşerir." : lang === "ar" ? "انضم إلى مجتمع Start ERA حيث تزدهر العلاقات وتنمو الأفكار." : "Join our community at Start ERA, where connections thrive and ideas flourish.",
@@ -134,7 +135,7 @@ export default function LandingPage() {
     shareIdea: lang === "tr" ? "Fikrinizi Paylaşın" : lang === "ar" ? "شارك فكرتك" : "Share your idea",
     trendingLabel: lang === "tr" ? "TREND FİKİRLER" : lang === "ar" ? "أفكار رائجة" : "TRENDING IDEAS FEED",
     trendingTitle: lang === "tr" ? "Trend Fikirler Akışına göz atın, girişimcilik ruhunu yakalayın." : lang === "ar" ? "اطّلع على خلاصة الأفكار الرائجة." : "Check out our Trending Ideas Feed, a vibrant mix of entrepreneurial spirit.",
-    tryIdea: lang === "tr" ? "→ Bu fikirle devam et" : lang === "ar" ? "→ المتابعة بهذه الفكرة" : "→ Try this idea",
+    tryIdea: lang === "tr" ? "→ Bu fikri dene" : lang === "ar" ? "→ المتابعة بهذه الفكرة" : "→ Try this idea",
     pricingSub: lang === "tr" ? "Büyüyen her girişim için esnek planlar." : lang === "ar" ? "خطط مرنة لكل شركة ناشئة." : "Flexible plans for every growing startup.",
     contactSub: lang === "tr" ? "Sorularınız için bize yazın." : lang === "ar" ? "اكتب لنا لأي أسئلة." : "Write to us for any questions.",
     builtWith: lang === "tr" ? "Start ERA ile oluşturuldu" : lang === "ar" ? "مبني بـ Start ERA" : "Built with Start ERA",
@@ -167,7 +168,7 @@ export default function LandingPage() {
     { idea: lang === "tr" ? "Küçük işletmeler için yapay zeka destekli muhasebe asistanı" : lang === "ar" ? "مساعد محاسبة مدعوم بالذكاء الاصطناعي" : "AI-powered accounting assistant for small businesses", score: 8.2, tag: "FinTech" },
     { idea: lang === "tr" ? "Öğrencileri akıl hocalarıyla buluşturan platform" : lang === "ar" ? "منصة تربط الطلاب بالمرشدين" : "Platform connecting students with mentors", score: 7.5, tag: "EdTech" },
     { idea: lang === "tr" ? "Restoran artıkları için yemek paylaşım ağı" : lang === "ar" ? "شبكة مشاركة طعام لفائض المطاعم" : "Food sharing network for restaurant surplus", score: 8.0, tag: "FoodTech" },
-    { idea: lang === "tr" ? "Sağlık verilerini takip eden akıllı giyilebilir" : lang === "ar" ? "جهاز ذكي قابل للارتداء لتتبع بيانات الصحة" : "Smart wearable that tracks health data", score: 7.9, tag: "HealthTech" },
+    { idea: lang === "tr" ? "Sağlık verilerini takip eden akıllı giyilebilir cihaz" : lang === "ar" ? "جهاز ذكي قابل للارتداء لتتبع بيانات الصحة" : "Smart wearable that tracks health data", score: 7.9, tag: "HealthTech" },
     { idea: lang === "tr" ? "Uzak ekipler için sanal ofis platformu" : lang === "ar" ? "منصة مكتب افتراضي للفرق عن بُعد" : "Virtual office platform for remote teams", score: 8.4, tag: "SaaS" },
   ];
 
@@ -213,6 +214,7 @@ export default function LandingPage() {
             <button onClick={() => scrollTo("about")} className={"hover:text-green-600 transition " + linkCls}>{t.nav_about}</button>
             <button onClick={() => scrollTo("trending")} className={"hover:text-green-600 transition " + linkCls}>{L.browse}</button>
             <a href="/idea-generation" className={"hover:text-green-600 transition no-underline " + linkCls}>{L.ideaGen}</a>
+            <a href="/planner" className={"hover:text-green-600 transition no-underline " + linkCls}>{L.businessPlan}</a>
           </div>
 
           {/* Right controls */}
@@ -262,6 +264,7 @@ export default function LandingPage() {
             <button onClick={() => scrollTo("about")} className={"block w-full text-left text-sm py-2 " + linkCls}>{t.nav_about}</button>
             <button onClick={() => scrollTo("trending")} className={"block w-full text-left text-sm py-2 " + linkCls}>{L.browse}</button>
             <a href="/idea-generation" className={"block w-full text-left text-sm py-2 no-underline " + linkCls}>{L.ideaGen}</a>
+            <a href="/planner" className={"block w-full text-left text-sm py-2 no-underline " + linkCls}>{L.businessPlan}</a>
           </div>
         )}
       </nav>
