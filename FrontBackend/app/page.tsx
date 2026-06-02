@@ -31,9 +31,9 @@ function CheckIcon() {
 
 // ── Static data ────────────────────────────────────────────────────────────────
 const MOCKUP_STARTUPS = [
-  { name: "Justi.items", color: "bg-blue-600",   tag: "E-commerce" },
-  { name: "CoMoon.ai",   color: "bg-purple-600", tag: "AI Tools"   },
-  { name: "Musicify",    color: "bg-green-600",  tag: "Music Tech" },
+  { name: "Justi.items", color: "bg-blue-600", tag: "E-commerce" },
+  { name: "CoMoon.ai", color: "bg-purple-600", tag: "AI Tools" },
+  { name: "Musicify", color: "bg-green-600", tag: "Music Tech" },
 ];
 
 // ── Page component ─────────────────────────────────────────────────────────────
@@ -41,11 +41,11 @@ export default function LandingPage() {
   const { user, darkMode, toggleTheme, logout, lang, setLang } = useThemeAuth();
   const t = TRANSLATIONS[lang];
   const isRTL = lang === "ar";
-  const [idea, setIdea]               = useState("");
+  const [idea, setIdea] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
-  const [contactMsg, setContactMsg]   = useState("");
+  const [contactMsg, setContactMsg] = useState("");
   const [contactLoading, setContactLoading] = useState(false);
   const maxChars = 400;
 
@@ -98,15 +98,15 @@ export default function LandingPage() {
       });
       toast.success(
         lang === "tr" ? "Mesajınız alındı!" :
-        lang === "ar" ? "تم استلام رسالتك!" :
-        "Message received! We'll be in touch."
+          lang === "ar" ? "تم استلام رسالتك!" :
+            "Message received! We'll be in touch."
       );
       setContactName(""); setContactEmail(""); setContactMsg("");
     } catch {
       toast.error(
         lang === "tr" ? "Hata oluştu, tekrar deneyin." :
-        lang === "ar" ? "حدث خطأ." :
-        "Something went wrong."
+          lang === "ar" ? "حدث خطأ." :
+            "Something went wrong."
       );
     } finally {
       setContactLoading(false);
@@ -115,42 +115,42 @@ export default function LandingPage() {
 
   // ── Translated strings ────────────────────────────────────────────────────
   const freeItems = [t.li_1, t.li_2, t.li_3, t.li_4];
-  const proItems  = [t.pro_li1, t.pro_li2, t.pro_li3, t.pro_li4];
+  const proItems = [t.pro_li1, t.pro_li2, t.pro_li3, t.pro_li4];
 
   const L = {
-    heroTitle: lang === "tr" ? <>Fikrinizi yazın.<br />Girişiminizin<br />hayata geçtiğini görün.</> : lang === "ar" ? <>اكتب فكرتك.<br />شاهد شركتك الناشئة<br />تنبض بالحياة.</> : <>Type your idea. See your<br />startup come to life.</>,
-    heroSub:        lang === "tr" ? "60 saniyenin altında önizleme al. Ardından girişimini inşa et ve başlat." : lang === "ar" ? "احصل على معاينة في أقل من 60 ثانية. ثم ابنِ شركتك الناشئة وأطلقها." : "Get a preview in under 60 seconds. Then build & launch your startup.",
-    placeholder:    lang === "tr" ? "Harika fikrinizi buraya girin..." : lang === "ar" ? "أدخل فكرتك الرائعة هنا..." : "Enter awesome idea here...",
-    charsLeft:      `${maxChars - idea.length} ${lang === "tr" ? "karakter kaldı" : lang === "ar" ? "حرف متبقٍ" : "characters left"}`,
-    generate:       lang === "tr" ? "Önizleme Oluştur" : lang === "ar" ? "إنشاء معاينة" : "Generate Preview",
-    browse:         lang === "tr" ? "Fikirlere Göz At" : lang === "ar" ? "استعرض الأفكار" : "Browse Ideas",
-    ideaGen:        lang === "tr" ? "Fikir Üretici" : lang === "ar" ? "مولّد الأفكار" : "Idea Generator",
-    getStarted:     lang === "tr" ? "Başla" : lang === "ar" ? "ابدأ" : "Get started",
-    builtOn:        lang === "tr" ? "START ERA İLE OLUŞTURULDU" : lang === "ar" ? "مبني على START ERA" : "BUILT ON START ERA",
+    heroTitle: lang === "tr" ? <>Fikrinizi yazın girişiminizin hayata geçtiğini görün.</> : lang === "ar" ? <>اكتب فكرتك شاهد شركتك الناشئ تنبض بالحياة.</> : <>Type your idea See your startup come to life.</>,
+    heroSub: lang === "tr" ? "60 saniyenin altında önizleme al. Ardından girişimini inşa et ve başlat." : lang === "ar" ? "احصل على معاينة في أقل من 60 ثانية. ثم ابنِ شركتك الناشئة وأطلقها." : "Get a preview in under 60 seconds. Then build & launch your startup.",
+    placeholder: lang === "tr" ? "Harika fikrinizi buraya girin..." : lang === "ar" ? "أدخل فكرتك الرائعة هنا..." : "Enter awesome idea here...",
+    charsLeft: `${maxChars - idea.length} ${lang === "tr" ? "karakter kaldı" : lang === "ar" ? "حرف متبقٍ" : "characters left"}`,
+    generate: lang === "tr" ? "Önizleme Oluştur" : lang === "ar" ? "إنشاء معاينة" : "Generate Preview",
+    browse: lang === "tr" ? "Fikirlere Göz At" : lang === "ar" ? "استعرض الأفكار" : "Browse Ideas",
+    ideaGen: lang === "tr" ? "Fikir Üretici" : lang === "ar" ? "مولّد الأفكار" : "Idea Generator",
+    getStarted: lang === "tr" ? "Başla" : lang === "ar" ? "ابدأ" : "Get started",
+    builtOn: lang === "tr" ? "START ERA İLE OLUŞTURULDU" : lang === "ar" ? "مبني على START ERA" : "BUILT ON START ERA",
     communityTitle: lang === "tr" ? "Start ERA topluluğuna katıl; bağlantılar gelişir ve fikirler yeşerir." : lang === "ar" ? "انضم إلى مجتمع Start ERA حيث تزدهر العلاقات وتنمو الأفكار." : "Join our community at Start ERA, where connections thrive and ideas flourish.",
-    communitySub:   lang === "tr" ? "Diğer girişimcilerle ağ kur, deneyimlerini paylaş ve büyüme fırsatlarını birlikte keşfet." : lang === "ar" ? "تواصل مع رواد أعمال آخرين وشارك تجاربك." : "Network with fellow innovators, share experiences, and explore growth opportunities.",
-    howLabel:       lang === "tr" ? "NASIL ÇALIŞIR" : lang === "ar" ? "كيف يعمل" : "HOW IT WORKS",
-    shareIdea:      lang === "tr" ? "Fikrinizi Paylaşın" : lang === "ar" ? "شارك فكرتك" : "Share your idea",
-    trendingLabel:  lang === "tr" ? "TREND FİKİRLER" : lang === "ar" ? "أفكار رائجة" : "TRENDING IDEAS FEED",
-    trendingTitle:  lang === "tr" ? "Trend Fikirler Akışına göz atın, girişimcilik ruhunu yakalayın." : lang === "ar" ? "اطّلع على خلاصة الأفكار الرائجة." : "Check out our Trending Ideas Feed, a vibrant mix of entrepreneurial spirit.",
-    tryIdea:        lang === "tr" ? "→ Bu fikirle devam et" : lang === "ar" ? "→ المتابعة بهذه الفكرة" : "→ Try this idea",
-    pricingSub:     lang === "tr" ? "Büyüyen her girişim için esnek planlar." : lang === "ar" ? "خطط مرنة لكل شركة ناشئة." : "Flexible plans for every growing startup.",
-    contactSub:     lang === "tr" ? "Sorularınız için bize yazın." : lang === "ar" ? "اكتب لنا لأي أسئلة." : "Write to us for any questions.",
-    builtWith:      lang === "tr" ? "Start ERA ile oluşturuldu" : lang === "ar" ? "مبني بـ Start ERA" : "Built with Start ERA",
-    darkLabel:      lang === "tr" ? "Karanlık" : lang === "ar" ? "داكن" : "Dark",
-    lightLabel:     lang === "tr" ? "Aydınlık" : lang === "ar" ? "فاتح" : "Light",
-    product:        lang === "tr" ? "Ürün" : lang === "ar" ? "المنتج" : "Product",
-    langLabel:      lang === "tr" ? "Dil" : lang === "ar" ? "اللغة" : "Language",
-    aiBadge:        lang === "tr" ? "Yapay zeka destekli girişim oluşturucu" : lang === "ar" ? "منشئ الشركات الناشئة بالذكاء الاصطناعي" : "AI-powered startup builder",
-    flowATitle:     lang === "tr" ? "Bana Fikir Bul" : lang === "ar" ? "ساعدني في إيجاد فكرة" : "Help Me Find an Idea",
-    flowADesc:      lang === "tr" ? "7 hızlı soruyu cevaplayın, yapay zekamız becerilerinize ve bütçenize göre 3 kişiselleştirilmiş girişim planı oluştursun." : lang === "ar" ? "أجب عن 7 أسئلة سريعة وسيقوم الذكاء الاصطناعي بإنشاء 3 خطط شركات ناشئة مخصصة بناءً على مهاراتك وميزانيتك." : "Answer 7 quick questions and our AI will generate 3 personalized startup blueprints based on your skills and budget.",
-    flowBTitle:     lang === "tr" ? "Zaten Bir Fikrim Var" : lang === "ar" ? "لديّ فكرة بالفعل" : "I Already Have an Idea",
-    flowBDesc:      lang === "tr" ? "Mevcut iş fikrinizi yapay zeka pazar doğrulama motorumuzdan geçirerek talep ve rekabeti test edin." : lang === "ar" ? "قدّم فكرتك التجارية الحالية وشغّلها عبر محرك التحقق من السوق بالذكاء الاصطناعي لاختبار الطلب والمنافسة." : "Bring your existing business idea and run it through our AI market validation engine to test demand and competition.",
-    openMenu:       lang === "tr" ? "Menüyü aç" : lang === "ar" ? "فتح القائمة" : "Open menu",
-    closeMenu:      lang === "tr" ? "Menüyü kapat" : lang === "ar" ? "إغلاق القائمة" : "Close menu",
-    submitIdea:     lang === "tr" ? "Fikri gönder" : lang === "ar" ? "إرسال الفكرة" : "Submit idea",
-    switchLang:     lang === "tr" ? "Dili değiştir" : lang === "ar" ? "تغيير اللغة" : "Switch language",
-    toggleTheme:    d
+    communitySub: lang === "tr" ? "Diğer girişimcilerle ağ kur, deneyimlerini paylaş ve büyüme fırsatlarını birlikte keşfet." : lang === "ar" ? "تواصل مع رواد أعمال آخرين وشارك تجاربك." : "Network with fellow innovators, share experiences, and explore growth opportunities.",
+    howLabel: lang === "tr" ? "NASIL ÇALIŞIR" : lang === "ar" ? "كيف يعمل" : "HOW IT WORKS",
+    shareIdea: lang === "tr" ? "Fikrinizi Paylaşın" : lang === "ar" ? "شارك فكرتك" : "Share your idea",
+    trendingLabel: lang === "tr" ? "TREND FİKİRLER" : lang === "ar" ? "أفكار رائجة" : "TRENDING IDEAS FEED",
+    trendingTitle: lang === "tr" ? "Trend Fikirler Akışına göz atın, girişimcilik ruhunu yakalayın." : lang === "ar" ? "اطّلع على خلاصة الأفكار الرائجة." : "Check out our Trending Ideas Feed, a vibrant mix of entrepreneurial spirit.",
+    tryIdea: lang === "tr" ? "→ Bu fikirle devam et" : lang === "ar" ? "→ المتابعة بهذه الفكرة" : "→ Try this idea",
+    pricingSub: lang === "tr" ? "Büyüyen her girişim için esnek planlar." : lang === "ar" ? "خطط مرنة لكل شركة ناشئة." : "Flexible plans for every growing startup.",
+    contactSub: lang === "tr" ? "Sorularınız için bize yazın." : lang === "ar" ? "اكتب لنا لأي أسئلة." : "Write to us for any questions.",
+    builtWith: lang === "tr" ? "Start ERA ile oluşturuldu" : lang === "ar" ? "مبني بـ Start ERA" : "Built with Start ERA",
+    darkLabel: lang === "tr" ? "Karanlık" : lang === "ar" ? "داكن" : "Dark",
+    lightLabel: lang === "tr" ? "Aydınlık" : lang === "ar" ? "فاتح" : "Light",
+    product: lang === "tr" ? "Ürün" : lang === "ar" ? "المنتج" : "Product",
+    langLabel: lang === "tr" ? "Dil" : lang === "ar" ? "اللغة" : "Language",
+    aiBadge: lang === "tr" ? "Yapay zeka destekli girişim oluşturucu" : lang === "ar" ? "منشئ الشركات الناشئة بالذكاء الاصطناعي" : "AI-powered startup builder",
+    flowATitle: lang === "tr" ? "Bana Fikir Bul" : lang === "ar" ? "ساعدني في إيجاد فكرة" : "Help Me Find an Idea",
+    flowADesc: lang === "tr" ? "7 hızlı soruyu cevaplayın, yapay zekamız becerilerinize ve bütçenize göre 3 kişiselleştirilmiş girişim planı oluştursun." : lang === "ar" ? "أجب عن 7 أسئلة سريعة وسيقوم الذكاء الاصطناعي بإنشاء 3 خطط شركات ناشئة مخصصة بناءً على مهاراتك وميزانيتك." : "Answer 7 quick questions and our AI will generate 3 personalized startup blueprints based on your skills and budget.",
+    flowBTitle: lang === "tr" ? "Zaten Bir Fikrim Var" : lang === "ar" ? "لديّ فكرة بالفعل" : "I Already Have an Idea",
+    flowBDesc: lang === "tr" ? "Mevcut iş fikrinizi yapay zeka pazar doğrulama motorumuzdan geçirerek talep ve rekabeti test edin." : lang === "ar" ? "قدّم فكرتك التجارية الحالية وشغّلها عبر محرك التحقق من السوق بالذكاء الاصطناعي لاختبار الطلب والمنافسة." : "Bring your existing business idea and run it through our AI market validation engine to test demand and competition.",
+    openMenu: lang === "tr" ? "Menüyü aç" : lang === "ar" ? "فتح القائمة" : "Open menu",
+    closeMenu: lang === "tr" ? "Menüyü kapat" : lang === "ar" ? "إغلاق القائمة" : "Close menu",
+    submitIdea: lang === "tr" ? "Fikri gönder" : lang === "ar" ? "إرسال الفكرة" : "Submit idea",
+    switchLang: lang === "tr" ? "Dili değiştir" : lang === "ar" ? "تغيير اللغة" : "Switch language",
+    toggleTheme: d
       ? (lang === "tr" ? "Aydınlık moda geç" : lang === "ar" ? "التبديل إلى الوضع الفاتح" : "Switch to light mode")
       : (lang === "tr" ? "Karanlık moda geç" : lang === "ar" ? "التبديل إلى الوضع الداكن" : "Switch to dark mode"),
   };
@@ -171,17 +171,17 @@ export default function LandingPage() {
   ];
 
   // ── Color tokens ──────────────────────────────────────────────────────────
-  const pageBg        = d ? "bg-gray-950"  : "bg-white";
-  const pageText      = d ? "text-gray-100" : "text-gray-900";
-  const navBg         = d ? "bg-gray-950/95 border-gray-800" : "bg-white/90 border-gray-100";
+  const pageBg = d ? "bg-gray-950" : "bg-white";
+  const pageText = d ? "text-gray-100" : "text-gray-900";
+  const navBg = d ? "bg-gray-950/95 border-gray-800" : "bg-white/90 border-gray-100";
   // WCAG fix: raised contrast — gray-400 on dark bg passes AA; gray-600 on white passes AA
-  const linkCls       = d ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900";
-  const sub           = d ? "text-gray-300" : "text-gray-600";
-  const sectionBg     = d ? "bg-gray-900" : "bg-gray-50";
-  const faqInputBg    = d ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500 focus:border-green-500" : "bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-green-500";
-  const mobileMenuBg  = d ? "bg-gray-950" : "bg-white";
-  const trendCardBg   = d ? "bg-gray-900 border-gray-800 hover:border-green-600" : "bg-white border-gray-200 hover:border-green-400";
-  const heroGradient  = d
+  const linkCls = d ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900";
+  const sub = d ? "text-gray-300" : "text-gray-600";
+  const sectionBg = d ? "bg-gray-900" : "bg-gray-50";
+  const faqInputBg = d ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500 focus:border-green-500" : "bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-green-500";
+  const mobileMenuBg = d ? "bg-gray-950" : "bg-white";
+  const trendCardBg = d ? "bg-gray-900 border-gray-800 hover:border-green-600" : "bg-white border-gray-200 hover:border-green-400";
+  const heroGradient = d
     ? "radial-gradient(ellipse at 60% 0%, #14532d 0%, #052e16 30%, #030712 70%, #030712 100%)"
     : "radial-gradient(ellipse at 60% 0%, #bbf7d0 0%, #d1fae5 30%, #f0fdf4 60%, #ffffff 100%)";
   const greenCardGradient = d
@@ -208,8 +208,8 @@ export default function LandingPage() {
 
           {/* Desktop nav links */}
           <div className={"hidden md:flex items-center gap-8 text-sm font-medium"}>
-            <button onClick={() => scrollTo("pricing")}  className={"hover:text-green-600 transition " + linkCls}>{t.nav_pricing}</button>
-            <button onClick={() => scrollTo("about")}    className={"hover:text-green-600 transition " + linkCls}>{t.nav_about}</button>
+            <button onClick={() => scrollTo("pricing")} className={"hover:text-green-600 transition " + linkCls}>{t.nav_pricing}</button>
+            <button onClick={() => scrollTo("about")} className={"hover:text-green-600 transition " + linkCls}>{t.nav_about}</button>
             <button onClick={() => scrollTo("trending")} className={"hover:text-green-600 transition " + linkCls}>{L.browse}</button>
             <a href="/idea-generation" className={"hover:text-green-600 transition no-underline " + linkCls}>{L.ideaGen}</a>
           </div>
@@ -255,7 +255,7 @@ export default function LandingPage() {
             >
               <div className={"w-4 h-0.5 mb-1 " + (d ? "bg-gray-400" : "bg-gray-700")} />
               <div className={"w-4 h-0.5 mb-1 " + (d ? "bg-gray-400" : "bg-gray-700")} />
-              <div className={"w-4 h-0.5 "      + (d ? "bg-gray-400" : "bg-gray-700")} />
+              <div className={"w-4 h-0.5 " + (d ? "bg-gray-400" : "bg-gray-700")} />
             </button>
           </div>
         </div>
@@ -263,8 +263,8 @@ export default function LandingPage() {
         {/* Mobile menu */}
         {mobileMenuOpen && (
           <div id="mobile-menu" className={"md:hidden px-6 pb-4 border-t pt-3 space-y-1 " + mobileMenuBg + " " + (d ? "border-gray-800" : "border-gray-100")}>
-            <button onClick={() => scrollTo("pricing")}  className={"block w-full text-left text-sm py-2 " + linkCls}>{t.nav_pricing}</button>
-            <button onClick={() => scrollTo("about")}    className={"block w-full text-left text-sm py-2 " + linkCls}>{t.nav_about}</button>
+            <button onClick={() => scrollTo("pricing")} className={"block w-full text-left text-sm py-2 " + linkCls}>{t.nav_pricing}</button>
+            <button onClick={() => scrollTo("about")} className={"block w-full text-left text-sm py-2 " + linkCls}>{t.nav_about}</button>
             <button onClick={() => scrollTo("trending")} className={"block w-full text-left text-sm py-2 " + linkCls}>{L.browse}</button>
             <a href="/idea-generation" className={"block w-full text-left text-sm py-2 no-underline " + linkCls}>{L.ideaGen}</a>
           </div>
@@ -366,8 +366,8 @@ export default function LandingPage() {
                       <div className={"w-8 h-8 rounded-full flex items-center justify-center " + (i === 0 ? "bg-green-600" : (d ? "bg-gray-800" : "bg-gray-100"))} aria-hidden="true">
                         <svg className={"w-4 h-4 " + (i === 0 ? "text-white" : sub)} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           {i === 0 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          : i === 1 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />}
+                            : i === 1 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />}
                         </svg>
                       </div>
                       {/* h3 — step headings (under h2) */}
@@ -493,9 +493,9 @@ export default function LandingPage() {
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { num: "10K+", label: lang === "tr" ? "Oluşturulan Plan" : lang === "ar" ? "خطة مُنشأة" : "Plans Created" },
-                  { num: "60s",  label: lang === "tr" ? "Ortalama Süre"    : lang === "ar" ? "متوسط الوقت"  : "Avg Time" },
-                  { num: "3",    label: lang === "tr" ? "Dil"              : lang === "ar" ? "لغات"         : "Languages" },
-                  { num: "100%", label: lang === "tr" ? "Ücretsiz"         : lang === "ar" ? "مجاني"        : "Free to Start" },
+                  { num: "60s", label: lang === "tr" ? "Ortalama Süre" : lang === "ar" ? "متوسط الوقت" : "Avg Time" },
+                  { num: "3", label: lang === "tr" ? "Dil" : lang === "ar" ? "لغات" : "Languages" },
+                  { num: "100%", label: lang === "tr" ? "Ücretsiz" : lang === "ar" ? "مجاني" : "Free to Start" },
                 ].map((s, i) => (
                   <div key={i} className="p-6 rounded-2xl bg-gray-900 border border-gray-800 text-center">
                     <div className="text-3xl font-black text-green-400 mb-1">{s.num}</div>
