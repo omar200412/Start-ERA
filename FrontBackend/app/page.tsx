@@ -493,7 +493,7 @@ export default function LandingPage() {
                 <article key={i} className={"reveal rounded-2xl overflow-hidden border transition-all duration-300 hover:-translate-y-1 " + (d ? "border-white/10 bg-white/5 backdrop-blur-xl hover:bg-white/10" : "border-gray-200 bg-white hover:border-green-300 shadow-sm hover:shadow-md")}>
                   <div className={(d ? s.colorDark : s.colorLight) + " h-32 flex items-center justify-center relative"}>
                     {d && <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>}
-                    <span className={"font-black text-2xl drop-shadow-lg relative z-10 " + (d ? "text-white" : "text-gray-800")}>{s.name}</span>
+                    <span className={"font-black text-2xl drop-shadow-sm relative z-10 " + (d ? "text-white" : "text-gray-800")}>{s.name}</span>
                   </div>
                   <div className={"p-4 border-t " + (d ? "border-white/5" : "border-gray-100")}>
                     <div className={"inline-block px-2.5 py-1 rounded-full text-xs font-medium " + (d ? "bg-white/10 text-gray-200" : "bg-gray-100 text-gray-700")}>{s.tag}</div>
