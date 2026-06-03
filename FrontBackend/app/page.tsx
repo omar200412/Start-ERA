@@ -1,9 +1,9 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useThemeAuth } from "./context/ThemeAuthContext";
 import { TRANSLATIONS } from "./lib/translations";
-import { Lightbulb, Target, ChevronRight } from "lucide-react";
+import { Lightbulb, Target, ChevronRight, Sparkles, Globe, FileText, TrendingUp, BarChart3, Users, Star, Zap, Shield, ArrowRight } from "lucide-react";
 import Chatbot from "./Chatbot";
 import LanguageDropdown from "./components/LanguageDropdown";
 
@@ -30,11 +30,60 @@ function CheckIcon() {
   );
 }
 
+// ── Scroll Reveal Hook ─────────────────────────────────────────────────────────
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { el.classList.add("visible"); observer.unobserve(el); } },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return ref;
+}
+
+// ── Animated Counter Hook ──────────────────────────────────────────────────────
+function useAnimatedCounter(target: number, suffix = "", duration = 1500) {
+  const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting && !started) { setStarted(true); observer.unobserve(el); } },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [started]);
+
+  useEffect(() => {
+    if (!started) return;
+    let startTime: number;
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(eased * target));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [started, target, duration]);
+
+  return { ref, display: `${count.toLocaleString()}${suffix}` };
+}
+
 // ── Static data ────────────────────────────────────────────────────────────────
 const MOCKUP_STARTUPS = [
-  { name: "Justi.items", color: "bg-white/5 backdrop-blur-md", tag: "E-commerce" },
-  { name: "CoMoon.ai", color: "bg-green-500/10 backdrop-blur-md", tag: "AI Tools" },
-  { name: "Musicify", color: "bg-emerald-500/10 backdrop-blur-md", tag: "Music Tech" },
+  { name: "Justi.items", colorDark: "bg-white/5 backdrop-blur-md", colorLight: "bg-gray-100", tag: "E-commerce" },
+  { name: "CoMoon.ai", colorDark: "bg-green-500/10 backdrop-blur-md", colorLight: "bg-green-100", tag: "AI Tools" },
+  { name: "Musicify", colorDark: "bg-emerald-500/10 backdrop-blur-md", colorLight: "bg-emerald-100", tag: "Music Tech" },
 ];
 
 // ── Page component ─────────────────────────────────────────────────────────────
@@ -50,24 +99,35 @@ export default function LandingPage() {
   const [contactLoading, setContactLoading] = useState(false);
   const maxChars = 400;
 
-  // Sync dark class on <html> so Tailwind dark: variants work everywhere
+  // Scroll reveal refs
+  const revealRefs = useRef<HTMLDivElement[]>([]);
+  const addRevealRef = useCallback((el: HTMLDivElement | null) => {
+    if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el);
+  }, []);
+
+  // Global scroll reveal observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+    revealRefs.current.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  // Sync dark class on <html>
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
   const d = darkMode;
-
-  // ── Language cycle ────────────────────────────────────────────────────────
-  function getLangLabel() {
-    if (lang === "tr") return "EN";
-    if (lang === "en") return "AR";
-    return "TR";
-  }
-  function toggleLang() {
-    if (lang === "tr") { setLang("en"); return; }
-    if (lang === "en") { setLang("ar"); return; }
-    setLang("tr");
-  }
 
   // ── Navigation helpers ────────────────────────────────────────────────────
   function scrollTo(id: string) {
@@ -119,7 +179,7 @@ export default function LandingPage() {
   const proItems = [t.pro_li1, t.pro_li2, t.pro_li3, t.pro_li4];
 
   const L = {
-    heroTitle: lang === "tr" ? <>Fikrinizi yazın girişiminizin hayata geçtiğini görün.</> : lang === "ar" ? <>اكتب فكرتك شاهد شركتك الناشئ تنبض بالحياة.</> : <>Type your idea See your startup come to life.</>,
+    heroTitle: lang === "tr" ? <>Fikrinizi yazın,<br />girişiminizin hayata geçtiğini görün.</> : lang === "ar" ? <>اكتب فكرتك،<br />شاهد شركتك الناشئة تنبض بالحياة.</> : <>Type your idea,<br />See your startup come to life.</>,
     heroSub: lang === "tr" ? "60 saniyenin altında önizleme al. Ardından girişimini inşa et ve başlat." : lang === "ar" ? "احصل على معاينة في أقل من 60 ثانية. ثم ابنِ شركتك الناشئة وأطلقها." : "Get a preview in under 60 seconds. Then build & launch your startup.",
     placeholder: lang === "tr" ? "Harika fikrinizi buraya girin..." : lang === "ar" ? "أدخل فكرتك الرائعة هنا..." : "Enter awesome idea here...",
     charsLeft: `${maxChars - idea.length} ${lang === "tr" ? "karakter kaldı" : lang === "ar" ? "حرف متبقٍ" : "characters left"}`,
@@ -155,14 +215,33 @@ export default function LandingPage() {
     toggleTheme: d
       ? (lang === "tr" ? "Aydınlık moda geç" : lang === "ar" ? "التبديل إلى الوضع الفاتح" : "Switch to light mode")
       : (lang === "tr" ? "Karanlık moda geç" : lang === "ar" ? "التبديل إلى الوضع الداكن" : "Switch to dark mode"),
+    // New sections
+    featuresLabel: lang === "tr" ? "ÖZELLİKLER" : lang === "ar" ? "الميزات" : "FEATURES",
+    featuresTitle: lang === "tr" ? "Girişiminizi başlatmak için ihtiyacınız olan her şey." : lang === "ar" ? "كل ما تحتاجه لإطلاق شركتك الناشئة." : "Everything you need to launch your startup.",
+    featuresSub: lang === "tr" ? "Güçlü yapay zeka araçlarıyla fikrinizi gerçek bir işe dönüştürün." : lang === "ar" ? "حوّل فكرتك إلى عمل حقيقي مع أدوات الذكاء الاصطناعي." : "Transform your idea into a real business with powerful AI tools.",
+    testimonialsLabel: lang === "tr" ? "KULLANICI DENEYİMLERİ" : lang === "ar" ? "تجارب المستخدمين" : "TESTIMONIALS",
+    testimonialsTitle: lang === "tr" ? "Girişimciler ne diyor?" : lang === "ar" ? "ماذا يقول رواد الأعمال؟" : "What entrepreneurs say",
+    trustedBy: lang === "tr" ? "girişimci tarafından güveniliyor" : lang === "ar" ? "يثق بنا من رواد الأعمال" : "entrepreneurs trust us",
   };
 
-  const STEPS = [
-    { num: "1.", title: lang === "tr" ? "Fikrinizi Girin" : lang === "ar" ? "أدخل فكرتك" : "Enter your idea", desc: lang === "tr" ? "Startup AI modelleri ve özel tasarım kullanarak fikrinizi dakikalar içinde oluşturun." : lang === "ar" ? "ابنِ فكرتك في دقائق باستخدام نماذج الذكاء الاصطناعي والتصميم المخصص." : "Build your idea in minutes using AI models, custom prompts, and design." },
-    { num: "2.", title: lang === "tr" ? "Anında Önizleme Alın" : lang === "ar" ? "احصل على معاينة فورية" : "Get instant preview", desc: lang === "tr" ? "AI analizinizi saniyeler içinde görün — iş planı, pazar analizi, finansal projeksiyon." : lang === "ar" ? "شاهد تحليل الذكاء الاصطناعي في ثوانٍ." : "See your AI analysis in seconds — business plan, market analysis, financial projections." },
-    { num: "3.", title: lang === "tr" ? "İndir ve Uygula" : lang === "ar" ? "نزّل ونفّذ" : "Download + launch", desc: lang === "tr" ? "Profesyonel PDF raporu indir ve girişimini hayata geçir." : lang === "ar" ? "نزّل تقرير PDF احترافياً وأطلق مشروعك." : "Download your professional PDF and launch your startup." },
+  // ── Features data ─────────────────────────────────────────────────────────
+  const FEATURES = [
+    { icon: Sparkles, title: t.feat1_t, desc: t.feat1_d, color: "text-purple-500", bg: d ? "bg-purple-500/10" : "bg-purple-50" },
+    { icon: Globe, title: t.feat2_t, desc: t.feat2_d, color: "text-blue-500", bg: d ? "bg-blue-500/10" : "bg-blue-50" },
+    { icon: FileText, title: t.feat3_t, desc: t.feat3_d, color: "text-green-500", bg: d ? "bg-green-500/10" : "bg-green-50" },
+    { icon: TrendingUp, title: lang === "tr" ? "Pazar Araştırması" : lang === "ar" ? "بحث السوق" : "Market Research", desc: lang === "tr" ? "Gerçek zamanlı pazar verileri ile sektörünüzü analiz edin." : lang === "ar" ? "حلل قطاعك ببيانات السوق الفورية." : "Analyze your industry with real-time market data.", color: "text-orange-500", bg: d ? "bg-orange-500/10" : "bg-orange-50" },
+    { icon: BarChart3, title: lang === "tr" ? "Finansal Projeksiyon" : lang === "ar" ? "التوقعات المالية" : "Financial Projections", desc: lang === "tr" ? "5 yıllık gelir ve gider projeksiyonları oluşturun." : lang === "ar" ? "أنشئ توقعات الإيرادات والمصروفات لخمس سنوات." : "Generate 5-year revenue and expense projections.", color: "text-cyan-500", bg: d ? "bg-cyan-500/10" : "bg-cyan-50" },
+    { icon: Users, title: lang === "tr" ? "Rakip Analizi" : lang === "ar" ? "تحليل المنافسين" : "Competitor Analysis", desc: lang === "tr" ? "Rakiplerinizi tanıyın, avantajlarınızı keşfedin." : lang === "ar" ? "تعرف على منافسيك واكتشف مزاياك." : "Know your competitors and discover your advantages.", color: "text-rose-500", bg: d ? "bg-rose-500/10" : "bg-rose-50" },
   ];
 
+  // ── Steps data ────────────────────────────────────────────────────────────
+  const STEPS = [
+    { num: "01", title: lang === "tr" ? "Fikrinizi Girin" : lang === "ar" ? "أدخل فكرتك" : "Enter your idea", desc: lang === "tr" ? "Startup AI modelleri ve özel tasarım kullanarak fikrinizi dakikalar içinde oluşturun." : lang === "ar" ? "ابنِ فكرتك في دقائق باستخدام نماذج الذكاء الاصطناعي والتصميم المخصص." : "Build your idea in minutes using AI models, custom prompts, and design.", icon: Lightbulb },
+    { num: "02", title: lang === "tr" ? "Anında Önizleme Alın" : lang === "ar" ? "احصل على معاينة فورية" : "Get instant preview", desc: lang === "tr" ? "AI analizinizi saniyeler içinde görün — iş planı, pazar analizi, finansal projeksiyon." : lang === "ar" ? "شاهد تحليل الذكاء الاصطناعي في ثوانٍ." : "See your AI analysis in seconds — business plan, market analysis, financial projections.", icon: Zap },
+    { num: "03", title: lang === "tr" ? "İndir ve Uygula" : lang === "ar" ? "نزّل ونفّذ" : "Download + launch", desc: lang === "tr" ? "Profesyonel PDF raporu indir ve girişimini hayata geçir." : lang === "ar" ? "نزّل تقرير PDF احترافياً وأطلق مشروعك." : "Download your professional PDF and launch your startup.", icon: ArrowRight },
+  ];
+
+  // ── Trending data ─────────────────────────────────────────────────────────
   const TRENDING = [
     { idea: lang === "tr" ? "Mahallenizdeki kedi bakıcısını bulmanıza yardımcı olan bir uygulama" : lang === "ar" ? "تطبيق يساعدك في إيجاد مربي قطط في منطقتك" : "An app that helps you find a cat sitter in your area", score: 7.8, tag: "Pet Tech" },
     { idea: lang === "tr" ? "Küçük işletmeler için yapay zeka destekli muhasebe asistanı" : lang === "ar" ? "مساعد محاسبة مدعوم بالذكاء الاصطناعي" : "AI-powered accounting assistant for small businesses", score: 8.2, tag: "FinTech" },
@@ -172,23 +251,33 @@ export default function LandingPage() {
     { idea: lang === "tr" ? "Uzak ekipler için sanal ofis platformu" : lang === "ar" ? "منصة مكتب افتراضي للفرق عن بُعد" : "Virtual office platform for remote teams", score: 8.4, tag: "SaaS" },
   ];
 
+  // ── Testimonials data ─────────────────────────────────────────────────────
+  const TESTIMONIALS = [
+    { name: lang === "tr" ? "Ahmet Yılmaz" : lang === "ar" ? "أحمد يلماز" : "Ahmet Yilmaz", role: lang === "tr" ? "Kurucu, TechFlow" : lang === "ar" ? "مؤسس، TechFlow" : "Founder, TechFlow", quote: lang === "tr" ? "Start ERA ile iş planımı 30 dakikada oluşturdum. Yatırımcı toplantısında çok profesyonel bir izlenim bıraktım." : lang === "ar" ? "أنشأت خطة عملي في 30 دقيقة مع Start ERA. تركت انطباعاً احترافياً في اجتماع المستثمرين." : "I created my business plan in 30 minutes with Start ERA. Made a very professional impression at the investor meeting.", rating: 5 },
+    { name: lang === "tr" ? "Elif Demir" : lang === "ar" ? "أليف دمير" : "Elif Demir", role: lang === "tr" ? "CEO, GreenBite" : lang === "ar" ? "CEO, GreenBite" : "CEO, GreenBite", quote: lang === "tr" ? "Pazar analizi ve finansal projeksiyonlar gerçekten etkileyici. Danışmanlık firmasına binlerce lira ödemekten kurtuldum." : lang === "ar" ? "تحليل السوق والتوقعات المالية مثيرة للإعجاب حقاً. وفّرت آلاف الليرات." : "Market analysis and financial projections are truly impressive. Saved thousands compared to consulting firms.", rating: 5 },
+    { name: lang === "tr" ? "Mehmet Kara" : lang === "ar" ? "محمد كارا" : "Mehmet Kara", role: lang === "tr" ? "Öğrenci Girişimci" : lang === "ar" ? "طالب رائد أعمال" : "Student Entrepreneur", quote: lang === "tr" ? "Üniversitedeki girişimcilik yarışmasında Start ERA'nın hazırladığı plan ile birincilik aldım!" : lang === "ar" ? "فزت بالمركز الأول في مسابقة ريادة الأعمال بالجامعة بخطة Start ERA!" : "I won first place in the university entrepreneurship competition with a Start ERA plan!", rating: 5 },
+  ];
+
   // ── Color tokens ──────────────────────────────────────────────────────────
   const pageBg = d ? "bg-gray-950" : "bg-[#faf9f6]";
   const pageText = d ? "text-gray-100" : "text-gray-900";
   const navBg = d ? "bg-gray-950/95 border-gray-800" : "bg-[#faf9f6]/90 border-gray-200";
-  // WCAG fix: raised contrast — gray-400 on dark bg passes AA; gray-600 on white passes AA
   const linkCls = d ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900";
-  const sub = d ? "text-gray-300" : "text-gray-600";
+  const sub = d ? "text-gray-400" : "text-gray-500";
   const sectionBg = d ? "bg-gray-900" : "bg-[#f5f4f0]";
   const faqInputBg = d ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500 focus:border-green-500" : "bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-green-500";
   const mobileMenuBg = d ? "bg-gray-950" : "bg-[#faf9f6]";
   const trendCardBg = d ? "bg-gray-900 border-gray-800 hover:border-green-600" : "bg-white border-gray-200 hover:border-green-400";
   const heroGradient = d
     ? "radial-gradient(ellipse at 60% 0%, #14532d 0%, #052e16 30%, #030712 70%, #030712 100%)"
-    : "radial-gradient(ellipse at 60% 0%, #bbf7d0 0%, #d1fae5 30%, #f0fdf4 60%, #ffffff 100%)";
-  const greenCardGradient = d
-    ? "radial-gradient(ellipse at top, #166534 0%, #14532d 100%)"
-    : "radial-gradient(ellipse at top, #4ade80 0%, #16a34a 100%)";
+    : "radial-gradient(ellipse at 60% 0%, #d1fae5 0%, #ecfdf5 30%, #faf9f6 60%, #faf9f6 100%)";
+  const cardBg = d ? "bg-gray-900/60 border-gray-800 hover:border-gray-700" : "bg-white border-gray-200 hover:border-green-300 shadow-sm hover:shadow-md";
+
+  // Animated counters
+  const counter1 = useAnimatedCounter(10000, "+");
+  const counter2 = useAnimatedCounter(60, "s");
+  const counter3 = useAnimatedCounter(3, "");
+  const counter4 = useAnimatedCounter(100, "%");
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -210,6 +299,7 @@ export default function LandingPage() {
 
           {/* Desktop nav links */}
           <div className={"hidden md:flex items-center gap-8 text-sm font-medium"}>
+            <button onClick={() => scrollTo("features")} className={"hover:text-green-600 transition " + linkCls}>{L.featuresLabel === "ÖZELLİKLER" ? t.nav_features : L.featuresLabel === "FEATURES" ? "Features" : t.nav_features}</button>
             <button onClick={() => scrollTo("pricing")} className={"hover:text-green-600 transition " + linkCls}>{t.nav_pricing}</button>
             <button onClick={() => scrollTo("about")} className={"hover:text-green-600 transition " + linkCls}>{t.nav_about}</button>
             <button onClick={() => scrollTo("trending")} className={"hover:text-green-600 transition " + linkCls}>{L.browse}</button>
@@ -219,7 +309,6 @@ export default function LandingPage() {
 
           {/* Right controls */}
           <div className="flex items-center gap-2">
-            {/* Language switcher */}
             <LanguageDropdown />
 
             {/* Theme toggle */}
@@ -239,7 +328,7 @@ export default function LandingPage() {
                 <button onClick={logout} className={"text-sm transition " + (d ? "text-gray-400 hover:text-red-400" : "text-gray-500 hover:text-red-500")}>{t.logout}</button>
               </>
             ) : (
-              <a href="/login" className="px-5 py-2.5 bg-gray-900 hover:bg-gray-700 text-white font-bold rounded-full text-sm transition no-underline shadow-sm">{L.getStarted}</a>
+              <a href="/login" className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-full text-sm transition no-underline shadow-sm">{L.getStarted}</a>
             )}
 
             {/* Mobile hamburger */}
@@ -260,6 +349,7 @@ export default function LandingPage() {
         {/* Mobile menu */}
         {mobileMenuOpen && (
           <div id="mobile-menu" className={"md:hidden px-6 pb-4 border-t pt-3 space-y-1 " + mobileMenuBg + " " + (d ? "border-gray-800" : "border-gray-100")}>
+            <button onClick={() => scrollTo("features")} className={"block w-full text-left text-sm py-2 " + linkCls}>{t.nav_features}</button>
             <button onClick={() => scrollTo("pricing")} className={"block w-full text-left text-sm py-2 " + linkCls}>{t.nav_pricing}</button>
             <button onClick={() => scrollTo("about")} className={"block w-full text-left text-sm py-2 " + linkCls}>{t.nav_about}</button>
             <button onClick={() => scrollTo("trending")} className={"block w-full text-left text-sm py-2 " + linkCls}>{L.browse}</button>
@@ -269,19 +359,24 @@ export default function LandingPage() {
         )}
       </nav>
 
-      {/* ── MAIN CONTENT (landmark) ────────────────────────────────────────── */}
+      {/* ── MAIN CONTENT ────────────────────────────────────────────────────── */}
       <main id="main-content">
 
         {/* ── HERO ──────────────────────────────────────────────────────────── */}
         <section aria-labelledby="hero-heading" className="relative overflow-hidden" style={{ background: heroGradient }}>
-          <div className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center">
+          {/* Animated background orbs */}
+          <div className="hero-orb w-[500px] h-[500px] top-[-200px] right-[-100px] animate-float" style={{ background: d ? "rgba(16, 185, 129, 0.08)" : "rgba(16, 185, 129, 0.12)" }} />
+          <div className="hero-orb w-[300px] h-[300px] bottom-[-100px] left-[-50px] animate-float-delayed" style={{ background: d ? "rgba(16, 185, 129, 0.06)" : "rgba(16, 185, 129, 0.08)" }} />
+          <div className="hero-orb w-[200px] h-[200px] top-[30%] left-[60%] animate-pulse-soft" style={{ background: d ? "rgba(34, 197, 94, 0.05)" : "rgba(34, 197, 94, 0.1)" }} />
+
+          <div className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center relative z-10">
             {/* Badge */}
             <div className={"inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-8 shadow-sm border " + (d ? "bg-gray-900/80 border-gray-700 text-gray-300" : "bg-white/80 border-gray-200 text-gray-600")}>
-              <svg aria-hidden="true" className="w-3.5 h-3.5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+              <Sparkles className="w-3.5 h-3.5 text-green-500" />
               {L.aiBadge}
             </div>
 
-            {/* h1 — the one and only page heading */}
+            {/* h1 */}
             <h1 id="hero-heading" className={"text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tight " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
               {L.heroTitle}
             </h1>
@@ -292,7 +387,7 @@ export default function LandingPage() {
               {/* Flow A — Find an Idea */}
               <a
                 href="/idea-generation"
-                className={"group rounded-2xl border p-6 text-left no-underline transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 " + (d ? "bg-gray-900/70 border-gray-800 hover:border-emerald-600" : "bg-white/70 border-gray-200 hover:border-emerald-400")}
+                className={"group rounded-2xl border p-6 text-left no-underline transition-all duration-300 hover:shadow-lg hover:-translate-y-1 " + (d ? "bg-gray-900/70 border-gray-800 hover:border-emerald-600" : "bg-white/70 border-gray-200 hover:border-emerald-400")}
               >
                 <div className={"w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-colors " + (d ? "bg-emerald-950/60 text-emerald-400 group-hover:bg-emerald-900/80" : "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100")}>
                   <Lightbulb className="w-5 h-5" />
@@ -300,14 +395,14 @@ export default function LandingPage() {
                 <h3 className={"text-base font-black mb-1.5 group-hover:text-emerald-500 transition-colors " + pageText}>{L.flowATitle}</h3>
                 <p className={"text-xs leading-relaxed mb-4 " + sub}>{L.flowADesc}</p>
                 <span className={"inline-flex items-center gap-1 text-xs font-bold transition-colors " + (d ? "text-emerald-400" : "text-emerald-600")}>
-                  {L.getStarted} <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  {L.getStarted} <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </span>
               </a>
 
               {/* Flow B — Validate Existing Idea */}
               <a
                 href="/planner"
-                className={"group rounded-2xl border p-6 text-left no-underline transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 " + (d ? "bg-gray-900/70 border-gray-800 hover:border-sky-600" : "bg-white/70 border-gray-200 hover:border-sky-400")}
+                className={"group rounded-2xl border p-6 text-left no-underline transition-all duration-300 hover:shadow-lg hover:-translate-y-1 " + (d ? "bg-gray-900/70 border-gray-800 hover:border-sky-600" : "bg-white/70 border-gray-200 hover:border-sky-400")}
               >
                 <div className={"w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-colors " + (d ? "bg-sky-950/60 text-sky-400 group-hover:bg-sky-900/80" : "bg-sky-50 text-sky-600 group-hover:bg-sky-100")}>
                   <Target className="w-5 h-5" />
@@ -315,38 +410,91 @@ export default function LandingPage() {
                 <h3 className={"text-base font-black mb-1.5 group-hover:text-sky-500 transition-colors " + pageText}>{L.flowBTitle}</h3>
                 <p className={"text-xs leading-relaxed mb-4 " + sub}>{L.flowBDesc}</p>
                 <span className={"inline-flex items-center gap-1 text-xs font-bold transition-colors " + (d ? "text-sky-400" : "text-sky-600")}>
-                  {L.getStarted} <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  {L.getStarted} <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </span>
               </a>
+            </div>
+
+            {/* Trust badge */}
+            <div className={"mt-10 inline-flex items-center gap-3 px-5 py-2.5 rounded-full text-xs font-medium " + (d ? "bg-gray-900/60 text-gray-400" : "bg-white/60 text-gray-500")}>
+              <div className="flex -space-x-2">
+                {["bg-green-500","bg-emerald-500","bg-teal-500","bg-cyan-500"].map((c,i) => (
+                  <div key={i} className={"w-6 h-6 rounded-full border-2 flex items-center justify-center text-[8px] font-bold text-white " + c + " " + (d ? "border-gray-950" : "border-[#faf9f6]")}>
+                    {["A","E","M","K"][i]}
+                  </div>
+                ))}
+              </div>
+              <span>10,000+ {L.trustedBy}</span>
+            </div>
+          </div>
+        </section>
+
+        {/* ── TRUST BAR ──────────────────────────────────────────────────────── */}
+        <section className={"py-10 px-6 border-b " + (d ? "bg-gray-900/50 border-gray-800" : "bg-white/50 border-gray-100")}>
+          <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {[
+              { ref: counter1.ref, display: counter1.display, label: lang === "tr" ? "Oluşturulan Plan" : lang === "ar" ? "خطة مُنشأة" : "Plans Created" },
+              { ref: counter2.ref, display: counter2.display, label: lang === "tr" ? "Ortalama Süre" : lang === "ar" ? "متوسط الوقت" : "Avg Time" },
+              { ref: counter3.ref, display: counter3.display, label: lang === "tr" ? "Dil Desteği" : lang === "ar" ? "لغات مدعومة" : "Languages" },
+              { ref: counter4.ref, display: counter4.display, label: lang === "tr" ? "Ücretsiz" : lang === "ar" ? "مجاني" : "Free to Start" },
+            ].map((item, i) => (
+              <div key={i} ref={item.ref}>
+                <div className={"text-2xl md:text-3xl font-black mb-1 " + (d ? "text-green-400" : "text-green-600")}>{item.display}</div>
+                <div className={"text-xs font-medium " + sub}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── FEATURES ───────────────────────────────────────────────────────── */}
+        <section id="features" aria-labelledby="features-heading" className={"py-24 px-6 " + pageBg}>
+          <div className="max-w-6xl mx-auto">
+            <div ref={addRevealRef} className="reveal text-center mb-16">
+              <p className={" text-xs font-bold uppercase tracking-[0.2em] mb-4 " + sub}>{L.featuresLabel}</p>
+              <h2 id="features-heading" className={"text-4xl md:text-5xl font-black mb-4 max-w-3xl mx-auto leading-tight " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                {L.featuresTitle}
+              </h2>
+              <p className={"max-w-xl mx-auto " + sub}>{L.featuresSub}</p>
+            </div>
+            <div ref={addRevealRef} className="reveal reveal-stagger grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {FEATURES.map((f, i) => (
+                <div key={i} className={"reveal rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 " + cardBg}>
+                  <div className={"w-12 h-12 rounded-xl flex items-center justify-center mb-4 " + f.bg}>
+                    <f.icon className={"w-6 h-6 " + f.color} />
+                  </div>
+                  <h3 className={"text-lg font-bold mb-2 " + pageText}>{f.title}</h3>
+                  <p className={"text-sm leading-relaxed " + sub}>{f.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
         {/* ── COMMUNITY SECTION ─────────────────────────────────────────────── */}
-        <section aria-labelledby="community-heading" className="relative bg-gray-950 py-24 px-6 overflow-hidden">
-          {/* Subtle background glow for glass effect */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-green-900/20 blur-[100px] rounded-full pointer-events-none"></div>
+        <section aria-labelledby="community-heading" className={"relative py-24 px-6 overflow-hidden " + sectionBg}>
+          {d && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-green-900/20 blur-[100px] rounded-full pointer-events-none"></div>}
           
           <div className="max-w-6xl mx-auto relative z-10">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-16">{L.builtOn}</p>
-            <div className="grid md:grid-cols-2 gap-16 items-start mb-16">
-              {/* h2 — first section heading (directly under h1) */}
-              <h2 id="community-heading" className="text-4xl md:text-5xl font-black text-white leading-tight" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-                <span className="text-white">{L.communityTitle.split(".")[0]}.</span>
-                {L.communityTitle.includes(".") && <span className="text-gray-400"> {L.communityTitle.split(".").slice(1).join(".").trim()}</span>}
-              </h2>
-              <p className="text-gray-300 text-lg leading-relaxed">{L.communitySub}</p>
+            <div ref={addRevealRef} className="reveal">
+              <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-16 " + sub}>{L.builtOn}</p>
             </div>
-            <div className="grid md:grid-cols-3 gap-5">
+            <div ref={addRevealRef} className="reveal grid md:grid-cols-2 gap-16 items-start mb-16">
+              <h2 id="community-heading" className={"text-4xl md:text-5xl font-black leading-tight " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                <span>{L.communityTitle.split(".")[0]}.</span>
+                {L.communityTitle.includes(".") && <span className={sub}> {L.communityTitle.split(".").slice(1).join(".").trim()}</span>}
+              </h2>
+              <p className={"text-lg leading-relaxed " + sub}>{L.communitySub}</p>
+            </div>
+            <div ref={addRevealRef} className="reveal reveal-stagger grid md:grid-cols-3 gap-5">
               {MOCKUP_STARTUPS.map((s, i) => (
-                <article key={i} className="rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-xl hover:bg-white/10 transition-colors">
-                  <div className={s.color + " h-32 flex items-center justify-center relative"}>
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
-                    <span className="text-white font-black text-2xl drop-shadow-lg relative z-10">{s.name}</span>
+                <article key={i} className={"reveal rounded-2xl overflow-hidden border transition-all duration-300 hover:-translate-y-1 " + (d ? "border-white/10 bg-white/5 backdrop-blur-xl hover:bg-white/10" : "border-gray-200 bg-white hover:border-green-300 shadow-sm hover:shadow-md")}>
+                  <div className={(d ? s.colorDark : s.colorLight) + " h-32 flex items-center justify-center relative"}>
+                    {d && <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>}
+                    <span className={"font-black text-2xl drop-shadow-lg relative z-10 " + (d ? "text-white" : "text-gray-800")}>{s.name}</span>
                   </div>
-                  <div className="p-4 border-t border-white/5">
-                    <div className="inline-block px-2.5 py-1 rounded-full bg-white/10 text-gray-200 text-xs font-medium">{s.tag}</div>
-                    <p className="text-gray-400 text-xs mt-2">{L.builtWith}</p>
+                  <div className={"p-4 border-t " + (d ? "border-white/5" : "border-gray-100")}>
+                    <div className={"inline-block px-2.5 py-1 rounded-full text-xs font-medium " + (d ? "bg-white/10 text-gray-200" : "bg-gray-100 text-gray-700")}>{s.tag}</div>
+                    <p className={"text-xs mt-2 " + (d ? "text-gray-400" : "text-gray-500")}>{L.builtWith}</p>
                   </div>
                 </article>
               ))}
@@ -355,27 +503,31 @@ export default function LandingPage() {
         </section>
 
         {/* ── HOW IT WORKS ──────────────────────────────────────────────────── */}
-        <section aria-labelledby="how-heading" className={"py-24 px-6 " + (d ? "bg-gray-950" : "bg-[#faf9f6]")}>
+        <section aria-labelledby="how-heading" className={"py-24 px-6 " + pageBg}>
           <div className="max-w-6xl mx-auto">
-            <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-16 " + sub}>{L.howLabel}</p>
-            <div className="max-w-3xl mx-auto">
-              <div className="space-y-0">
-                {/* h2 — section heading */}
-                <h2 id="how-heading" className={"sr-only"}>{L.howLabel}</h2>
+            <div ref={addRevealRef} className="reveal text-center mb-16">
+              <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-4 " + sub}>{L.howLabel}</p>
+              <h2 id="how-heading" className={"text-4xl md:text-5xl font-black leading-tight max-w-3xl mx-auto " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                {lang === "tr" ? "Üç adımda fikirden gerçeğe." : lang === "ar" ? "من الفكرة إلى الواقع في ثلاث خطوات." : "From idea to reality in three steps."}
+              </h2>
+            </div>
+            <div className="max-w-3xl mx-auto relative">
+              {/* Vertical timeline line */}
+              <div className={"absolute top-0 bottom-0 w-px hidden md:block " + (isRTL ? "right-[39px]" : "left-[39px]") + " " + (d ? "bg-gray-800" : "bg-gray-200")} />
+
+              <div className="space-y-8">
                 {STEPS.map((s, i) => (
-                  <div key={i} className={(i === 0 ? (d ? "bg-green-950 border border-green-900 rounded-xl p-6 mb-8" : "bg-green-50 rounded-xl p-6 mb-8") : "border-b pb-8 mb-8 p-6 " + (d ? "border-gray-800" : "border-gray-200"))}>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className={"w-8 h-8 rounded-full flex items-center justify-center " + (i === 0 ? "bg-green-600" : (d ? "bg-gray-800" : "bg-gray-100"))} aria-hidden="true">
-                        <svg className={"w-4 h-4 " + (i === 0 ? "text-white" : sub)} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          {i === 0 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            : i === 1 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />}
-                        </svg>
-                      </div>
-                      {/* h3 — step headings (under h2) */}
-                      <h3 className={"font-bold " + pageText}>{s.num} {s.title}</h3>
+                  <div key={i} ref={addRevealRef} className={"reveal flex gap-6 items-start group"}>
+                    {/* Step number circle */}
+                    <div className={"flex-shrink-0 w-20 h-20 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 group-hover:scale-105 " + (i === 0 ? "bg-green-600 text-white shadow-lg shadow-green-600/20" : d ? "bg-gray-800 text-gray-400 group-hover:bg-gray-700" : "bg-gray-100 text-gray-500 group-hover:bg-gray-200")}>
+                      <s.icon className="w-5 h-5 mb-0.5" />
+                      <span className="text-xs font-black">{s.num}</span>
                     </div>
-                    <p className={"text-sm leading-relaxed ml-11 " + sub}>{s.desc}</p>
+                    {/* Step content */}
+                    <div className={"flex-1 rounded-2xl border p-6 transition-all duration-300 group-hover:-translate-y-0.5 " + (i === 0 ? (d ? "bg-green-950/40 border-green-900/50" : "bg-green-50/80 border-green-200") : cardBg)}>
+                      <h3 className={"text-lg font-bold mb-2 " + pageText}>{s.title}</h3>
+                      <p className={"text-sm leading-relaxed " + sub}>{s.desc}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -386,22 +538,24 @@ export default function LandingPage() {
         {/* ── TRENDING ──────────────────────────────────────────────────────── */}
         <section id="trending" aria-labelledby="trending-heading" className={"py-24 px-6 " + sectionBg}>
           <div className="max-w-6xl mx-auto">
-            <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-8 " + sub}>{L.trendingLabel}</p>
-            <h2 id="trending-heading" className={"text-4xl md:text-5xl font-black mb-16 max-w-3xl leading-tight " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-              {L.trendingTitle}
-            </h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div ref={addRevealRef} className="reveal">
+              <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-8 " + sub}>{L.trendingLabel}</p>
+              <h2 id="trending-heading" className={"text-4xl md:text-5xl font-black mb-16 max-w-3xl leading-tight " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                {L.trendingTitle}
+              </h2>
+            </div>
+            <div ref={addRevealRef} className="reveal reveal-stagger grid md:grid-cols-2 lg:grid-cols-3 gap-5">
               {TRENDING.map((item, i) => (
                 <button
                   key={i}
                   onClick={() => { setIdea(item.idea); document.getElementById("idea-input")?.scrollIntoView({ behavior: "smooth", block: "center" }); (document.getElementById("idea-input") as HTMLTextAreaElement | null)?.focus(); }}
-                  className={"rounded-2xl border p-6 text-left hover:shadow-md transition-all group w-full " + trendCardBg}
+                  className={"reveal rounded-2xl border p-6 text-left hover:shadow-md transition-all duration-300 group w-full hover:-translate-y-1 " + trendCardBg}
                   aria-label={`${L.tryIdea}: ${item.idea}`}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <span className={"inline-block px-2.5 py-1 rounded-full text-xs font-bold border " + (d ? "bg-green-950 text-green-400 border-green-900" : "bg-green-50 text-green-700 border-green-100")}>{item.tag}</span>
                     <div className="flex items-center gap-1" aria-label={`Score: ${item.score}`}>
-                      <svg aria-hidden="true" className="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                      <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
                       <span className="text-[10px] font-black text-yellow-600">{item.score}</span>
                     </div>
                   </div>
@@ -413,31 +567,71 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── PRICING ───────────────────────────────────────────────────────── */}
-        <section id="pricing" aria-labelledby="pricing-heading" className={"py-24 px-6 " + (d ? "bg-gray-950" : "bg-[#faf9f6]")}>
+        {/* ── TESTIMONIALS ───────────────────────────────────────────────────── */}
+        <section aria-labelledby="testimonials-heading" className={"py-24 px-6 " + pageBg}>
           <div className="max-w-6xl mx-auto">
-            <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-8 " + sub}>{lang === "tr" ? "FİYATLANDIRMA" : lang === "ar" ? "الأسعار" : "PRICING"}</p>
-            <h2 id="pricing-heading" className={"text-4xl md:text-5xl font-black mb-4 " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.price_title}</h2>
-            <p className={"mb-16 " + sub}>{L.pricingSub}</p>
-            <div className="grid md:grid-cols-2 gap-6 max-w-3xl">
+            <div ref={addRevealRef} className="reveal text-center mb-16">
+              <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-4 " + sub}>{L.testimonialsLabel}</p>
+              <h2 id="testimonials-heading" className={"text-4xl md:text-5xl font-black leading-tight " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+                {L.testimonialsTitle}
+              </h2>
+            </div>
+            <div ref={addRevealRef} className="reveal reveal-stagger grid md:grid-cols-3 gap-6">
+              {TESTIMONIALS.map((tm, i) => (
+                <div key={i} className={"reveal relative rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 quote-icon " + cardBg}>
+                  {/* Stars */}
+                  <div className="flex gap-0.5 mb-4">
+                    {Array.from({ length: tm.rating }).map((_, j) => (
+                      <Star key={j} className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                    ))}
+                  </div>
+                  {/* Quote */}
+                  <p className={"text-sm leading-relaxed mb-6 " + pageText}>"{tm.quote}"</p>
+                  {/* Author */}
+                  <div className="flex items-center gap-3">
+                    <div className={"w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white " + ["bg-green-600","bg-emerald-600","bg-teal-600"][i]}>
+                      {tm.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div className={"text-sm font-bold " + pageText}>{tm.name}</div>
+                      <div className={"text-xs " + sub}>{tm.role}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── PRICING ───────────────────────────────────────────────────────── */}
+        <section id="pricing" aria-labelledby="pricing-heading" className={"py-24 px-6 " + sectionBg}>
+          <div className="max-w-6xl mx-auto">
+            <div ref={addRevealRef} className="reveal text-center mb-16">
+              <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-4 " + sub}>{lang === "tr" ? "FİYATLANDIRMA" : lang === "ar" ? "الأسعار" : "PRICING"}</p>
+              <h2 id="pricing-heading" className={"text-4xl md:text-5xl font-black mb-4 " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.price_title}</h2>
+              <p className={sub}>{L.pricingSub}</p>
+            </div>
+            <div ref={addRevealRef} className="reveal reveal-stagger grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
               {/* Free plan */}
-              <div className={"rounded-2xl border-2 border-green-500 p-8 relative " + (d ? "bg-gray-900" : "bg-white")}>
-                <div className="absolute -top-3 left-6 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">{t.popular}</div>
+              <div className={"reveal rounded-2xl border-2 border-green-500 p-8 relative transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-green-500/10 " + (d ? "bg-gray-900" : "bg-white")}>
+                <div className="absolute -top-3 left-6 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">{t.popular}</div>
                 <p className="text-xs font-bold uppercase tracking-widest text-green-600 mb-2">{t.p_free_t}</p>
                 <p className={"text-5xl font-black mb-1 " + pageText}>{t.p_free_p}</p>
                 <p className={"text-sm mb-6 " + sub}>{t.p_free_d}</p>
                 <ul className="space-y-3 mb-8">
                   {freeItems.map((item, i) => (
                     <li key={i} className="flex items-center gap-3">
-                      <CheckIcon />
+                      <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <CheckIcon />
+                      </div>
                       <span className={"text-sm " + pageText}>{item}</span>
                     </li>
                   ))}
                 </ul>
-                <a href={user ? "/dashboard" : "/login"} className="w-full py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-full text-center transition text-sm no-underline block">{t.start_free}</a>
+                <a href={user ? "/dashboard" : "/login"} className="w-full py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-full text-center transition text-sm no-underline block shadow-lg shadow-green-600/20">{t.start_free}</a>
               </div>
               {/* Pro plan (coming soon) */}
-              <div className={"rounded-2xl border p-8 relative opacity-75 " + (d ? "bg-gray-900 border-gray-700" : "bg-gray-50 border-gray-200")}>
+              <div className={"reveal rounded-2xl border p-8 relative opacity-75 transition-all duration-300 hover:-translate-y-1 " + (d ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200")}>
                 <div className={"absolute top-4 right-4 text-xs font-bold px-3 py-1 rounded-full animate-pulse " + (d ? "bg-purple-900 text-purple-300" : "bg-purple-100 text-purple-700")}>{t.coming_soon}</div>
                 <p className="text-xs font-bold uppercase tracking-widest text-purple-500 mb-2">{t.p_pro_t}</p>
                 <p className={"text-5xl font-black mb-1 " + sub}>{t.p_pro_p}</p>
@@ -445,7 +639,9 @@ export default function LandingPage() {
                 <ul className="space-y-3 mb-8">
                   {proItems.map((item, i) => (
                     <li key={i} className="flex items-center gap-3">
-                      <svg aria-hidden="true" className="w-4 h-4 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                      <div className={"w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 " + (d ? "bg-purple-900/50" : "bg-purple-50")}>
+                        <svg aria-hidden="true" className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                      </div>
                       <span className={"text-sm " + sub}>{item}</span>
                     </li>
                   ))}
@@ -457,24 +653,29 @@ export default function LandingPage() {
         </section>
 
         {/* ── ABOUT ─────────────────────────────────────────────────────────── */}
-        <section id="about" aria-labelledby="about-heading" className="py-24 px-6 bg-gray-950">
+        <section id="about" aria-labelledby="about-heading" className={"py-24 px-6 " + pageBg}>
           <div className="max-w-6xl mx-auto">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-8">{lang === "tr" ? "HAKKIMIZDA" : lang === "ar" ? "من نحن" : "ABOUT"}</p>
+            <div ref={addRevealRef} className="reveal">
+              <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-8 " + sub}>{lang === "tr" ? "HAKKIMIZDA" : lang === "ar" ? "من نحن" : "ABOUT"}</p>
+            </div>
             <div className="grid md:grid-cols-2 gap-16 items-center">
-              <div>
-                <h2 id="about-heading" className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.about_title}</h2>
-                <p className="text-gray-300 text-lg leading-relaxed">{t.about_text}</p>
+              <div ref={addRevealRef} className="reveal-left">
+                <h2 id="about-heading" className={"text-4xl md:text-5xl font-black mb-6 leading-tight " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.about_title}</h2>
+                <p className={"text-lg leading-relaxed mb-6 " + sub}>{t.about_text}</p>
+                <a href={user ? "/dashboard" : "/login"} className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-full text-sm transition no-underline shadow-lg shadow-green-600/20">
+                  {L.getStarted} <ArrowRight className="w-4 h-4" />
+                </a>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div ref={addRevealRef} className="reveal-right grid grid-cols-2 gap-4">
                 {[
                   { num: "10K+", label: lang === "tr" ? "Oluşturulan Plan" : lang === "ar" ? "خطة مُنشأة" : "Plans Created" },
                   { num: "60s", label: lang === "tr" ? "Ortalama Süre" : lang === "ar" ? "متوسط الوقت" : "Avg Time" },
                   { num: "3", label: lang === "tr" ? "Dil" : lang === "ar" ? "لغات" : "Languages" },
                   { num: "100%", label: lang === "tr" ? "Ücretsiz" : lang === "ar" ? "مجاني" : "Free to Start" },
                 ].map((s, i) => (
-                  <div key={i} className="p-6 rounded-2xl bg-gray-900 border border-gray-800 text-center">
-                    <div className="text-3xl font-black text-green-400 mb-1">{s.num}</div>
-                    <div className="text-xs text-gray-400 font-medium">{s.label}</div>
+                  <div key={i} className={"p-6 rounded-2xl border text-center transition-all duration-300 hover:-translate-y-1 " + (d ? "bg-gray-900 border-gray-800 hover:border-gray-700" : "bg-white border-gray-200 shadow-sm hover:shadow-md")}>
+                    <div className={"text-3xl font-black mb-1 " + (d ? "text-green-400" : "text-green-600")}>{s.num}</div>
+                    <div className={"text-xs font-medium " + sub}>{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -483,11 +684,16 @@ export default function LandingPage() {
         </section>
 
         {/* ── CONTACT ───────────────────────────────────────────────────────── */}
-        <section id="contact" aria-labelledby="contact-heading" className={"py-24 px-6 " + (d ? "bg-gray-900" : "bg-[#faf9f6]")}>
-          <div className="max-w-2xl mx-auto text-center">
-            <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-6 " + sub}>{lang === "tr" ? "İLETİŞİM" : lang === "ar" ? "التواصل" : "CONTACT"}</p>
-            <h2 id="contact-heading" className={"text-4xl font-black mb-3 " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.contact_title}</h2>
-            <p className={"mb-10 " + sub}>{L.contactSub}</p>
+        <section id="contact" aria-labelledby="contact-heading" className={"py-24 px-6 relative overflow-hidden " + sectionBg}>
+          {/* Subtle background gradient */}
+          <div className={"absolute inset-0 pointer-events-none " + (d ? "bg-gradient-to-b from-transparent via-green-950/10 to-transparent" : "bg-gradient-to-b from-transparent via-green-50/50 to-transparent")} />
+
+          <div className="max-w-2xl mx-auto text-center relative z-10">
+            <div ref={addRevealRef} className="reveal">
+              <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-6 " + sub}>{lang === "tr" ? "İLETİŞİM" : lang === "ar" ? "التواصل" : "CONTACT"}</p>
+              <h2 id="contact-heading" className={"text-4xl font-black mb-3 " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.contact_title}</h2>
+              <p className={"mb-10 " + sub}>{L.contactSub}</p>
+            </div>
             <form onSubmit={handleContact} className="space-y-4" noValidate>
               <div className="grid md:grid-cols-2 gap-4">
                 <label className="block text-left">
@@ -527,7 +733,7 @@ export default function LandingPage() {
                 type="submit"
                 disabled={contactLoading}
                 aria-busy={contactLoading}
-                className={"w-full py-3.5 font-bold rounded-full text-sm transition " + (contactLoading ? "bg-gray-400 cursor-not-allowed text-white" : "bg-gray-900 hover:bg-gray-700 text-white")}
+                className={"w-full py-3.5 font-bold rounded-full text-sm transition shadow-lg " + (contactLoading ? "bg-gray-400 cursor-not-allowed text-white" : "bg-green-600 hover:bg-green-700 text-white shadow-green-600/20")}
               >
                 {contactLoading ? (lang === "tr" ? "Gönderiliyor..." : lang === "ar" ? "جارٍ الإرسال..." : "Sending...") : t.form_btn}
               </button>
@@ -538,8 +744,8 @@ export default function LandingPage() {
       </main>{/* /main */}
 
       {/* ── FOOTER ────────────────────────────────────────────────────────── */}
-      <footer className="bg-gray-950 border-t border-gray-900 py-12 px-6">
-        <div className="max-w-6xl mx-auto">
+      <footer className={d ? "bg-gray-950 border-t border-gray-900" : "bg-gray-900 border-t border-gray-800"}>
+        <div className="max-w-6xl mx-auto py-12 px-6">
           <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-10">
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -552,6 +758,7 @@ export default function LandingPage() {
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">{L.product}</h3>
                 <ul className="space-y-2 text-sm text-gray-400">
+                  <li><button onClick={() => scrollTo("features")} className="hover:text-white transition">{t.nav_features}</button></li>
                   <li><button onClick={() => scrollTo("pricing")} className="hover:text-white transition">{t.nav_pricing}</button></li>
                   <li><a href={user ? "/dashboard" : "/login"} className="hover:text-white transition no-underline">{t.dashboard}</a></li>
                 </ul>
@@ -568,7 +775,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-          <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-gray-900 text-xs text-gray-500">
+          <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-gray-800 text-xs text-gray-500">
             <span>{t.footer}</span>
             <button
               onClick={toggleTheme}
