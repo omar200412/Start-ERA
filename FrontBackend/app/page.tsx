@@ -32,9 +32,9 @@ function CheckIcon() {
 
 // ── Static data ────────────────────────────────────────────────────────────────
 const MOCKUP_STARTUPS = [
-  { name: "Justi.items", color: "bg-gradient-to-br from-gray-800 to-gray-900", tag: "E-commerce" },
-  { name: "CoMoon.ai", color: "bg-gradient-to-br from-green-600 to-emerald-800", tag: "AI Tools" },
-  { name: "Musicify", color: "bg-gradient-to-br from-emerald-500 to-green-700", tag: "Music Tech" },
+  { name: "Justi.items", color: "bg-white/5 backdrop-blur-md", tag: "E-commerce" },
+  { name: "CoMoon.ai", color: "bg-green-500/10 backdrop-blur-md", tag: "AI Tools" },
+  { name: "Musicify", color: "bg-emerald-500/10 backdrop-blur-md", tag: "Music Tech" },
 ];
 
 // ── Page component ─────────────────────────────────────────────────────────────
@@ -173,15 +173,15 @@ export default function LandingPage() {
   ];
 
   // ── Color tokens ──────────────────────────────────────────────────────────
-  const pageBg = d ? "bg-gray-950" : "bg-white";
+  const pageBg = d ? "bg-gray-950" : "bg-[#faf9f6]";
   const pageText = d ? "text-gray-100" : "text-gray-900";
-  const navBg = d ? "bg-gray-950/95 border-gray-800" : "bg-white/90 border-gray-100";
+  const navBg = d ? "bg-gray-950/95 border-gray-800" : "bg-[#faf9f6]/90 border-gray-200";
   // WCAG fix: raised contrast — gray-400 on dark bg passes AA; gray-600 on white passes AA
   const linkCls = d ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900";
   const sub = d ? "text-gray-300" : "text-gray-600";
-  const sectionBg = d ? "bg-gray-900" : "bg-gray-50";
+  const sectionBg = d ? "bg-gray-900" : "bg-[#f5f4f0]";
   const faqInputBg = d ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500 focus:border-green-500" : "bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-green-500";
-  const mobileMenuBg = d ? "bg-gray-950" : "bg-white";
+  const mobileMenuBg = d ? "bg-gray-950" : "bg-[#faf9f6]";
   const trendCardBg = d ? "bg-gray-900 border-gray-800 hover:border-green-600" : "bg-white border-gray-200 hover:border-green-400";
   const heroGradient = d
     ? "radial-gradient(ellipse at 60% 0%, #14532d 0%, #052e16 30%, #030712 70%, #030712 100%)"
@@ -323,8 +323,11 @@ export default function LandingPage() {
         </section>
 
         {/* ── COMMUNITY SECTION ─────────────────────────────────────────────── */}
-        <section aria-labelledby="community-heading" className="bg-gray-950 py-24 px-6">
-          <div className="max-w-6xl mx-auto">
+        <section aria-labelledby="community-heading" className="relative bg-gray-950 py-24 px-6 overflow-hidden">
+          {/* Subtle background glow for glass effect */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-green-900/20 blur-[100px] rounded-full pointer-events-none"></div>
+          
+          <div className="max-w-6xl mx-auto relative z-10">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-16">{L.builtOn}</p>
             <div className="grid md:grid-cols-2 gap-16 items-start mb-16">
               {/* h2 — first section heading (directly under h1) */}
@@ -336,12 +339,13 @@ export default function LandingPage() {
             </div>
             <div className="grid md:grid-cols-3 gap-5">
               {MOCKUP_STARTUPS.map((s, i) => (
-                <article key={i} className="rounded-2xl overflow-hidden border border-gray-800 bg-gray-900">
-                  <div className={s.color + " h-32 flex items-center justify-center"}>
-                    <span className="text-white font-black text-2xl">{s.name}</span>
+                <article key={i} className="rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-xl hover:bg-white/10 transition-colors">
+                  <div className={s.color + " h-32 flex items-center justify-center relative"}>
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+                    <span className="text-white font-black text-2xl drop-shadow-lg relative z-10">{s.name}</span>
                   </div>
-                  <div className="p-4">
-                    <div className="inline-block px-2.5 py-1 rounded-full bg-gray-800 text-gray-300 text-xs font-medium">{s.tag}</div>
+                  <div className="p-4 border-t border-white/5">
+                    <div className="inline-block px-2.5 py-1 rounded-full bg-white/10 text-gray-200 text-xs font-medium">{s.tag}</div>
                     <p className="text-gray-400 text-xs mt-2">{L.builtWith}</p>
                   </div>
                 </article>
@@ -351,7 +355,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── HOW IT WORKS ──────────────────────────────────────────────────── */}
-        <section aria-labelledby="how-heading" className={"py-24 px-6 " + (d ? "bg-gray-950" : "bg-white")}>
+        <section aria-labelledby="how-heading" className={"py-24 px-6 " + (d ? "bg-gray-950" : "bg-[#faf9f6]")}>
           <div className="max-w-6xl mx-auto">
             <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-16 " + sub}>{L.howLabel}</p>
             <div className="max-w-3xl mx-auto">
@@ -410,7 +414,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── PRICING ───────────────────────────────────────────────────────── */}
-        <section id="pricing" aria-labelledby="pricing-heading" className={"py-24 px-6 " + (d ? "bg-gray-950" : "bg-white")}>
+        <section id="pricing" aria-labelledby="pricing-heading" className={"py-24 px-6 " + (d ? "bg-gray-950" : "bg-[#faf9f6]")}>
           <div className="max-w-6xl mx-auto">
             <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-8 " + sub}>{lang === "tr" ? "FİYATLANDIRMA" : lang === "ar" ? "الأسعار" : "PRICING"}</p>
             <h2 id="pricing-heading" className={"text-4xl md:text-5xl font-black mb-4 " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.price_title}</h2>
@@ -479,7 +483,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── CONTACT ───────────────────────────────────────────────────────── */}
-        <section id="contact" aria-labelledby="contact-heading" className={"py-24 px-6 " + (d ? "bg-gray-900" : "bg-white")}>
+        <section id="contact" aria-labelledby="contact-heading" className={"py-24 px-6 " + (d ? "bg-gray-900" : "bg-[#faf9f6]")}>
           <div className="max-w-2xl mx-auto text-center">
             <p className={"text-xs font-bold uppercase tracking-[0.2em] mb-6 " + sub}>{lang === "tr" ? "İLETİŞİM" : lang === "ar" ? "التواصل" : "CONTACT"}</p>
             <h2 id="contact-heading" className={"text-4xl font-black mb-3 " + pageText} style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>{t.contact_title}</h2>
