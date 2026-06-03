@@ -35,7 +35,8 @@ html {
               transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.reveal.visible {
+.reveal.visible,
+.reveal-stagger.visible > .reveal {
   opacity: 1;
   transform: translateY(0);
 }

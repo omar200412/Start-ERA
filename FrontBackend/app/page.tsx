@@ -100,9 +100,9 @@ export default function LandingPage() {
   const maxChars = 400;
 
   // Scroll reveal refs
-  const revealRefs = useRef<HTMLDivElement[]>([]);
-  const addRevealRef = useCallback((el: HTMLDivElement | null) => {
-    if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el);
+  const revealRefs = useRef<Set<HTMLElement>>(new Set());
+  const addRevealRef = useCallback((el: HTMLElement | null) => {
+    if (el) revealRefs.current.add(el);
   }, []);
 
   // Global scroll reveal observer
@@ -116,11 +116,14 @@ export default function LandingPage() {
           }
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.05 } // lowered threshold to 0.05 so large grids trigger earlier
     );
+    
+    // Observe all current elements
     revealRefs.current.forEach(el => observer.observe(el));
+    
     return () => observer.disconnect();
-  }, []);
+  }); // Run on every render to catch newly mounted elements
 
   // Sync dark class on <html>
   useEffect(() => {
@@ -685,8 +688,14 @@ export default function LandingPage() {
 
         {/* ── CONTACT ───────────────────────────────────────────────────────── */}
         <section id="contact" aria-labelledby="contact-heading" className={"py-24 px-6 relative overflow-hidden " + sectionBg}>
-          {/* Subtle background gradient */}
-          <div className={"absolute inset-0 pointer-events-none " + (d ? "bg-gradient-to-b from-transparent via-green-950/10 to-transparent" : "bg-gradient-to-b from-transparent via-green-50/50 to-transparent")} />
+          {/* Subtle background gradient and glowing orbs */}
+          <div className={"absolute inset-0 pointer-events-none " + (d ? "bg-gradient-to-b from-transparent via-green-900/10 to-[#0a0a0a]" : "bg-gradient-to-b from-transparent via-green-50/50 to-transparent")} />
+          {d && (
+            <>
+              <div className="absolute top-10 right-10 w-64 h-64 bg-green-900/20 blur-[100px] rounded-full pointer-events-none"></div>
+              <div className="absolute bottom-10 left-10 w-64 h-64 bg-emerald-900/20 blur-[100px] rounded-full pointer-events-none"></div>
+            </>
+          )}
 
           <div className="max-w-2xl mx-auto text-center relative z-10">
             <div ref={addRevealRef} className="reveal">
@@ -744,8 +753,12 @@ export default function LandingPage() {
       </main>{/* /main */}
 
       {/* ── FOOTER ────────────────────────────────────────────────────────── */}
-      <footer className={d ? "bg-gray-950 border-t border-gray-900" : "bg-gray-900 border-t border-gray-800"}>
-        <div className="max-w-6xl mx-auto py-12 px-6">
+      <footer className={"relative overflow-hidden " + (d ? "bg-[#0a0a0a] border-t border-white/5" : "bg-gray-900 border-t border-gray-800")}>
+        {/* Glowing top border */}
+        {d && <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-green-500/30 to-transparent"></div>}
+        {/* Subtle background glow for footer */}
+        {d && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-green-900/10 blur-[80px] rounded-full pointer-events-none"></div>}
+        <div className="max-w-6xl mx-auto py-12 px-6 relative z-10">
           <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-10">
             <div>
               <div className="flex items-center gap-2 mb-3">
