@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useThemeAuth } from "../context/ThemeAuthContext";
@@ -216,15 +216,32 @@ export default function PlannerPage() {
   const [planResult, setPlanResult] = useState<PlanSection[] | null>(null);
   const [scores, setScores] = useState<Scores | null>(null);
   const [formData, setFormData] = useState({ idea: "", capital: "", skills: "", strategy: "", management: "", language: lang });
+  const autoGenerateRef = useRef(false);
 
   useEffect(() => { setFormData(prev => ({ ...prev, language: lang })); }, [lang]);
   useEffect(() => {
     const saved = sessionStorage.getItem("planner_form");
     if (saved) { try { setFormData(prev => ({ ...prev, ...JSON.parse(saved) })); } catch {} }
+    // Check if we should auto-generate (coming from idea generation results)
+    if (sessionStorage.getItem("planner_auto_generate") === "true") {
+      autoGenerateRef.current = true;
+      sessionStorage.removeItem("planner_auto_generate");
+    }
   }, []);
   useEffect(() => {
     sessionStorage.setItem("planner_form", JSON.stringify(formData));
   }, [formData]);
+
+  // Auto-trigger plan generation when coming from idea generation flow
+  useEffect(() => {
+    if (autoGenerateRef.current && formData.idea.trim() && user) {
+      autoGenerateRef.current = false;
+      // Small delay to ensure state is fully settled
+      const timer = setTimeout(() => generatePlan(), 300);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.idea, user]);
 
   const isDark = darkMode;
 

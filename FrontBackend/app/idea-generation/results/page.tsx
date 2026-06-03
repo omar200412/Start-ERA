@@ -59,7 +59,7 @@ const T: Record<string, Record<string, string>> = {
     complexity: "Karmaşıklık",
     saturation: "Pazar Doygunluğu",
     whyFits: "Neden Size Uyuyor",
-    validate: "Bu Fikri Doğrula",
+    validate: "Bu Fikirle Devam Et",
     beginner: "Başlangıç",
     intermediate: "Orta",
     advanced: "İleri",
@@ -82,7 +82,7 @@ const T: Record<string, Record<string, string>> = {
     complexity: "Complexity",
     saturation: "Market Saturation",
     whyFits: "Why This Fits You",
-    validate: "Validate This Idea",
+    validate: "Continue with This Idea",
     beginner: "Beginner",
     intermediate: "Intermediate",
     advanced: "Advanced",
@@ -105,7 +105,7 @@ const T: Record<string, Record<string, string>> = {
     complexity: "التعقيد",
     saturation: "تشبع السوق",
     whyFits: "لماذا يناسبك",
-    validate: "تحقق من هذه الفكرة",
+    validate: "تابع مع هذه الفكرة",
     beginner: "مبتدئ",
     intermediate: "متوسط",
     advanced: "متقدم",
@@ -186,11 +186,23 @@ export default function IdeaResultsPage() {
 
   // ── Handle validate click ──────────────────────────────────────────────────
   function handleValidate(idea: IdeaResult) {
+    // Feed the selected idea into the Planner's business plan generation flow
+    const ideaText = `${idea.title} — ${idea.whyThisFitsYou}`;
+    const inputData = inputRef.current || {};
     sessionStorage.setItem(
-      "selected_idea_for_validation",
-      JSON.stringify({ title: idea.title, description: idea.whyThisFitsYou })
+      "planner_form",
+      JSON.stringify({
+        idea: ideaText,
+        capital: inputData.budget || "",
+        skills: inputData.skills || "",
+        strategy: inputData.workHistory || "",
+        management: inputData.timeAvailability || "",
+        language: lang,
+      })
     );
-    router.push("/validation");
+    // Signal the planner to auto-start AI plan generation
+    sessionStorage.setItem("planner_auto_generate", "true");
+    router.push("/planner");
   }
 
   // ── Language / theme helpers ───────────────────────────────────────────────
