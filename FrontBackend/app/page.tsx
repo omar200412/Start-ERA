@@ -581,7 +581,7 @@ export default function LandingPage() {
             </div>
             <div ref={addRevealRef} className="reveal reveal-stagger grid md:grid-cols-3 gap-6">
               {TESTIMONIALS.map((tm, i) => (
-                <div key={i} className={"reveal relative rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 quote-icon " + cardBg}>
+                <div key={i} className={"reveal relative rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 " + cardBg}>
                   {/* Stars */}
                   <div className="flex gap-0.5 mb-4">
                     {Array.from({ length: tm.rating }).map((_, j) => (
