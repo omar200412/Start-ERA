@@ -183,7 +183,7 @@ export default function LandingPage() {
 
   const L = {
     heroTitle: lang === "tr" ? <>Fikrinizi yazın,<br />girişiminizin hayata geçtiğini görün.</> : lang === "ar" ? <>اكتب فكرتك،<br />شاهد شركتك الناشئة تنبض بالحياة.</> : <>Type your idea,<br />See your startup come to life.</>,
-    heroSub: lang === "tr" ? "60 saniyenin altında önizleme al. Ardından girişimini inşa et ve başlat." : lang === "ar" ? "احصل على معاينة في أقل من 60 ثانية. ثم ابنِ شركتك الناشئة وأطلقها." : "Get a preview in under 60 seconds. Then build & launch your startup.",
+    heroSub: lang === "tr" ? "Fikrini 60 saniyede gerçeğe dönüştür." : lang === "ar" ? "حوّل فكرتك إلى واقع في 60 ثانية." : "Turn your idea into reality in 60 seconds.",
     placeholder: lang === "tr" ? "Harika fikrinizi buraya girin..." : lang === "ar" ? "أدخل فكرتك الرائعة هنا..." : "Enter awesome idea here...",
     charsLeft: `${maxChars - idea.length} ${lang === "tr" ? "karakter kaldı" : lang === "ar" ? "حرف متبقٍ" : "characters left"}`,
     generate: lang === "tr" ? "Önizleme Oluştur" : lang === "ar" ? "إنشاء معاينة" : "Generate Preview",
