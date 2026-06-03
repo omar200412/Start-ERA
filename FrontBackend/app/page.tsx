@@ -32,9 +32,9 @@ function CheckIcon() {
 
 // ── Static data ────────────────────────────────────────────────────────────────
 const MOCKUP_STARTUPS = [
-  { name: "Justi.items", color: "bg-blue-600", tag: "E-commerce" },
-  { name: "CoMoon.ai", color: "bg-purple-600", tag: "AI Tools" },
-  { name: "Musicify", color: "bg-green-600", tag: "Music Tech" },
+  { name: "Justi.items", color: "bg-gradient-to-br from-gray-800 to-gray-900", tag: "E-commerce" },
+  { name: "CoMoon.ai", color: "bg-gradient-to-br from-green-600 to-emerald-800", tag: "AI Tools" },
+  { name: "Musicify", color: "bg-gradient-to-br from-emerald-500 to-green-700", tag: "Music Tech" },
 ];
 
 // ── Page component ─────────────────────────────────────────────────────────────
